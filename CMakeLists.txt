@@ -7,62 +7,53 @@ set(EDHOC_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 
 project("edhoc-c" LANGUAGES C VERSION "${EDHOC_VERSION}")
 
-set(CMAKE_C_STANDARD 99)
-
-add_subdirectory(src)
-
-###############################################################################
-# OPTIONS
-###############################################################################
-
-option(EDHOC_C_USE_CONTEXT "Use context pointer for COSE functions" OFF)
-option(EDHOC_C_BUILD_TESTS "build tests" ON)
-
-
-option(BUILD_SHARED_LIBS "Build Shared Libraries" OFF)
+set(CMAKE_C_STANDARD 11)
 
 # Set the output of the libraries and executables.
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_BINARY_DIR})
 
-set(dist_dir ${CMAKE_BINARY_DIR}/dist)
 set(prefix ${CMAKE_INSTALL_PREFIX})
 set(exec_prefix ${CMAKE_INSTALL_PREFIX}/bin)
 set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
 set(includedir ${CMAKE_INSTALL_PREFIX}/include)
 
 ###############################################################################
-# DEPENDENCIES
+# OPTIONS
 ###############################################################################
 
-if (EDHOC_C_USE_FIND_PACKAGE)
-    find_package(cn-cbor)
-else ()
-    include(FetchContent)
-
-    FetchContent_Declare(CN_CBOR GIT_REPOSITORY https://github.com/jimsch/cn-cbor.git GIT_TAG master)
-    FetchContent_GetProperties(CN_CBOR)
-    string(TOLOWER "CN_CBOR" lcName)
-
-    if (NOT ${lcName}_POPULATED)
-        FetchContent_Populate(CN_CBOR)
-        set(CN_CBOR_FATAL_WARNINGS OFF CACHE BOOL "" FORCE)
-        set(CN_CBOR_COVERALLS OFF CACHE BOOL "" FORCE)
-        set(CN_CBOR_USE_CONTEXT ${EDHOC_C_USE_CONTEXT} CACHE BOOL "" FORCE)
-        set(BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS} CACHE BOOL "" FORCE)
-        set(CN_CBOR_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-        set(CN_CBOR_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-        add_subdirectory(${${lcName}_SOURCE_DIR} ${${lcName}_BINARY_DIR} EXCLUDE_FROM_ALL)
-    endif ()
-endif ()
+option(EDHOC_C_BUILD_TESTS "build tests" ON)
+option(BUILD_SHARED_LIBS "Build Shared Libraries" OFF)
 
 if (BUILD_SHARED_LIBS)
     set(BUILD_STATIC_LIBS OFF)
 else ()
     set(BUILD_STATIC_LIBS ON)
 endif ()
+
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type" FORCE)
+endif ()
+
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "MinSizeRel, Release")
+
+if (NOT EDHOC_CRYPTO_BACKEND)
+    set(EDHOC_CRYPTO_BACKEND "WOLFSSL" CACHE STRING "Backend for cryptography" FORCE)
+endif ()
+
+set_property(CACHE EDHOC_CRYPTO_BACKEND PROPERTY STRINGS "MBEDTLS" "WOLFSSL")
+
+if (NOT EDHOC_CBOR_BACKEND)
+    set(EDHOC_CBOR_BACKEND "NANOCBOR" CACHE STRING "Backend for CBOR encoding/decoding" FORCE)
+endif ()
+
+set_property(CACHE EDHOC_CBOR_BACKEND PROPERTY STRINGS "CN_CBOR" "NANOCBOR")
+
+###############################################################################
+# SOURCE FILES
+###############################################################################
+
+add_subdirectory(src)
 
 ###############################################################################
 # ADD TESTS
@@ -78,6 +69,8 @@ endif ()
 # PRINT CONFIG
 ###############################################################################
 
-message(STATUS "EDHOC_C_BUILD_TESTS:..............${EDHOC_C_BUILD_TESTS}")
-message(STATUS "CN_CBOR_SOURCE_DIR:...............${${lcName}_SOURCE_DIR}")
-message(STATUS "CN_CBOR_BINARY_DIR:...............${${lcName}_BINARY_DIR}")
+message(STATUS "EDHOC_BUILD_TYPE:...............${CMAKE_BUILD_TYPE}")
+message(STATUS "EDHOC_BUILD_TESTS:..............${EDHOC_C_BUILD_TESTS}")
+message(STATUS "EDHOC_SHARED_LIBS:..............${BUILD_SHARED_LIBS}")
+message(STATUS "EDHOC_CRYPTO_BACKEND:...........${EDHOC_CRYPTO_BACKEND}")
+message(STATUS "EDHOC_CBOR_BACKEND:.............${EDHOC_CBOR_BACKEND}")
