@@ -1,129 +1,287 @@
 #ifndef EDHOC_EDHOC_H
 #define EDHOC_EDHOC_H
 
+#if !defined(EDHOC_CONFIG_FILE)
+
+#include "edhoc/config.h"
+
+#else
+#include EDHOC_CONFIG_FILE
+#endif
+
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdio.h>
 
-typedef enum cipher_suite {
-    EDHOC_CIPHER_SUITE_0,
-    EDHOC_CIPHER_SUITE_1,
-    EDHOC_CIPHER_SUITE_2,
-    EDHOC_CIPHER_SUITE_3
-} cipher_suite_t;
+#include <mbedtls/ctr_drbg.h>
+#include <mbedtls/entropy.h>
 
-typedef enum auth_method {
-    SIGN_SIGN,
-    SIGN_STATIC,
-    STATIC_SIGN,
-    STATIC_STATIC
-} method_t;
+#include "cose.h"
+#include "cbor_cert.h"
 
-typedef enum msg_correlation {
-    NO_CORR,
+#if !defined(EDHOC_MAX_CID_LEN)
+#define EDHOC_MAX_CID_LEN                (4)
+#endif
+
+#if !defined(EDHOX_MAX_SUPPORTED_SUITES)
+#define EDHOC_MAX_SUPPORTED_SUITES       (5)
+#endif
+
+#if !defined(EDHOC_MAX_CRED_SIZE)
+#define EDHOC_MAX_CRED_SIZE              (200)
+#endif
+
+#if !defined(EDHOC_MAX_CRED_ID_SIZE)
+#define EDHOC_MAX_CRED_ID_SIZE           (50)
+#endif
+
+#define EDHOC_A2M_SIZE                   (EDHOC_MAX_CRED_SIZE +    \
+                                          EDHOC_MAX_CRED_ID_SIZE + \
+                                          sizeof("Encrypt0") +     \
+                                          COSE_DIGEST_LEN)
+
+/*
+ * EDHOC error codes
+ */
+#define EDHOC_SUCCESS                   (0)
+#define EDHOC_ERR_RNG                   (-1)
+#define EDHOC_ERR_ILLEGAL_CIPHERSUITE   (-2)
+#define EDHOC_ERR_CURVE_UNAVAILABLE     (-3)
+#define EDHOC_ERR_KEY_GENERATION        (-4)
+#define EDHOC_ERR_INVALID_KEY           (-5)
+#define EDHOC_ILLEGAL_CONN_ID           (-6)
+#define EDHOC_ERR_ADDITIONAL_DATA       (-7)
+#define EDHOC_ERR_DECODE_MESSAGE1       (-8)
+#define EDHOC_ERR_DECODE_MESSAGE2       (-9)
+#define EDHOC_ERR_DECODE_MESSAGE3       (-10)
+#define EDHOC_ERR_BUFFER_OVERFLOW       (-11)
+#define EDHOC_ERR_CBOR_ENCODING         (-12)
+#define EDHOC_ERR_ILLEGAL_ROLE          (-13)
+#define EDHOC_ERR_ILLEGAL_CORR          (-14)
+#define EDHOC_ERR_ILLEGAL_METHOD        (-15)
+#define EDHOC_ERR_CRYPTO                (-16)
+#define EDHOC_ERR_CBOR_DECODING         (-17)
+
+#define EDHOC_CHECK_RET(f)                                      \
+do{                                                             \
+    if((ret = (f)) != EDHOC_SUCCESS){                           \
+        goto exit;                                              \
+    }                                                           \
+} while(0)
+
+
+/* Callback functions */
+typedef int (*rng_cb_t)(void *, unsigned char *, size_t);
+
+typedef void (*edhoc_cred_cb_t)(void);
+
+/* Definitions for clarity */
+typedef uint8_t cipher_suite_t;
+typedef uint8_t method_t;
+
+/* Defined in cbor certs */
+typedef struct cbor_cert cbor_cert_t;
+
+/* Defined below */
+typedef struct edhoc_conf edhoc_conf_t;
+typedef struct edhoc_session edhoc_session_t;
+typedef struct edhoc_ctx edhoc_ctx_t;
+
+typedef enum edhoc_corr {
+    NO_CORR = 0,
     CORR_1_2,
     CORR_2_3,
-    CORR_ALL
+    CORR_ALL,
+    CORR_UNSET
 } corr_t;
 
-typedef struct EDHOC_Msg1 {
-    uint8_t method_corr;
-    const uint8_t *suites;
-    size_t s_size;
-    uint8_t selected;
-    const uint8_t *g_x;
-    size_t g_x_size;
-    uint8_t *connection_idi;
-    size_t ci_size;
-    const uint8_t *additional_data_1;
-    size_t ad1_size;
-} EDHOC_Msg1_t;
+typedef enum edhoc_role {
+    EDHOC_IS_RESPONDER = 0,
+    EDHOC_IS_INITIATOR
+} edhoc_role_t;
 
-typedef struct EDHOC_Msg2 {
-    uint8_t *data_2;
-    size_t d_size;
-    uint8_t *ciphertext_2;
-    size_t c_size;
-} EDHOC_Msg2_t;
+struct edhoc_conf {
+    edhoc_role_t role;
+    cose_key_t auth_key;
+#if defined(EDHOC_AUTH_PUB_KEY)
+    cose_key_t pub_key;
+#endif
+#if defined(EDHOC_AUTH_CBOR_CERT)
+    cbor_cert_t certificate;
+#endif
+    edhoc_cred_cb_t edhoc_get_creds;
+    const uint8_t *cred_id;
+    size_t cred_id_len;
+    rng_cb_t f_rng;
+    void *p_rng;
+};
 
-typedef struct EDHOC_ctx {
-    EDHOC_Msg1_t message_1;
-    EDHOC_Msg2_t message_2;
-} EDHOC_ctx_t;
+struct edhoc_session {
+    uint8_t cidi[EDHOC_MAX_CID_LEN];
+    uint8_t cidi_len;
+    uint8_t cidr[EDHOC_MAX_CID_LEN];
+    uint8_t cidr_len;
+    cipher_suite_t *selected_suite;
+};
 
-
-/**
- * @brief   Parse an EDHOC message 1
- * @param[out]  ctx        EDHOC context struct to populate
- * @param[in]   buf        pointer to a raw EDHOC message 1
- * @param[in]   bsize      length of the EDHOC message at @p buf
- *
- * @returns     0 on success
- * @returns     <0 on error
- */
-
-int8_t EDHOC_Msg1_Decode(EDHOC_ctx_t *ctx, const uint8_t *buf, size_t bsize);
-
-/**
- * @brief   Parse an EDHOC message 2
- * @param[out]  ctx        EDHOC context struct to populate
- * @param[in]   buf        pointer to a raw EDHOC message 2
- * @param[in]   bsize      length of the EDHOC message at @p buf
- *
- * @returns     0 on success
- * @returns     <0 on error
- */
-
-int8_t EDHOC_Msg2_Decode(EDHOC_ctx_t *ctx, const uint8_t *buf, size_t bsize);
+struct edhoc_ctx {
+    edhoc_conf_t *conf;
+    edhoc_session_t session;
+    corr_t correlation;
+    method_t *method;
+    cose_key_t local_eph_key;
+    cose_key_t remote_eph_key;
+    uint8_t secret[COSE_MAX_KEY_LEN];
+    uint8_t prk_2e[COSE_DIGEST_LEN];
+    uint8_t prk_3e2m[COSE_DIGEST_LEN];
+    uint8_t k_2m[COSE_MAX_KEY_LEN];
+    uint8_t iv_2m[COSE_MAX_IV_LEN];
+    uint8_t a_2m[EDHOC_A2M_SIZE];
+    uint8_t mac_2[COSE_MAX_TAG_LEN];
+    uint8_t transcript_2[COSE_DIGEST_LEN];
+    uint8_t transcript_3[COSE_DIGEST_LEN];
+    uint8_t transcript_4[COSE_DIGEST_LEN];
+};
 
 /**
+ * @brief Initialize an EDHOC context object. Prepare it for edhoc_ctx_setup().
  *
- * @brief   Initializes a EDHOC message 1 struct, to build an encoded EDHOC message 1.
+ * @param[in,out] ctx       EDHOC context
  *
- * @param ctx[out]          initializes the EDHOC context struct
- * @param correlation       correlation value for the EDHOC exchange
- * @param method            EDHOC authentication method
- * @param s[in]             cipher suite list to convey to the responder, first element is the selected cipher suite
- * @param s_len[in]         length of @p s
- * @param g_x[in]           ephemeral public key
- * @param g_x_len[in]       length of @p g_x
- * @param cid[in]           initiator connection identifier
- * @param cid_len[in]       length of @p cid
- * @param aad1[in]          additional data to send to the responder
- * @param aad1_len[in]      length of @p aad1
- *
- * @returns     0 on success
- * @returns     <0 on error
  */
-int8_t EDHOC_Msg1_Build(EDHOC_ctx_t *ctx, corr_t correlation, method_t method, const uint8_t *s, size_t s_len,
-                        const uint8_t *g_x, size_t g_x_len, const uint8_t *cid, size_t cid_len, const uint8_t *aad1,
-                        size_t aad1_len);
+void edhoc_ctx_init(edhoc_ctx_t *ctx);
 
 /**
+ * @brief Initialize the EDHOC configuration
  *
- * @brief   Initializes a EDHOC message 2 struct, to build an encoded EDHOC message 2.
- *
- * @param ctx[out]          initializes the EDHOC context struct
- * @param data_2[in]        CBOR encoded data_2 struct
- * @param d_size            size of the CBOR sequence at @p data_2
- * @param ciphertext_2      ciphertext byte string
- * @param c_size            length of @p ciphertext_2
- *
- * @returns     0 on success
- * @returns     <0 on error
+ * @param[in,out] conf      EDHOC configuration struct
  */
-int8_t EDHOC_Msg2_Build(EDHOC_ctx_t *ctx);
+void edhoc_conf_init(edhoc_conf_t *conf);
 
 /**
+ * @brief Set up the EDHOC configuration
  *
- * @brief   Builds a CBOR-encoded EDHOC message 1
- *
- * @param ctx[in]       initialized EDHOC context struct
- * @param buffer[out]   buffer holding the encoded message
- * @param bsize[in]     total size of the buffer which will hold the encoded message
- *
- * @returns     size of the message 1 on success
- * @returns     <0 on error
+ * @param ctx[in,out]       EDHOC context
+ * @param conf[in]          EDHOC configuration struct
  */
-ssize_t EDHOC_Msg1_Encode(const EDHOC_ctx_t *ctx, uint8_t *buffer, size_t bsize);
+void edhoc_ctx_setup(edhoc_ctx_t *ctx, edhoc_conf_t *conf);
+
+/**
+ * @brief Set up the EDHOC configuration.
+ *
+ * @param conf[in,out]      The EDHOC configuration struct to populate
+ * @param role[in]          An EDHOC role; either EDHOC_IS_INITIATOR or EDHOC_IS_RESPONDER
+ * @param f_rng[in]         A function that provides strong random bytes
+ * @param p_rng[in]         Optional RNG context object
+ * @param cb[in]            Callback to fetch remote credential information
+ *
+ * @returns 0 on success
+ * @returns A negative value on failure
+ *
+ */
+int edhoc_conf_setup(edhoc_conf_t *conf, edhoc_role_t role, rng_cb_t f_rng, void *p_rng, edhoc_cred_cb_t cb);
+
+/**
+ * @brief Load the private COSE key for authenticating the exchange.
+ * It must correspond to the credentials loaded with edhoc_conf_load_authkey() or edhoc_conf_load_cbor_cert()
+ *
+ * @param conf
+ */
+int edhoc_conf_load_authkey(edhoc_conf_t *conf, const uint8_t *auth_key, size_t auth_key_len);
+
+#if defined(EDHOC_AUTH_CBOR_CERT)
+
+/**
+ * @brief Load a CBOR certificate as credential for authentication
+ *
+ * @param conf
+ */
+int edhoc_conf_load_cborcert(edhoc_conf_t *conf, const uint8_t *cbor_cert, size_t cbor_cert_len);
+
+#endif
+
+#if defined(EDHOC_AUTH_PUB_KEY)
+/**
+ * @brief Load a public COSE key as credential for authentication
+ *
+ * @param conf
+ */
+int edhoc_conf_load_pubkey(edhoc_conf_t *conf, const uint8_t *pub_key, size_t pub_key_len);
+#endif
+
+int edhoc_conf_load_cred_id(edhoc_conf_t *conf, const uint8_t *cred_id, size_t cred_id_len);
+
+/**
+ * @brief   Create EDHOC message 1
+ *
+ * @param ctx[in]           EDHOC context
+ * @param correlation       EDHOC correlation value
+ * @param method            EHDOC authentication method
+ * @param suite             Preferred cipher suite
+ * @param ad1[in]          Additional data
+ * @param ad1_len[in]      Length of the addition
+ * @param out[out]          Output buffer to hold EDHOC message 1
+ * @param buf_len[in]       Length of @p out
+ *
+ * @returns     size of message 1 on success
+ * @returns     negative value on failure
+ */
+ssize_t edhoc_create_msg1(
+        edhoc_ctx_t *ctx,
+        corr_t correlation,
+        method_t method,
+        cipher_suite_t suite,
+        const uint8_t *ad1,
+        size_t ad1_len,
+        uint8_t *out,
+        size_t buf_len);
+
+/**
+ * @brief   Create EDHOC message 2
+ *
+ * @param ctx[in]           EDHOC context
+ * @param msg1_buf[in]      Buffer containing EDHOC message 1
+ * @param msg1_len[in]      Length of EDHOC message 1
+ * @param aad2[in]          Additional data
+ * @param aad2_len[in]      Length of the addition
+ * @param out[out]          Output buffer to hold EDHOC message 1
+ * @param out_len[in]       Length of @p out
+ *
+ * @returns     size of message 1 on success
+ * @returns     negative value on failure
+ */
+ssize_t edhoc_create_msg2(
+        edhoc_ctx_t *ctx,
+        const uint8_t *msg1_buf,
+        size_t msg1_len,
+        const uint8_t *aad1,
+        size_t aad1_len,
+        uint8_t *out,
+        size_t out_len);
+
+#if defined(EDHOC_DEBUG_ENABLE)
+
+/**
+ * @brief Load an ephemeral COSE key pair.
+ *
+ * @param conf
+ */
+int edhoc_load_ephkey(edhoc_ctx_t *ctx, const uint8_t *eph_key, size_t eph_key_len);
+
+/**
+ * @brief Load an ephemeral COSE key pair.
+ *
+ * @param conf
+ */
+int edhoc_session_preset_cidi(edhoc_ctx_t *ctx, const uint8_t *conn_id, size_t conn_id_len);
+
+/**
+ * @brief Load an ephemeral COSE key pair.
+ *
+ * @param conf
+ */
+int edhoc_session_preset_cidr(edhoc_ctx_t *ctx, const uint8_t *conn_id, size_t conn_id_len);
+
+#endif
 
 #endif /* EDHOC_EDHOC_H */
