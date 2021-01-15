@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define CBOR_CHECK_RET(cbor_encoding)  \
-if ((written = (cbor_encoding)) < 0) { \
+#define CBOR_CHECK_RET(enc)  \
+if ((written = (enc)) < 0) { \
     size = written;                    \
     goto exit;                         \
 } else {                               \
