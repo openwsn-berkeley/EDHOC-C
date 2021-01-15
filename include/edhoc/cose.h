@@ -11,6 +11,7 @@
 #define COSE_MAX_KID_LEN        (8)
 #define COSE_NUM_KEY_OPS        (5)
 #define COSE_MAX_TAG_LEN        (16)
+#define COSE_MAX_SIGNATURE_LEN  (64)
 
 typedef enum {
     COSE_KEY_COMMON_PARAM_KTY = 1,    /**< Key type identifier */

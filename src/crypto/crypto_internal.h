@@ -139,8 +139,8 @@ int crypt_aead_tag(
  *
  * @param[in] crv           COSE curve for the signature calculation
  * @param[in] authkey       Private key
- * @param[in] digest        Message digest
- * @param[in] digest_len    Length of @p digest
+ * @param[in] msg        Message digest
+ * @param[in] msg_len    Length of @p digest
  * @param[in] f_rng         Function providing randomness
  * @param[in] p_rng         Optional randomness context structure
  *
@@ -149,9 +149,10 @@ int crypt_aead_tag(
  */
 int crypt_compute_signature(cose_curve_t crv,
                             cose_key_t *authkey,
-                            const uint8_t *digest,
-                            size_t digest_len,
+                            const uint8_t *msg,
+                            size_t msg_len,
                             rng_cb_t f_rng,
-                            void *p_rng);
+                            void *p_rng,
+                            uint8_t* signature);
 
 #endif /* EDHOC_CRYPTO_INTERNAL_H */
