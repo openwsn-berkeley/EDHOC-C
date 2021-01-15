@@ -2,12 +2,16 @@
 #include <assert.h>
 #include <string.h>
 
+#include <wolfssl/options.h>
+#include <wolfssl/wolfcrypt/ed25519.h>
+
 #if defined(MBEDTLS)
 
 #include <mbedtls/sha256.h>
 #include <mbedtls/dhm.h>
 
 #elif defined(WOLFSSL)
+
 #include <wolfssl/options.h>
 #include <wolfssl/wolfcrypt/random.h>
 
@@ -81,7 +85,7 @@ int test_ecdh_computation(cose_curve_t crv, const uint8_t *priv_key, size_t priv
 #elif defined(WOLFSSL)
     RNG rng;
 
-    if(wc_InitRng(&rng) != EDHOC_SUCCESS)
+    if (wc_InitRng(&rng) != EDHOC_SUCCESS)
         exit(-1);
 
     EDHOC_CHECK_RET(edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, NULL, &rng, NULL));
@@ -151,7 +155,7 @@ int test_key_generation(void) {
     return ret;
 }
 
-int test_compute_prk2e(uint8_t secret[32], const uint8_t* salt, size_t salt_size, const uint8_t* result) {
+int test_compute_prk2e(uint8_t secret[32], const uint8_t *salt, size_t salt_size, const uint8_t *result) {
     (void) salt;
     uint8_t out[32];
 
@@ -159,6 +163,21 @@ int test_compute_prk2e(uint8_t secret[32], const uint8_t* salt, size_t salt_size
     assert(compare_arrays(out, result, 32));
 
     return EDHOC_SUCCESS;
+}
+
+int test_compute_ed25519_signature(uint8_t *sk, size_t sk_len, uint8_t *m_2, size_t m_2_len, uint8_t *expected) {
+    cose_key_t authkey;
+    cose_key_init(&authkey);
+
+    uint8_t signature[64];
+
+    cose_key_from_cbor(&authkey, sk, sk_len);
+
+    crypt_compute_signature(COSE_EC_CURVE_ED25519, &authkey, m_2, m_2_len, NULL, NULL, signature);
+
+    assert(compare_arrays(signature, expected, 64));
+
+    return 0;
 }
 
 int test_edhoc_kdf(
@@ -180,8 +199,9 @@ int test_edhoc_kdf(
 int main(int argc, char **argv) {
     test_context_ptr ctx;
     cose_algo_t id;
-    uint8_t message_1[100], data_2[100], th_2[32], prk2e[32], salt[32], prk3e2m[32], k2m[32], iv2m[16];
-    int selected, msg1_len, data2_len, th2_len;
+    uint8_t message_1[100], data_2[100], th_2[32], prk2e[32], salt[32], prk3e2m[32], k2m[32], iv2m[16], cbor_key[100],
+            m_2[250], sig[64];
+    int selected, msg1_len, data2_len, th2_len, cbor_key_len, m_2_len;
     uint8_t init_ephkey[200], resp_ephkey[200], secret[50];
     int init_ephkey_len, resp_ephkey_len, secret_len, prk2e_len, salt_len, prk3e2m_len, k2m_len, iv2m_len;
 
@@ -260,6 +280,17 @@ int main(int argc, char **argv) {
             assert(test_edhoc_kdf(id, prk3e2m, th_2, label, iv2m, iv2m_len) == 0);
 
             close_test(ctx);
+        } else if (strcmp(argv[1], "--ed25519") == 0) {
+            ctx = load_json_test_file(argv[2]);
+
+            cbor_key_len = load_from_json_RESP_AUTHKEY(ctx, cbor_key, sizeof(cbor_key));
+            m_2_len = load_from_json_M2(ctx, m_2, sizeof(m_2));
+            load_from_json_SIGNATURE(ctx, sig, sizeof(sig));
+
+            assert(test_compute_ed25519_signature(cbor_key, cbor_key_len, m_2, m_2_len, sig) == 0);
+
+            return 0;
+
         }
     }
 
