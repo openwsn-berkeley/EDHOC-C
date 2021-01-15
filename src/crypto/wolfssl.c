@@ -2,6 +2,8 @@
 
 #include <wolfssl/wolfcrypt/curve25519.h>
 #include <wolfssl/wolfcrypt/hmac.h>
+#include <wolfssl/wolfcrypt/aes.h>
+#include <wolfssl/wolfcrypt/ed25519.h>
 
 #include "edhoc/cose.h"
 #include "edhoc/edhoc.h"
@@ -222,15 +224,59 @@ int crypt_aead_tag(
         size_t aad_len,
         uint8_t *tag) {
 
+    Aes aes;
+    int ret, key_len, iv_len, tag_len;
+    uint8_t plaintext, ciphertext;
+
+    ret = EDHOC_ERR_CRYPTO;
+
+    key_len = cose_key_len_from_alg(alg);
+    iv_len = cose_iv_len_from_alg(alg);
+    tag_len = cose_tag_len_from_alg(alg);
+
+    if (wc_AesCcmSetKey(&aes, key, key_len) != EDHOC_SUCCESS)
+        goto exit;
+
+    if (wc_AesCcmEncrypt(&aes, &ciphertext, &plaintext, 0, iv, iv_len, tag, tag_len, aad, aad_len) != EDHOC_SUCCESS)
+        goto exit;
+
+    exit:
+    wc_AesFree(&aes);
+    return ret;
 }
 
 int crypt_compute_signature(cose_curve_t crv,
                             cose_key_t *authkey,
-                            const uint8_t *digest,
-                            size_t digest_len,
+                            const uint8_t *msg,
+                            size_t msg_len,
                             rng_cb_t f_rng,
-                            void *p_rng) {
+                            void *p_rng,
+                            uint8_t *signature) {
+    int ret;
+    ed25519_key sk;
+    wc_ed25519_init(&sk);
+    size_t sig_len = COSE_MAX_SIGNATURE_LEN;
+    uint8_t pk[COSE_MAX_KEY_LEN];
 
+    ret = EDHOC_ERR_CRYPTO;
+
+    if (wc_ed25519_import_private_only(authkey->d, authkey->d_len, &sk) != EDHOC_SUCCESS)
+        goto exit;
+
+    if (wc_ed25519_make_public(&sk, pk, COSE_MAX_KEY_LEN) != EDHOC_SUCCESS)
+        goto exit;
+
+    if (wc_ed25519_import_private_key(authkey->d, authkey->d_len, pk, COSE_MAX_KEY_LEN, &sk) != EDHOC_SUCCESS)
+        goto exit;
+
+    if (wc_ed25519_sign_msg(msg, msg_len, signature, (word32 *) &sig_len, &sk) != EDHOC_SUCCESS)
+        goto exit;
+
+    ret = EDHOC_SUCCESS;
+
+    exit:
+    wc_ed25519_free(&sk);
+    return ret;
 }
 
 #endif /* WOLFSSL */

@@ -226,13 +226,21 @@ static int compute_signature2(edhoc_ctx_t *ctx) {
     int ret;
     cose_algo_t aead;
     cose_curve_t crv;
-    uint8_t m2_digest[COSE_DIGEST_LEN];
+    uint8_t m_2[300];
+    int written, size = 0, tag_len;
+
+    ret = EDHOC_ERR_CBOR_ENCODING;
+
+    memset(m_2, 0, sizeof(m_2));
+
+    if ((crv = edhoc_sign_curve_from_suite(*ctx->session.selected_suite)) == COSE_EC_NONE)
+        return EDHOC_ERR_CURVE_UNAVAILABLE;
 
     if ((aead = edhoc_aead_from_suite(*ctx->session.selected_suite)) == COSE_ALGO_NONE)
         return EDHOC_ERR_ILLEGAL_CIPHERSUITE;
 
-    if ((crv = edhoc_sign_curve_from_suite(*ctx->session.selected_suite)) == COSE_EC_NONE)
-        return EDHOC_ERR_CURVE_UNAVAILABLE;
+    if ((tag_len = cose_tag_len_from_alg(aead)) < 0)
+        return EDHOC_ERR_ILLEGAL_CIPHERSUITE;
 
 #if defined(MBEDTLS)
     mbedtls_sha256_context sha256_ctx;
@@ -242,56 +250,28 @@ static int compute_signature2(edhoc_ctx_t *ctx) {
 
     if (*ctx->method == EDHOC_AUTH_SIGN_SIGN || *ctx->method == EDHOC_AUTH_STATIC_SIGN) {
 
-        const uint8_t cbor_array_len_encoding = 0x84;
-        const uint8_t cbor_string_len_encoding = 0x6a;
+        CBOR_CHECK_RET(cbor_create_array(m_2, 4, size, sizeof(m_2)));
+        CBOR_CHECK_RET(cbor_array_append_string("Signature1", m_2, size, sizeof(m_2)));
+        CBOR_CHECK_RET(cbor_array_append_bytes(ctx->conf->cred_id, ctx->conf->cred_id_len, m_2, size, sizeof(m_2)));
 
-        uint8_t written;
-        uint8_t cbor_fmt_buf[2];
+        // TODO: kind of hacky approach (needs improvements). The additional (+ 2) offset is to make space for the
+        //  [0x58 0x92] cbor encoding bytes to still have to prepended.
+        written = cbor_bytes_encode(ctx->transcript_2, COSE_DIGEST_LEN, m_2, size + 2, sizeof(m_2));
+        written += cbor_bytes_encode(ctx->conf->certificate.cert, ctx->conf->certificate.cert_len, m_2, size + written + 2,
+                                     sizeof(m_2));
 
-        // start hashing context
-        EDHOC_CHECK_RET(crypt_hash_init(&sha256_ctx));
+        CBOR_CHECK_RET(cbor_array_append_bytes(m_2 + size + 2, written, m_2, size, sizeof(m_2)));
 
-        // update with CBOR array fmt
-        EDHOC_CHECK_RET(crypt_hash_update(&sha256_ctx, &cbor_array_len_encoding, 1));
-
-        // update with CBOR string fmt + string
-        EDHOC_CHECK_RET(crypt_hash_update(&sha256_ctx, &cbor_string_len_encoding, 1));
-        EDHOC_CHECK_RET(crypt_hash_update(&sha256_ctx, (uint8_t *) "Signature1", strlen("Signature1")));
-
-        // update with CBOR byte fmt + cred id
-        written = cbor_fmt_bstr(ctx->conf->cred_id_len, cbor_fmt_buf, 0, sizeof(cbor_fmt_buf));
-        EDHOC_CHECK_RET(crypt_hash_update(&sha256_ctx, cbor_fmt_buf, written));
-        EDHOC_CHECK_RET(crypt_hash_update(&sha256_ctx, ctx->conf->cred_id, ctx->conf->cred_id_len));
-
-        // update with CBOR byte + < th_2, cred_r, ? ad_2 >
-        // TODO: support for aad2
-        written = cbor_fmt_bstr(COSE_DIGEST_LEN + 2 + ctx->conf->certificate.cert_len + 2,
-                                cbor_fmt_buf,
-                                0,
-                                sizeof(cbor_fmt_buf));
-        EDHOC_CHECK_RET(crypt_hash_update(&sha256_ctx, cbor_fmt_buf, written));
-
-        written = cbor_fmt_bstr(COSE_DIGEST_LEN, cbor_fmt_buf, 0, sizeof(cbor_fmt_buf));
-        EDHOC_CHECK_RET(crypt_hash_update(&sha256_ctx, cbor_fmt_buf, written));
-        EDHOC_CHECK_RET(crypt_hash_update(&sha256_ctx, ctx->transcript_2, COSE_DIGEST_LEN));
-
-        written = cbor_fmt_bstr(ctx->conf->certificate.cert_len, cbor_fmt_buf, 0, sizeof(cbor_fmt_buf));
-        EDHOC_CHECK_RET(crypt_hash_update(&sha256_ctx, cbor_fmt_buf, written));
-        EDHOC_CHECK_RET(crypt_hash_update(&sha256_ctx, ctx->conf->certificate.cert, ctx->conf->certificate.cert_len));
-
-        written = cbor_fmt_bstr(cose_tag_len_from_alg(aead), cbor_fmt_buf, 0, sizeof(cbor_fmt_buf));
-        EDHOC_CHECK_RET(crypt_hash_update(&sha256_ctx, cbor_fmt_buf, written));
-        EDHOC_CHECK_RET(crypt_hash_update(&sha256_ctx, ctx->mac_2, cose_tag_len_from_alg(aead)));
-
-        EDHOC_CHECK_RET(crypt_hash_finish(&sha256_ctx, m2_digest));
+        CBOR_CHECK_RET(cbor_array_append_bytes(ctx->mac_2, tag_len, m_2, size, sizeof(m_2)));
 
         // compute signature
         crypt_compute_signature(crv,
                                 &ctx->conf->auth_key,
-                                m2_digest,
-                                COSE_DIGEST_LEN,
+                                m_2,
+                                size,
                                 ctx->conf->f_rng,
-                                ctx->conf->p_rng);
+                                ctx->conf->p_rng,
+                                ctx->signature_2);
     }
 
     ret = EDHOC_SUCCESS;
@@ -444,8 +424,8 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx,
         goto exit;
     }
 
-    // compute_mac2(ctx);
-    // compute_signature2(ctx);
+    compute_mac2(ctx);
+    compute_signature2(ctx);
 
     exit:
     // crypt_hash_free(&transcript_ctx);

@@ -74,6 +74,9 @@ int load_from_json_INFO_IV2M(test_context_ptr ctx, uint8_t *buf, size_t blen);
 int load_from_json_RESP_CERT(test_context_ptr ctx, uint8_t *buf, size_t blen);
 int load_from_json_RESP_X5T(test_context_ptr ctx, uint8_t *buf, size_t blen);
 
+int load_from_json_SIGNATURE(test_context_ptr ctx, uint8_t *buf, size_t blen);
+int load_from_json_M2(test_context_ptr ctx, uint8_t *buf, size_t blen);
+
 
 
 #endif /* EDHOC_JSON_H */

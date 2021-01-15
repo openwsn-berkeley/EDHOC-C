@@ -153,6 +153,26 @@ int load_from_json_MESSAGE1(test_context_ptr ctx, uint8_t *buf, size_t blen) {
     return load_json_array(message1, buf, blen);
 }
 
+int load_from_json_SIGNATURE(test_context_ptr ctx, uint8_t *buf, size_t blen){
+    cJSON *signature;
+
+    if ((signature = cJSON_GetObjectItemCaseSensitive(ctx->shared, "signature")) == NULL) {
+        return FAILURE;
+    }
+
+    return load_json_array(signature, buf, blen);
+}
+
+int load_from_json_M2(test_context_ptr ctx, uint8_t *buf, size_t blen){
+    cJSON *m_2;
+
+    if ((m_2 = cJSON_GetObjectItemCaseSensitive(ctx->shared, "m_2")) == NULL) {
+        return FAILURE;
+    }
+
+    return load_json_array(m_2, buf, blen);
+}
+
 int load_from_json_MESSAGE2(test_context_ptr ctx, uint8_t *buf, size_t blen) {
     cJSON *message2;
 

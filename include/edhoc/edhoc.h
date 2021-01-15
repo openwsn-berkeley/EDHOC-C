@@ -138,6 +138,7 @@ struct edhoc_ctx {
     uint8_t iv_2m[COSE_MAX_IV_LEN];
     uint8_t a_2m[EDHOC_A2M_SIZE];
     uint8_t mac_2[COSE_MAX_TAG_LEN];
+    uint8_t signature_2[COSE_MAX_SIGNATURE_LEN];
     uint8_t transcript_2[COSE_DIGEST_LEN];
     uint8_t transcript_3[COSE_DIGEST_LEN];
     uint8_t transcript_4[COSE_DIGEST_LEN];
