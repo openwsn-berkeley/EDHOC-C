@@ -2,6 +2,7 @@
 
 #include <wolfssl/wolfcrypt/curve25519.h>
 #include <wolfssl/wolfcrypt/hmac.h>
+#include <wolfssl/wolfcrypt/aes.h>
 #include <wolfssl/wolfcrypt/ed25519.h>
 
 #include "edhoc/cose.h"
@@ -223,6 +224,25 @@ int crypt_aead_tag(
         size_t aad_len,
         uint8_t *tag) {
 
+    Aes aes;
+    int ret, key_len, iv_len, tag_len;
+    uint8_t plaintext, ciphertext;
+
+    ret = EDHOC_ERR_CRYPTO;
+
+    key_len = cose_key_len_from_alg(alg);
+    iv_len = cose_iv_len_from_alg(alg);
+    tag_len = cose_tag_len_from_alg(alg);
+
+    if (wc_AesCcmSetKey(&aes, key, key_len) != EDHOC_SUCCESS)
+        goto exit;
+
+    if (wc_AesCcmEncrypt(&aes, &ciphertext, &plaintext, 0, iv, iv_len, tag, tag_len, aad, aad_len) != EDHOC_SUCCESS)
+        goto exit;
+
+    exit:
+    wc_AesFree(&aes);
+    return ret;
 }
 
 int crypt_compute_signature(cose_curve_t crv,

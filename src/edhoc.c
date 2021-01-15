@@ -424,7 +424,7 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx,
         goto exit;
     }
 
-    // compute_mac2(ctx);
+    compute_mac2(ctx);
     compute_signature2(ctx);
 
     exit:
