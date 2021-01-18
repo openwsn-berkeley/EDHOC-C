@@ -15,6 +15,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Install WolfSSL dependancy
+      # clone wolfssl
+      run: cd .. && git clone https://github.com/wolfSSL/wolfssl.git && cd wolfssl && ./autogen.sh && ./configure --enable-cryptonly --enable-curve25519 --enable-ed25519 --enable-hkdf --enable-aesccm && sudo make install cd ../EDHOC-C
+      
     - uses: actions/checkout@v2
 
     - name: Create Build Environment
