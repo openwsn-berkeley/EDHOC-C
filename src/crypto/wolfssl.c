@@ -62,12 +62,14 @@ void crypt_hash_free(void *digest_ctx) {
 int
 crypt_edhoc_kdf(cose_algo_t id, const uint8_t *prk, const uint8_t *th, const char *label, uint8_t *out, size_t olen) {
     ssize_t ret;
-    uint8_t info_buf[45];
+    uint8_t info_buf[EDHOC_MAX_KDFINFO_LEN];
     ssize_t info_len;
+
+    memset(info_buf, 0, sizeof(info_buf));
 
     ret = EDHOC_ERR_CRYPTO;
 
-    if ((info_len = edhoc_info_encode(id, th, label, olen, info_buf, sizeof(info_buf))) < EDHOC_SUCCESS) {
+    if ((info_len = edhoc_info_encode(id, th, label, olen, info_buf, EDHOC_MAX_MAC_OR_SIG2_LEN)) < EDHOC_SUCCESS) {
         ret = info_len;     // store the error code and return
         goto exit;
     }
@@ -240,6 +242,7 @@ int crypt_aead_tag(
     if (wc_AesCcmEncrypt(&aes, &ciphertext, &plaintext, 0, iv, iv_len, tag, tag_len, aad, aad_len) != EDHOC_SUCCESS)
         goto exit;
 
+    ret = EDHOC_SUCCESS;
     exit:
     wc_AesFree(&aes);
     return ret;

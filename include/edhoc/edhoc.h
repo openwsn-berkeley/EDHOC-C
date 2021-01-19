@@ -35,10 +35,13 @@
 #define EDHOC_MAX_CRED_ID_SIZE           (50)
 #endif
 
-#define EDHOC_A2M_SIZE                   (EDHOC_MAX_CRED_SIZE +    \
-                                          EDHOC_MAX_CRED_ID_SIZE + \
-                                          sizeof("Encrypt0") +     \
-                                          COSE_DIGEST_LEN)
+#define EDHOC_MAX_P2E_LEN                (80)
+#define EDHOC_MAX_K2E_LEN                (80)
+#define EDHOC_MAX_M2_OR_A2M_LEN          (200)
+#define EDHOC_MAX_K2M_LEN                (16)
+#define EDHOC_MAX_IV2M_LEN               (16)
+#define EDHOC_MAX_MAC_OR_SIG2_LEN        (64)
+#define EDHOC_MAX_KDFINFO_LEN            (50)
 
 /*
  * EDHOC error codes
@@ -134,11 +137,6 @@ struct edhoc_ctx {
     uint8_t secret[COSE_MAX_KEY_LEN];
     uint8_t prk_2e[COSE_DIGEST_LEN];
     uint8_t prk_3e2m[COSE_DIGEST_LEN];
-    uint8_t k_2m[COSE_MAX_KEY_LEN];
-    uint8_t iv_2m[COSE_MAX_IV_LEN];
-    uint8_t a_2m[EDHOC_A2M_SIZE];
-    uint8_t mac_2[COSE_MAX_TAG_LEN];
-    uint8_t signature_2[COSE_MAX_SIGNATURE_LEN];
     uint8_t transcript_2[COSE_DIGEST_LEN];
     uint8_t transcript_3[COSE_DIGEST_LEN];
     uint8_t transcript_4[COSE_DIGEST_LEN];
@@ -224,8 +222,8 @@ int edhoc_conf_load_cred_id(edhoc_conf_t *conf, const uint8_t *cred_id, size_t c
  * @param out[out]          Output buffer to hold EDHOC message 1
  * @param buf_len[in]       Length of @p out
  *
- * @returns     size of message 1 on success
- * @returns     negative value on failure
+ * @returns     On success the size of EDHOC message_1
+ * @returns     On failure a negative value
  */
 ssize_t edhoc_create_msg1(
         edhoc_ctx_t *ctx,
@@ -246,10 +244,10 @@ ssize_t edhoc_create_msg1(
  * @param aad2[in]          Additional data
  * @param aad2_len[in]      Length of the addition
  * @param out[out]          Output buffer to hold EDHOC message 1
- * @param out_len[in]       Length of @p out
+ * @param olen[in]       Length of @p out
  *
- * @returns     size of message 1 on success
- * @returns     negative value on failure
+ * @returns     On success size of EDHOC message_2
+ * @returns     On failure a negative value
  */
 ssize_t edhoc_create_msg2(
         edhoc_ctx_t *ctx,
@@ -258,7 +256,7 @@ ssize_t edhoc_create_msg2(
         const uint8_t *aad1,
         size_t aad1_len,
         uint8_t *out,
-        size_t out_len);
+        size_t olen);
 
 #if defined(EDHOC_DEBUG_ENABLE)
 

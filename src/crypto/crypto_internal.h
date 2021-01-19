@@ -117,14 +117,17 @@ int crypt_compute_ecdh(
         void *p_rng);
 
 /**
+ * @brief Computes the authentication tag using a COSE AEAD cipher
  *
- * @param alg
- * @param key
- * @param iv
- * @param aad
- * @param aad_len
- * @param tag
- * @return
+ * @param[in] alg           COSE algorithm to use
+ * @param[in] key           Authentication key
+ * @param[in] iv            IV for the AEAD cipher
+ * @param[in] aad           Additional data
+ * @param[in] aad_len       Length of @p aad_len
+ * @param[out] tag          Authentication tag
+ *
+ * @return On success, EDHOC_SUCCESS
+ * @return On failure EDHOC_ERR_CRYPTO or another negative value
  */
 int crypt_aead_tag(
         cose_algo_t alg,

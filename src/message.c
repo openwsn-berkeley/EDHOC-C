@@ -139,7 +139,13 @@ verify_cipher_suite(cipher_suite_t preferred_suite, const cipher_suite_t *remote
     return EDHOC_SUCCESS;
 }
 
-int edhoc_msg1_decode(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen) {
+int edhoc_msg2_decode(edhoc_ctx_t *ctx, const uint8_t *msg2, size_t msg2_len){
+    int ret;
+
+
+}
+
+int edhoc_msg1_decode(edhoc_ctx_t *ctx, const uint8_t *msg1, size_t msg1_len) {
     int ret;
     int8_t *single_byte_conn_id;
     cn_cbor *cbor[5] = {NULL};
@@ -152,19 +158,19 @@ int edhoc_msg1_decode(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen) {
     ret = EDHOC_ERR_CBOR_DECODING;
 
     // iterate over the CBOR sequence until all elements are decoded
-    while ((final_cbor = cn_cbor_decode(in, ilen, &cbor_err)) == NULL) {
+    while ((final_cbor = cn_cbor_decode(msg1, msg1_len, &cbor_err)) == NULL) {
         rSize = cbor_err.pos;
 
         // reset the error
         memset(&cbor_err, 0, sizeof(cbor_err));
-        cbor[field] = cn_cbor_decode(in, rSize, &cbor_err);
+        cbor[field] = cn_cbor_decode(msg1, rSize, &cbor_err);
 
         // if a new errors occurs something went wrong, abort
         if (cbor_err.err != CN_CBOR_NO_ERROR)
             return EDHOC_ERR_DECODE_MESSAGE1;
 
-        in = &in[rSize];
-        ilen = ilen - rSize;
+        msg1 = &msg1[rSize];
+        msg1_len = msg1_len - rSize;
         field += 1;
     }
 
