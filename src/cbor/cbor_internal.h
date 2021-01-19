@@ -27,8 +27,4 @@ ssize_t cbor_array_append_bytes(const uint8_t* bytes, size_t bytes_len, uint8_t 
 
 ssize_t cbor_array_append_string(const char* string, uint8_t *buffer, size_t offset, size_t total);
 
-ssize_t cbor_fmt_tstr(size_t len, uint8_t *buffer, size_t offset, size_t total);
-
-ssize_t cbor_fmt_bstr(size_t len, uint8_t *buffer, size_t offset, size_t total);
-
 #endif /* EDHOC_CBOR_INTERNAL_H */
