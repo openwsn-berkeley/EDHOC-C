@@ -188,7 +188,7 @@ int test_edhoc_kdf(
         uint8_t *expected,
         size_t expected_len) {
 
-    uint8_t out[32];
+    uint8_t out[100];
 
     assert(crypt_edhoc_kdf(id, prk, transcript, label, out, expected_len) == EDHOC_SUCCESS);
     assert(compare_arrays(expected, out, expected_len));
@@ -200,10 +200,10 @@ int main(int argc, char **argv) {
     test_context_ptr ctx;
     cose_algo_t id;
     uint8_t message_1[100], data_2[100], th_2[32], prk2e[32], salt[32], prk3e2m[32], k2m[32], iv2m[16], cbor_key[100],
-            m_2[250], sig[64];
-    int selected, msg1_len, data2_len, th2_len, cbor_key_len, m_2_len;
+            m_2[250], sig[64], k_2e[80];
+    int selected, msg1_len, data2_len, th2_len, cbor_key_len, m_2_len, iv2m_len;
     uint8_t init_ephkey[200], resp_ephkey[200], secret[50];
-    int init_ephkey_len, resp_ephkey_len, secret_len, prk2e_len, salt_len, prk3e2m_len, k2m_len, iv2m_len;
+    int init_ephkey_len, resp_ephkey_len, secret_len, prk2e_len, salt_len, prk3e2m_len, k2m_len, k_2e_len;
 
     memset(message_1, 0, sizeof(message_1));
     memset(data_2, 0, sizeof(data_2));
@@ -278,6 +278,20 @@ int main(int argc, char **argv) {
             id = edhoc_aead_from_suite(selected);
 
             assert(test_edhoc_kdf(id, prk3e2m, th_2, label, iv2m, iv2m_len) == 0);
+
+            close_test(ctx);
+        } else if (strcmp(argv[1], "--edhoc-kdf-k2e") == 0) {
+            const char *label = "K_2e";
+            ctx = load_json_test_file(argv[2]);
+
+            load_from_json_CIPHERSUITE(ctx, (int *) &selected);
+            load_from_json_PRK2E(ctx, prk2e, sizeof(prk2e));
+            load_from_json_TH2(ctx, th_2, sizeof(th_2));
+            k_2e_len = load_from_json_K2E(ctx, k_2e, sizeof(k_2e));
+
+            id = edhoc_aead_from_suite(selected);
+
+            assert(test_edhoc_kdf(id, prk2e, th_2, label, k_2e, k_2e_len) == 0);
 
             close_test(ctx);
         } else if (strcmp(argv[1], "--ed25519") == 0) {

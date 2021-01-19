@@ -67,6 +67,7 @@ int load_from_json_PRK3E2M(test_context_ptr ctx, uint8_t *buf, size_t blen);
 
 int load_from_json_K2M(test_context_ptr ctx, uint8_t *buf, size_t blen);
 int load_from_json_IV2M(test_context_ptr ctx, uint8_t *buf, size_t blen);
+int load_from_json_K2E(test_context_ptr ctx, uint8_t *buf, size_t blen);
 
 int load_from_json_INFO_K2M(test_context_ptr ctx, uint8_t *buf, size_t blen);
 int load_from_json_INFO_IV2M(test_context_ptr ctx, uint8_t *buf, size_t blen);

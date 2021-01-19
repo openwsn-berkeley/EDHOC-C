@@ -111,6 +111,12 @@ add_test(
 )
 
 add_test(
+        NAME TEST_CRYPTO_KDF_3
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_crypto --edhoc-kdf-k2e test_vectors/vector1.json
+)
+
+add_test(
         NAME TEST_CRYPTO_ED25519
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMAND test_crypto --ed25519 test_vectors/vector1.json

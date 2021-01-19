@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include "json.h"
+#include "util.h"
 
 int test_message2_encoding(
         const uint8_t *eph_key,
@@ -53,7 +54,6 @@ int test_message2_encoding(
     EDHOC_CHECK_RET(edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, NULL, NULL, NULL));
 #endif
 
-
     EDHOC_CHECK_RET(edhoc_conf_load_authkey(&conf, auth_key, auth_key_len));
     EDHOC_CHECK_RET(edhoc_conf_load_cborcert(&conf, cbor_certificate, cert_len));
     EDHOC_CHECK_RET(edhoc_conf_load_cred_id(&conf, cred_id, cred_id_len));
@@ -69,6 +69,9 @@ int test_message2_encoding(
     if ((ret = edhoc_create_msg2(&ctx, msg1, msg1_len, NULL, 0, mbuf, sizeof(mbuf))) < EDHOC_SUCCESS) {
         goto exit;
     }
+
+    assert(ret == expected_len);
+    assert(compare_arrays(mbuf, expected_msg, expected_len));
 
     ret = EDHOC_SUCCESS;
     exit:
@@ -115,6 +118,8 @@ int main(int argc, char **argv) {
                     cred_id_len,
                     message_2,
                     msg2_len) == EDHOC_SUCCESS);
+
+            close_test(ctx);
         }
     }
 

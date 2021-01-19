@@ -303,6 +303,16 @@ int load_from_json_TH2(test_context_ptr ctx, uint8_t *buf, size_t blen) {
     return load_json_array(th_2, buf, blen);
 }
 
+int load_from_json_K2E(test_context_ptr ctx, uint8_t *buf, size_t blen) {
+    cJSON *k_2e;
+
+    if ((k_2e = cJSON_GetObjectItemCaseSensitive(ctx->responder, "k_2e")) == NULL) {
+        return FAILURE;
+    }
+
+    return load_json_array(k_2e, buf, blen);
+}
+
 int load_from_json_INIT_EPHKEY(test_context_ptr ctx, uint8_t *buf, size_t blen) {
     cJSON *eph_key;
 
