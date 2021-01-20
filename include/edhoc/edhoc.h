@@ -35,35 +35,43 @@
 #define EDHOC_MAX_CRED_ID_SIZE           (50)
 #endif
 
-#define EDHOC_MAX_P2E_LEN                (80)
-#define EDHOC_MAX_K2E_LEN                (80)
-#define EDHOC_MAX_M2_OR_A2M_LEN          (200)
-#define EDHOC_MAX_K2M_LEN                (16)
-#define EDHOC_MAX_IV2M_LEN               (16)
-#define EDHOC_MAX_MAC_OR_SIG2_LEN        (64)
+/**
+ * Internal buffer sizes
+ */
+#define EDHOC_MAX_M23_OR_A23M_LEN        (500)
+#define EDHOC_MAX_K23M_LEN               (16)
+#define EDHOC_MAX_IV23M_LEN              (16)
+#define EDHOC_MAX_MAC_OR_SIG23_LEN       (64)
+#define EDHOC_MAX_A3AE_LEN               (45)
 #define EDHOC_MAX_KDFINFO_LEN            (50)
+#define EDHOC_MAX_PAYLOAD_LEN            (400)
+#define EDHOC_MAX_EXAD_DATA_LEN          (50)
+#define EDHOC_MAX_AUTH_TAG_LEN           (16)
 
-/*
+
+/**
  * EDHOC error codes
  */
 #define EDHOC_SUCCESS                   (0)
+
 #define EDHOC_ERR_RNG                   (-1)
-#define EDHOC_ERR_ILLEGAL_CIPHERSUITE   (-2)
-#define EDHOC_ERR_CURVE_UNAVAILABLE     (-3)
-#define EDHOC_ERR_KEY_GENERATION        (-4)
-#define EDHOC_ERR_INVALID_KEY           (-5)
-#define EDHOC_ILLEGAL_CONN_ID           (-6)
-#define EDHOC_ERR_ADDITIONAL_DATA       (-7)
-#define EDHOC_ERR_DECODE_MESSAGE1       (-8)
-#define EDHOC_ERR_DECODE_MESSAGE2       (-9)
-#define EDHOC_ERR_DECODE_MESSAGE3       (-10)
+#define EDHOC_ERR_CRYPTO                (-2)
+
+#define EDHOC_ERR_INVALID_ROLE          (-3)
+#define EDHOC_ERR_INVALID_AUTH_METHOD   (-4)
+#define EDHOC_ERR_INVALID_CORR          (-5)
+#define EDHOC_ERR_INVALID_CIPHERSUITE   (-6)
+#define EDHOC_ERR_AEAD_UNAVAILABLE      (-7)
+#define EDHOC_ERR_CURVE_UNAVAILABLE     (-8)
+#define EDHOC_ERR_INVALID_CBOR_KEY      (-9)
+
+#define EDHOC_ERR_KEY_GENERATION        (-10)
+
 #define EDHOC_ERR_BUFFER_OVERFLOW       (-11)
+
 #define EDHOC_ERR_CBOR_ENCODING         (-12)
-#define EDHOC_ERR_ILLEGAL_ROLE          (-13)
-#define EDHOC_ERR_ILLEGAL_CORR          (-14)
-#define EDHOC_ERR_ILLEGAL_METHOD        (-15)
-#define EDHOC_ERR_CRYPTO                (-16)
-#define EDHOC_ERR_CBOR_DECODING         (-17)
+#define EDHOC_ERR_CBOR_DECODING         (-13)
+
 
 #define EDHOC_CHECK_RET(f)                                      \
 do{                                                             \
@@ -76,7 +84,9 @@ do{                                                             \
 /* Callback functions */
 typedef int (*rng_cb_t)(void *, unsigned char *, size_t);
 
-typedef void (*edhoc_cred_cb_t)(void);
+typedef int (*ad_cb_t)(unsigned char *, size_t, ssize_t *);
+
+typedef void (*cred_cb_t)(void);
 
 /* Definitions for clarity */
 typedef uint8_t cipher_suite_t;
@@ -105,6 +115,9 @@ typedef enum edhoc_role {
 
 struct edhoc_conf {
     edhoc_role_t role;
+    ad_cb_t ad1;
+    ad_cb_t ad2;
+    ad_cb_t ad3;
     cose_key_t auth_key;
 #if defined(EDHOC_AUTH_PUB_KEY)
     cose_key_t pub_key;
@@ -112,7 +125,7 @@ struct edhoc_conf {
 #if defined(EDHOC_AUTH_CBOR_CERT)
     cbor_cert_t certificate;
 #endif
-    edhoc_cred_cb_t edhoc_get_creds;
+    cred_cb_t get_edhoc_creds;
     const uint8_t *cred_id;
     size_t cred_id_len;
     rng_cb_t f_rng;
@@ -137,9 +150,14 @@ struct edhoc_ctx {
     uint8_t secret[COSE_MAX_KEY_LEN];
     uint8_t prk_2e[COSE_DIGEST_LEN];
     uint8_t prk_3e2m[COSE_DIGEST_LEN];
-    uint8_t transcript_2[COSE_DIGEST_LEN];
-    uint8_t transcript_3[COSE_DIGEST_LEN];
-    uint8_t transcript_4[COSE_DIGEST_LEN];
+    uint8_t prk_4x3m[COSE_DIGEST_LEN];
+    uint8_t th_2[COSE_DIGEST_LEN];
+    uint8_t th_3[COSE_DIGEST_LEN];
+    uint8_t th_4[COSE_DIGEST_LEN];
+    uint8_t ct_or_pld_2[EDHOC_MAX_PAYLOAD_LEN];
+    size_t ct_or_pld_2_len;
+    uint8_t ct_or_pld_3[EDHOC_MAX_PAYLOAD_LEN];
+    size_t ct_or_pld_3_len;
 };
 
 /**
@@ -168,17 +186,27 @@ void edhoc_ctx_setup(edhoc_ctx_t *ctx, edhoc_conf_t *conf);
 /**
  * @brief Set up the EDHOC configuration.
  *
- * @param conf[in,out]      The EDHOC configuration struct to populate
- * @param role[in]          An EDHOC role; either EDHOC_IS_INITIATOR or EDHOC_IS_RESPONDER
- * @param f_rng[in]         A function that provides strong random bytes
- * @param p_rng[in]         Optional RNG context object
- * @param cb[in]            Callback to fetch remote credential information
+ * @param[out] conf         The EDHOC configuration struct to populate
+ * @param[in] role          An EDHOC role; either EDHOC_IS_INITIATOR or EDHOC_IS_RESPONDER
+ * @param[in] f_rng         A function that provides strong random bytes
+ * @param[in] p_rng         Optional RNG context object
+ * @param[in] cred_cb       Callback to fetch remote credential information
+ * @param[in] ad1_cb        Callback to fetch additional data
+ * @param[in] ad2_cb        Callback to fetch additional data
+ * @param[in] ad3_cb        Callback to fetch additional data
  *
  * @returns 0 on success
  * @returns A negative value on failure
  *
  */
-int edhoc_conf_setup(edhoc_conf_t *conf, edhoc_role_t role, rng_cb_t f_rng, void *p_rng, edhoc_cred_cb_t cb);
+int edhoc_conf_setup(edhoc_conf_t *conf,
+                     edhoc_role_t role,
+                     rng_cb_t f_rng,
+                     void *p_rng,
+                     cred_cb_t cred_cb,
+                     ad_cb_t ad1_cb,
+                     ad_cb_t ad2_cb,
+                     ad_cb_t ad3_cb);
 
 /**
  * @brief Load the private COSE key for authenticating the exchange.
@@ -213,14 +241,13 @@ int edhoc_conf_load_cred_id(edhoc_conf_t *conf, const uint8_t *cred_id, size_t c
 /**
  * @brief   Create EDHOC message 1
  *
- * @param ctx[in]           EDHOC context
- * @param correlation       EDHOC correlation value
- * @param method            EHDOC authentication method
- * @param suite             Preferred cipher suite
- * @param ad1[in]          Additional data
- * @param ad1_len[in]      Length of the addition
- * @param out[out]          Output buffer to hold EDHOC message 1
- * @param buf_len[in]       Length of @p out
+ * @param[in] ctx               EDHOC context
+ * @param[in] correlation       EDHOC correlation value
+ * @param[in] method            EHDOC authentication method
+ * @param[in] suite             Preferred cipher suite
+ * @param[in] ad1               Callback to fetch additional data (can be NULL)
+ * @param[out] out              Output buffer to hold EDHOC message 1
+ * @param[in] buf_len           Length of @p out
  *
  * @returns     On success the size of EDHOC message_1
  * @returns     On failure a negative value
@@ -230,31 +257,46 @@ ssize_t edhoc_create_msg1(
         corr_t correlation,
         method_t method,
         cipher_suite_t suite,
-        const uint8_t *ad1,
-        size_t ad1_len,
         uint8_t *out,
         size_t buf_len);
 
 /**
  * @brief   Create EDHOC message 2
  *
- * @param ctx[in]           EDHOC context
- * @param msg1_buf[in]      Buffer containing EDHOC message 1
- * @param msg1_len[in]      Length of EDHOC message 1
- * @param aad2[in]          Additional data
- * @param aad2_len[in]      Length of the addition
- * @param out[out]          Output buffer to hold EDHOC message 1
- * @param olen[in]       Length of @p out
+ * @param[in] ctx           EDHOC context
+ * @param[in] msg1_buf      Buffer containing EDHOC message 1
+ * @param[in] msg1_len      Length of EDHOC message 1
+ * @param[in] ad2           Callback to fetch additional data (can be NULL)
+ * @param[out] out          Output buffer to hold EDHOC message 1
+ * @param[in] olen          Length of @p out
  *
- * @returns     On success size of EDHOC message_2
+ * @returns     On success size of EDHOC message 2
  * @returns     On failure a negative value
  */
 ssize_t edhoc_create_msg2(
         edhoc_ctx_t *ctx,
         const uint8_t *msg1_buf,
         size_t msg1_len,
-        const uint8_t *aad1,
-        size_t aad1_len,
+        uint8_t *out,
+        size_t olen);
+
+/**
+ * @brief   Create EDHOC message 3
+ *
+ * @param[in] ctx           EDHOC context
+ * @param[in] msg2_buf      Buffer containing EDHOC message 2
+ * @param[in] msg2_len      Length of @p msg2_buf
+ * @param[in] ad2           Callback to fetch additional data (can be NULL)
+ * @param[out] out          Output buffer to hold EDHOC message 3
+ * @param[in] olen          Capacity of @p out
+ *
+ * @return  On success the size of EDHOC message 3
+ * @return  On failure a negative value
+ */
+ssize_t edhoc_create_msg3(
+        edhoc_ctx_t *ctx,
+        const uint8_t *msg2_buf,
+        size_t msg2_len,
         uint8_t *out,
         size_t olen);
 

@@ -76,45 +76,72 @@ crypt_edhoc_kdf(cose_algo_t id, const uint8_t *prk, const uint8_t *th, const cha
 /**
  * @brief Compute the EDHOC PRK_2e value.
  *
- * @param[in] secret        The shared secret, computed with ECDH
- * @param[in] salt          Salt for the hashing algorithm
- * @param[in] salt_len      Length of @p salt
- * @param[out] out          Output buffer, must be at least COSE_DIGEST_LEN in size
+ * @param[in] shared_secret         The shared secret, computed with ECDH
+ * @param[in] salt                  Salt for the hashing algorithm
+ * @param[in] salt_len              Length of @p salt
+ * @param[out] prk_2e               Output buffer, must be at least COSE_DIGEST_LEN in size
  *
  * @return On success, EDHOC_SUCCESS
  * @return On failure, EDHOC_ERR_CRYPTO
  **/
-int crypt_compute_prk2e(const uint8_t *secret, const uint8_t *salt, size_t salt_len, uint8_t *out);
+int crypt_compute_prk2e(const uint8_t *shared_secret, const uint8_t *salt, size_t salt_len, uint8_t *prk_2e);
 
-/*
+/**
  * @brief Compute the EDHOC PRK_3e2m value.
+
+ * @param[in] role                  EDHOC role
+ * @param[in] method                EDHOC authentication method
+ * @param[in] prk_2e                EDHOC prk_2e value
+ * @param[in] shared_secret         EDHOC ECDH shared secret
+ * @param[out] prk_3e2m             EDHOC prk_3e2m computed value
+ *
+ * @return On success returns EDHOC_SUCCESS
+ * @return On failure returns EDHOC_ERR_CRYPTO
  */
-int crypt_compute_prk3e2m(
-        edhoc_role_t role,
-        method_t method,
-        uint8_t *prk2e,
-        uint8_t shared_secret[32],
-        uint8_t *prk3e2m);
+int crypt_compute_prk3e2m(edhoc_role_t role,
+                          method_t method,
+                          const uint8_t *prk_2e,
+                          const uint8_t *shared_secret,
+                          uint8_t *prk_3e2m);
+
+/**
+ * @brief Compute the EDHOC PRK_4x3m value.
+ *
+ * @param[in] role              EDHOC role
+ * @param[in] method            EDHOC authentication method
+ * @param[in] shared_secret     EDHOC ECDH shared secret
+ * @param[in] prk_3e2m          EDHOC PRK_3e2m value
+ * @param[out] prk_4x3m         EDHOC prk_4x3m computed value
+ *
+ * @return On success returns EDHOC_SUCCESS
+ * @return On failure returns EDHOC_ERR_CRYPTO
+ */
+int crypt_compute_prk4x3m(edhoc_role_t role,
+                          method_t method,
+                          const uint8_t *shared_secret,
+                          const uint8_t *prk_3e2m,
+                          uint8_t *prk_4x3m);
 
 /**
  * @brief Compute the ECDH secret.
  *
- * @param crv
- * @param private_key
- * @param public_key
- * @param out_buf
- * @param f_rng
- * @param p_rng
+ * @param[in] crv           The curve over which the ECDH secret is computed
+ * @param[in] private_key   COSE key where the private part must be set
+ * @param[in] public_key    COSE key where the public part must be set
+ * @param[in] f_rng         Function pointer to an RNG
+ * @param[in] p_rng         Context for the RNG
+ * @param[out] out          Output buffer, must be at least 32 bytes long
  *
- * @return
+ * @return On success returns EDHOC_SUCCESS
+ * @return On failure returns a negative value (i.e., EDHOC_ERR_CRYPTO, ...)
  */
 int crypt_compute_ecdh(
         cose_curve_t crv,
         cose_key_t *private_key,
         cose_key_t *public_key,
-        uint8_t out_buf[COSE_MAX_KEY_LEN],
         rng_cb_t f_rng,
-        void *p_rng);
+        void *p_rng,
+        uint8_t* out);
 
 /**
  * @brief Computes the authentication tag using a COSE AEAD cipher
@@ -124,17 +151,23 @@ int crypt_compute_ecdh(
  * @param[in] iv            IV for the AEAD cipher
  * @param[in] aad           Additional data
  * @param[in] aad_len       Length of @p aad_len
+ * @param[in] plaintext     Plaintext input
+ * @param[out] ciphertext   Ciphertext
+ * @param[in] ct_pl_len     Length of @p plaintext and @p ciphertext
  * @param[out] tag          Authentication tag
  *
  * @return On success, EDHOC_SUCCESS
  * @return On failure EDHOC_ERR_CRYPTO or another negative value
  */
-int crypt_aead_tag(
+int crypt_encrypt_aead(
         cose_algo_t alg,
         const uint8_t *key,
         const uint8_t *iv,
         const uint8_t *aad,
         size_t aad_len,
+        uint8_t *plaintext,
+        uint8_t *ciphertext,
+        size_t ct_pl_len,
         uint8_t *tag);
 
 /**
@@ -156,6 +189,6 @@ int crypt_compute_signature(cose_curve_t crv,
                             size_t msg_len,
                             rng_cb_t f_rng,
                             void *p_rng,
-                            uint8_t* signature);
+                            uint8_t *signature);
 
 #endif /* EDHOC_CRYPTO_INTERNAL_H */

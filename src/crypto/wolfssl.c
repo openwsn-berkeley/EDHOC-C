@@ -65,11 +65,9 @@ crypt_edhoc_kdf(cose_algo_t id, const uint8_t *prk, const uint8_t *th, const cha
     uint8_t info_buf[EDHOC_MAX_KDFINFO_LEN];
     ssize_t info_len;
 
-    memset(info_buf, 0, sizeof(info_buf));
-
     ret = EDHOC_ERR_CRYPTO;
 
-    if ((info_len = edhoc_info_encode(id, th, label, olen, info_buf, EDHOC_MAX_MAC_OR_SIG2_LEN)) < EDHOC_SUCCESS) {
+    if ((info_len = edhoc_info_encode(id, th, label, olen, info_buf, EDHOC_MAX_MAC_OR_SIG23_LEN)) < EDHOC_SUCCESS) {
         ret = info_len;     // store the error code and return
         goto exit;
     }
@@ -84,7 +82,7 @@ crypt_edhoc_kdf(cose_algo_t id, const uint8_t *prk, const uint8_t *th, const cha
     return ret;
 }
 
-int crypt_compute_prk2e(const uint8_t *secret, const uint8_t *salt, size_t salt_len, uint8_t *out) {
+int crypt_compute_prk2e(const uint8_t *shared_secret, const uint8_t *salt, size_t salt_len, uint8_t *prk_2e) {
     int ret;
     Hmac hmac;
 
@@ -94,10 +92,10 @@ int crypt_compute_prk2e(const uint8_t *secret, const uint8_t *salt, size_t salt_
     if (wc_HmacSetKey(&hmac, SHA256, salt, salt_len) != EDHOC_SUCCESS)
         goto exit;
 
-    if (wc_HmacUpdate(&hmac, secret, 32) != EDHOC_SUCCESS)
+    if (wc_HmacUpdate(&hmac, shared_secret, 32) != EDHOC_SUCCESS)
         goto exit;
 
-    if (wc_HmacFinal(&hmac, out))
+    if (wc_HmacFinal(&hmac, prk_2e))
         goto exit;
 
     ret = EDHOC_SUCCESS;
@@ -107,30 +105,85 @@ int crypt_compute_prk2e(const uint8_t *secret, const uint8_t *salt, size_t salt_
     return ret;
 }
 
-int crypt_compute_prk3e2m(
-        edhoc_role_t role,
-        method_t method,
-        uint8_t *prk2e,
-        uint8_t shared_secret[32],
-        uint8_t *prk3e2m) {
+int crypt_compute_prk4x3m(edhoc_role_t role,
+                          method_t method,
+                          const uint8_t *shared_secret,
+                          const uint8_t *prk_3e2m,
+                          uint8_t *prk_4x3m) {
     int ret;
 
-    switch (method) {
-        case EDHOC_AUTH_SIGN_SIGN:
-        case EDHOC_AUTH_STATIC_SIGN:
-            memcpy(prk3e2m, prk2e, COSE_DIGEST_LEN);
-            break;
-        case EDHOC_AUTH_STATIC_STATIC:
-        case EDHOC_AUTH_SIGN_STATIC:
-            //TODO: implement static DH
-            break;
-        default:
-            break;
+    if (role == EDHOC_IS_RESPONDER) {
+        switch (method) {
+            case EDHOC_AUTH_SIGN_SIGN:
+            case EDHOC_AUTH_STATIC_SIGN:
+                memcpy(prk_4x3m, prk_3e2m, COSE_DIGEST_LEN);
+                break;
+            case EDHOC_AUTH_STATIC_STATIC:
+            case EDHOC_AUTH_SIGN_STATIC:
+                //TODO: implement static DH
+                break;
+            default:
+                break;
+        }
+    } else { // IS_INITIATOR
+        switch (method) {
+            case EDHOC_AUTH_SIGN_SIGN:
+            case EDHOC_AUTH_SIGN_STATIC:
+                memcpy(prk_4x3m, prk_3e2m, COSE_DIGEST_LEN);
+                break;
+            case EDHOC_AUTH_STATIC_STATIC:
+            case EDHOC_AUTH_STATIC_SIGN:
+                //TODO: implement static DH
+                break;
+            default:
+                break;
+        }
     }
 
     ret = EDHOC_SUCCESS;
     return ret;
+}
 
+
+int crypt_compute_prk3e2m(edhoc_role_t role,
+                          method_t method,
+                          const uint8_t *prk_2e,
+                          uint8_t *shared_secret,
+                          uint8_t *prk_3e2m) {
+    int ret;
+
+    if (role == EDHOC_IS_RESPONDER) {
+
+        switch (method) {
+            case EDHOC_AUTH_SIGN_SIGN:
+            case EDHOC_AUTH_STATIC_SIGN:
+                memcpy(prk_3e2m, prk_2e, COSE_DIGEST_LEN);
+                break;
+            case EDHOC_AUTH_STATIC_STATIC:
+            case EDHOC_AUTH_SIGN_STATIC:
+                //TODO: implement static DH
+                break;
+            default:
+                break;
+        }
+
+    } else { // IS_INITIATOR
+        switch (method) {
+            case EDHOC_AUTH_SIGN_SIGN:
+            case EDHOC_AUTH_SIGN_STATIC:
+                memcpy(prk_3e2m, prk_2e, COSE_DIGEST_LEN);
+                break;
+            case EDHOC_AUTH_STATIC_STATIC:
+            case EDHOC_AUTH_STATIC_SIGN:
+                //TODO: implement static DH
+                break;
+            default:
+                break;
+        }
+    }
+
+    ret = EDHOC_SUCCESS;
+    return ret;
 }
 
 /**
@@ -174,9 +227,9 @@ int crypt_compute_ecdh(
         cose_curve_t crv,
         cose_key_t *private_key,
         cose_key_t *public_key,
-        uint8_t out_buf[COSE_MAX_KEY_LEN],
         rng_cb_t f_rng,
-        void *p_rng) {
+        void *p_rng,
+        uint8_t* out) {
 
     int ret;
     (void) f_rng;
@@ -206,7 +259,7 @@ int crypt_compute_ecdh(
         goto exit;
     }
 
-    if (wc_curve25519_shared_secret_ex(&d, &Q, out_buf, &key_size, EC25519_LITTLE_ENDIAN) != EDHOC_SUCCESS)
+    if (wc_curve25519_shared_secret_ex(&d, &Q, out, &key_size, EC25519_LITTLE_ENDIAN) != EDHOC_SUCCESS)
         goto exit;
 
     ret = EDHOC_SUCCESS;
@@ -218,17 +271,19 @@ int crypt_compute_ecdh(
     return ret;
 }
 
-int crypt_aead_tag(
+int crypt_encrypt_aead(
         cose_algo_t alg,
         const uint8_t *key,
         const uint8_t *iv,
         const uint8_t *aad,
         size_t aad_len,
+        uint8_t *plaintext,
+        uint8_t *ciphertext,
+        size_t ct_pl_len,
         uint8_t *tag) {
 
     Aes aes;
     int ret, key_len, iv_len, tag_len;
-    uint8_t plaintext, ciphertext;
 
     ret = EDHOC_ERR_CRYPTO;
 
@@ -239,7 +294,16 @@ int crypt_aead_tag(
     if (wc_AesCcmSetKey(&aes, key, key_len) != EDHOC_SUCCESS)
         goto exit;
 
-    if (wc_AesCcmEncrypt(&aes, &ciphertext, &plaintext, 0, iv, iv_len, tag, tag_len, aad, aad_len) != EDHOC_SUCCESS)
+    if (wc_AesCcmEncrypt(&aes,
+                         ciphertext,
+                         plaintext,
+                         ct_pl_len,
+                         iv,
+                         iv_len,
+                         tag,
+                         tag_len,
+                         aad,
+                         aad_len) != EDHOC_SUCCESS)
         goto exit;
 
     ret = EDHOC_SUCCESS;
