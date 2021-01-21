@@ -20,7 +20,9 @@ jobs:
     
     - name: Install CN-CBOR dependancy
       run: cd .. && git clone https://github.com/jimsch/cn-cbor.git && cd cn-cbor && mkdir -p build && cd build && cmake .. -DCN_CBOR_COVERALLS=OFF -DCN_CBOR_BUILD_TESTS=OFF && sudo cmake --build . --target install && cd ../../EDHOC-C
-    
+
+    - name: Install cJSON dependancy
+      run: cd .. && git clone https://github.com/DaveGamble/cJSON.git && cd cJSON && mkdir -p build && cd build && cmake .. -DENABLE_CJSON_TEST=OFF && sudo cmake --build . --target install && cd ../../EDHOC-C
     - uses: actions/checkout@v2
 
     - name: Create Build Environment
