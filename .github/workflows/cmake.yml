@@ -16,9 +16,11 @@ jobs:
 
     steps:
     - name: Install WolfSSL dependancy
-      # clone wolfssl
       run: cd .. && git clone https://github.com/wolfSSL/wolfssl.git && cd wolfssl && ./autogen.sh && ./configure --enable-cryptonly --enable-curve25519 --enable-ed25519 --enable-hkdf --enable-aesccm && sudo make install && cd ../EDHOC-C
-      
+    
+    - name: Install CN-CBOR dependancy
+      run: cd .. && git clone https://github.com/jimsch/cn-cbor.git && cd cn-cbor && mkdir -p build && cd build && cmake .. -DCN_CBOR_COVERALLS=OFF -DCN_CBOR_BUILD_TESTS=OFF && sudo cmake --build . install && cd ../EDHOC-C
+    
     - uses: actions/checkout@v2
 
     - name: Create Build Environment
