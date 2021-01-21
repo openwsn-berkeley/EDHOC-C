@@ -1,5 +1,8 @@
-#include <nanocbor/nanocbor.h>
 #include <edhoc/edhoc.h>
+
+#if defined(NANOCBOR)
+#include <nanocbor/nanocbor.h>
+#endif
 
 #include "cbor_internal.h"
 
