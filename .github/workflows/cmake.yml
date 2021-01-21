@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: Release
+  BUILD_TYPE: Debug
 
 jobs:
   build:
@@ -20,8 +20,13 @@ jobs:
     
     - name: Install CN-CBOR dependancy
       run: cd .. && git clone https://github.com/jimsch/cn-cbor.git && cd cn-cbor && mkdir -p build && cd build && cmake .. -DCN_CBOR_COVERALLS=OFF -DCN_CBOR_BUILD_TESTS=OFF && sudo cmake --build . --target install && cd ../../EDHOC-C
-    
+
+    - name: Install cJSON dependancy
+      run: cd .. && git clone https://github.com/DaveGamble/cJSON.git && cd cJSON && mkdir -p build && cd build && cmake .. -DENABLE_CJSON_TEST=OFF && sudo cmake --build . --target install && cd ../../EDHOC-C
     - uses: actions/checkout@v2
+
+    - name: Reload libraries
+      run: sudo ldconfig -v
 
     - name: Create Build Environment
       # Some projects don't allow in-source building, so create a separate build directory
@@ -49,4 +54,4 @@ jobs:
       shell: bash
       # Execute tests defined by the CMake configuration.  
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ctest -C $BUILD_TYPE
+      run: ctest -C $BUILD_TYPE --output-on-failure

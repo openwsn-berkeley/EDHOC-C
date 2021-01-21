@@ -13,9 +13,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#include <mbedtls/ctr_drbg.h>
-#include <mbedtls/entropy.h>
-
 #include "cose.h"
 #include "cbor_cert.h"
 

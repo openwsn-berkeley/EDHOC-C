@@ -1,4 +1,6 @@
 #include <string.h>
+
+#if defined(MBEDTLS)
 #include <mbedtls/ecp.h>
 #include <mbedtls/sha256.h>
 #include <mbedtls/ecdh.h>
@@ -6,6 +8,7 @@
 #include <mbedtls/hkdf.h>
 #include <mbedtls/ccm.h>
 #include <mbedtls/ecdsa.h>
+#endif
 
 #include "edhoc/cipher_suites.h"
 #include "edhoc_internal.h"

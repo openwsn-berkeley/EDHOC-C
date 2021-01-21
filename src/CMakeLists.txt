@@ -50,9 +50,9 @@ target_include_directories(${PROJECT_NAME}
 
 find_package(cn-cbor REQUIRED)
 
-#if ("${EDHOC_CBOR_BACKEND}" STREQUAL "CN_CBOR")
-target_link_libraries(${PROJECT_NAME} PRIVATE cn-cbor::cn-cbor)
-#endif ()
+if ("${EDHOC_CBOR_BACKEND}" STREQUAL "CN_CBOR")
+    target_link_libraries(${PROJECT_NAME} PRIVATE cn-cbor::cn-cbor)
+endif ()
 
 if ("${EDHOC_CBOR_BACKEND}" STREQUAL "NANOCBOR")
     target_link_libraries(${PROJECT_NAME} PRIVATE nanocbor)
