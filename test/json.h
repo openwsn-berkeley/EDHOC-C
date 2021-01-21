@@ -3,6 +3,7 @@
 
 #define MAX_FILENAME_SIZE   100
 #define FAILURE             (-1)
+#define SUCCESS             (0)
 
 /*
  * Structure holding test context information
@@ -65,18 +66,21 @@ int load_from_json_RESP_SALT(test_context_ptr ctx, uint8_t *buf, size_t blen);
 int load_from_json_PRK2E(test_context_ptr ctx, uint8_t *buf, size_t blen);
 int load_from_json_PRK3E2M(test_context_ptr ctx, uint8_t *buf, size_t blen);
 
+int load_from_json_INFO_K2M(test_context_ptr ctx, uint8_t *buf, size_t blen);
+int load_from_json_INFO_IV2M(test_context_ptr ctx, uint8_t *buf, size_t blen);
 int load_from_json_K2M(test_context_ptr ctx, uint8_t *buf, size_t blen);
 int load_from_json_IV2M(test_context_ptr ctx, uint8_t *buf, size_t blen);
 int load_from_json_K2E(test_context_ptr ctx, uint8_t *buf, size_t blen);
+int load_from_json_P2E(test_context_ptr ctx, uint8_t *buf, size_t blen);
+int load_from_json_M2(test_context_ptr ctx, uint8_t *buf, size_t blen);
 
-int load_from_json_INFO_K2M(test_context_ptr ctx, uint8_t *buf, size_t blen);
-int load_from_json_INFO_IV2M(test_context_ptr ctx, uint8_t *buf, size_t blen);
-
-int load_from_json_RESP_CERT(test_context_ptr ctx, uint8_t *buf, size_t blen);
-int load_from_json_RESP_X5T(test_context_ptr ctx, uint8_t *buf, size_t blen);
+int load_from_json_RESP_CRED(test_context_ptr ctx, uint8_t *buf, size_t blen);
+int load_from_json_RESP_CRED_ID(test_context_ptr ctx, uint8_t *buf, size_t blen);
+int load_from_json_INIT_CRED(test_context_ptr ctx, uint8_t *buf, size_t blen);
+int load_from_json_INIT_CRED_ID(test_context_ptr ctx, uint8_t *buf, size_t blen);
 
 int load_from_json_SIGNATURE(test_context_ptr ctx, uint8_t *buf, size_t blen);
-int load_from_json_M2(test_context_ptr ctx, uint8_t *buf, size_t blen);
+int load_from_json_CIPHERTEXT2(test_context_ptr ctx, uint8_t *buf, size_t blen);
 
 
 
