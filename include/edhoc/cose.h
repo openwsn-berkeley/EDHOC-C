@@ -14,12 +14,14 @@
 #define COSE_MAX_SIGNATURE_LEN  (64)
 
 typedef enum {
-    COSE_KEY_COMMON_PARAM_KTY = 1,    /**< Key type identifier */
-    COSE_KEY_COMMON_PARAM_KID = 2,    /**< Key identifier */
-    COSE_KEY_COMMON_PARAM_ALGO = 3,   /**< Key algorithm */
-    COSE_KEY_COMMON_PARAM_OPS = 4,    /**< Key options */
-    COSE_KEY_COMMON_PARAM_BIV = 5,    /**< Base IV */
-    COSE_KEY_COMMON_PARAM_X5T = 34,  /** X5T (hash-based certificate identifier) */
+    COSE_KEY_COMMON_PARAM_KTY = 1,        /**< Key type identifier */
+    COSE_KEY_COMMON_PARAM_KID = 2,        /**< Key identifier */
+    COSE_KEY_COMMON_PARAM_ALGO = 3,       /**< Key algorithm */
+    COSE_KEY_COMMON_PARAM_OPS = 4,        /**< Key options */
+    COSE_KEY_COMMON_PARAM_BIV = 5,        /**< Base IV */
+    COSE_KEY_COMMON_PARAM_X5CHAIN = 33,   /**< An ordered chain of X.509 certificates */
+    COSE_KEY_COMMON_PARAM_X5T = 34,       /**< Hash of an X.509 certificate */
+    COSE_KEY_COMMON_PARAM_URI = 35,       /**< URI pointing to an X.509 certificate */
 } cose_key_common_param_t;
 
 /**
@@ -81,6 +83,9 @@ typedef enum cose_algo {
     COSE_ALGO_AESCCM_16_128_128 = 30,       /**< AES-CCM */
 } cose_algo_t;
 
+/**
+ * COSE Key structure
+ */
 typedef struct cose_key {
     cose_kty_t kty;                     /**< Key type */
     cose_algo_t algo;                   /**< Key algorithm restriction with this key */
@@ -103,21 +108,20 @@ typedef struct cose_key {
  * @brief   Initializes a COSE key object, must be called before using the key
  * object
  *
- * @param   key      Key object to initialize
+ * @param[in,out] key      Key object to initialize
  */
 void cose_key_init(cose_key_t *key);
 
 /**
  * @brief   Initializes a key struct based on a cbor map
  *
- * @param   key         Empty COSE key struct to fill with key information
- * @param   key_bytes   Array of bytes containing the CBOR encoded key
- * @param   key_len     Length of @p key_bytes
+ * @param[out] key          Initialized COSE key struct to fill with key information
+ * @param[in] key_bytes     Array of bytes containing the CBOR encoded key
+ * @param[in] key_len       Length of @p key_bytes
  *
- * @return              0 on successfully loaded from cbor
- * @return              Negative on error
+ * @return  On success return EDHOC_SUCCESS
+ * @return  On failure a negative value
  */
-
 int cose_key_from_cbor(cose_key_t *key, const unsigned char *key_bytes, size_t key_len);
 
 /*
@@ -125,29 +129,32 @@ int cose_key_from_cbor(cose_key_t *key, const unsigned char *key_bytes, size_t k
  *
  * @param[in]   alg     An COSE algorithm
  *
- * @return  Length of the key used with this algorithm
+ * @return  On success the length of the key used with this algorithm
+ * @return  On failure a negative value
  */
 int cose_key_len_from_alg(cose_algo_t alg);
 
-/*
+/**
  * @brief Get the IV length for a specific COSE algorithm identifier
  *
  * @param[in]   alg     An COSE algorithm
  *
- * @return  Length of the IV used with this algorithm
+ * @return  On success the length of the IV used with this algorithm
+ * @return  On failure a negative value
  */
 int cose_iv_len_from_alg(cose_algo_t alg);
 
-/*
+/**
  * @brief Get the authentication tag length for a specific COSE algorithm identifier
  *
  * @param[in]   alg     An COSE algorithm
  *
- * @return  Length of the authentication tag used with this algorithm
+ * @return  On success the length of the authentication tag used with this algorithm
+ * @return  On failure a negative value
  */
 int cose_tag_len_from_alg(cose_algo_t alg);
 
-/*
+/**
  * @brief Create a COSE header attribute for hash-based certificate identification
  *
  * @param[in]   hash        COSE hash algorithm used to create a digest from the certificate
@@ -156,7 +163,8 @@ int cose_tag_len_from_alg(cose_algo_t alg);
  * @param[out]  out         The output buffer, will contain the CBOR encoded X5T attribute
  * @param[in]   olen        Total size of @p out
  *
- * @return the length of the CBOR encoded header attribute on success, else negative value
+ * @return On success the length of the CBOR encoded header attribute on success,
+ * @return On failure a negative value
  */
 ssize_t cose_x5t_attribute(cose_algo_t hash, const uint8_t *cert, size_t cert_len, uint8_t *out, size_t olen);
 
