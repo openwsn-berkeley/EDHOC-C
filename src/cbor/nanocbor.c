@@ -60,27 +60,6 @@ ssize_t cbor_array_append_string(const char *string, uint8_t *buffer, size_t off
     return cbor_string_encode(string, buffer, offset, total);
 }
 
-ssize_t cbor_fmt_tstr(size_t len, uint8_t *buffer, size_t offset, size_t total) {
-    nanocbor_encoder_t encoder;
-
-    nanocbor_encoder_init(&encoder, buffer + offset, total - offset);
-    if (nanocbor_fmt_tstr(&encoder, len) < EDHOC_SUCCESS)
-        return EDHOC_ERR_CBOR_ENCODING;
-
-    return nanocbor_encoded_len(&encoder);
-
-}
-
-ssize_t cbor_fmt_bstr(size_t len, uint8_t *buffer, size_t offset, size_t total){
-    nanocbor_encoder_t encoder;
-
-    nanocbor_encoder_init(&encoder, buffer + offset, total - offset);
-    if (nanocbor_fmt_bstr(&encoder, len) < EDHOC_SUCCESS)
-        return EDHOC_ERR_CBOR_ENCODING;
-
-    return nanocbor_encoded_len(&encoder);
-}
-
 #endif
 
 

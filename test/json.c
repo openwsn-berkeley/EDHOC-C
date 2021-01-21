@@ -146,7 +146,7 @@ static int load_json_array(cJSON *array, uint8_t *buf, size_t blen) {
 int load_from_json_MESSAGE1(test_context_ptr ctx, uint8_t *buf, size_t blen) {
     cJSON *message1;
 
-    if ((message1 = cJSON_GetObjectItemCaseSensitive(ctx->initiator, "message_1")) == NULL) {
+    if ((message1 = cJSON_GetObjectItemCaseSensitive(ctx->shared, "message_1")) == NULL) {
         return FAILURE;
     }
 
@@ -156,7 +156,7 @@ int load_from_json_MESSAGE1(test_context_ptr ctx, uint8_t *buf, size_t blen) {
 int load_from_json_SIGNATURE(test_context_ptr ctx, uint8_t *buf, size_t blen){
     cJSON *signature;
 
-    if ((signature = cJSON_GetObjectItemCaseSensitive(ctx->shared, "signature")) == NULL) {
+    if ((signature = cJSON_GetObjectItemCaseSensitive(ctx->shared, "signature_2")) == NULL) {
         return FAILURE;
     }
 
@@ -176,11 +176,21 @@ int load_from_json_M2(test_context_ptr ctx, uint8_t *buf, size_t blen){
 int load_from_json_MESSAGE2(test_context_ptr ctx, uint8_t *buf, size_t blen) {
     cJSON *message2;
 
-    if ((message2 = cJSON_GetObjectItemCaseSensitive(ctx->responder, "message_2")) == NULL) {
+    if ((message2 = cJSON_GetObjectItemCaseSensitive(ctx->shared, "message_2")) == NULL) {
         return FAILURE;
     }
 
     return load_json_array(message2, buf, blen);
+}
+
+int load_from_json_MESSAGE3(test_context_ptr ctx, uint8_t *buf, size_t blen) {
+    cJSON *message3;
+
+    if ((message3 = cJSON_GetObjectItemCaseSensitive(ctx->shared, "message_3")) == NULL) {
+        return FAILURE;
+    }
+
+    return load_json_array(message3, buf, blen);
 }
 
 int load_from_json_DATA2(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -263,24 +273,44 @@ int load_from_json_IV2M(test_context_ptr ctx, uint8_t *buf, size_t blen){
     return load_json_array(iv2m, buf, blen);
 }
 
-int load_from_json_RESP_CERT(test_context_ptr ctx, uint8_t *buf, size_t blen){
-    cJSON *cert;
+int load_from_json_RESP_CRED(test_context_ptr ctx, uint8_t *buf, size_t blen){
+    cJSON *cred;
 
-    if ((cert = cJSON_GetObjectItemCaseSensitive(ctx->responder, "cert")) == NULL) {
+    if ((cred = cJSON_GetObjectItemCaseSensitive(ctx->responder, "cred")) == NULL) {
         return FAILURE;
     }
 
-    return load_json_array(cert, buf, blen);
+    return load_json_array(cred, buf, blen);
 }
 
-int load_from_json_RESP_X5T(test_context_ptr ctx, uint8_t *buf, size_t blen){
-    cJSON *x5t;
+int load_from_json_INIT_CRED(test_context_ptr ctx, uint8_t *buf, size_t blen){
+    cJSON *cred;
 
-    if ((x5t = cJSON_GetObjectItemCaseSensitive(ctx->responder, "x5t")) == NULL) {
+    if ((cred = cJSON_GetObjectItemCaseSensitive(ctx->initiator, "cred")) == NULL) {
         return FAILURE;
     }
 
-    return load_json_array(x5t, buf, blen);
+    return load_json_array(cred, buf, blen);
+}
+
+int load_from_json_RESP_CRED_ID(test_context_ptr ctx, uint8_t *buf, size_t blen){
+    cJSON *cred_id;
+
+    if ((cred_id = cJSON_GetObjectItemCaseSensitive(ctx->responder, "cred_id")) == NULL) {
+        return FAILURE;
+    }
+
+    return load_json_array(cred_id, buf, blen);
+}
+
+int load_from_json_INIT_CRED_ID(test_context_ptr ctx, uint8_t *buf, size_t blen){
+    cJSON *cred_id;
+
+    if ((cred_id = cJSON_GetObjectItemCaseSensitive(ctx->initiator, "cred_id")) == NULL) {
+        return FAILURE;
+    }
+
+    return load_json_array(cred_id, buf, blen);
 }
 
 int load_from_json_INFO_IV2M(test_context_ptr ctx, uint8_t *buf, size_t blen){
@@ -301,6 +331,36 @@ int load_from_json_TH2(test_context_ptr ctx, uint8_t *buf, size_t blen) {
     }
 
     return load_json_array(th_2, buf, blen);
+}
+
+int load_from_json_K2E(test_context_ptr ctx, uint8_t *buf, size_t blen) {
+    cJSON *k_2e;
+
+    if ((k_2e = cJSON_GetObjectItemCaseSensitive(ctx->shared, "k_2e")) == NULL) {
+        return FAILURE;
+    }
+
+    return load_json_array(k_2e, buf, blen);
+}
+
+int load_from_json_P2E(test_context_ptr ctx, uint8_t *buf, size_t blen) {
+    cJSON *p_2e;
+
+    if ((p_2e = cJSON_GetObjectItemCaseSensitive(ctx->shared, "p_2e")) == NULL) {
+        return FAILURE;
+    }
+
+    return load_json_array(p_2e, buf, blen);
+}
+
+int load_from_json_CIPHERTEXT2(test_context_ptr ctx, uint8_t *buf, size_t blen) {
+    cJSON *ciphertext_2;
+
+    if ((ciphertext_2 = cJSON_GetObjectItemCaseSensitive(ctx->shared, "ciphertext_2")) == NULL) {
+        return FAILURE;
+    }
+
+    return load_json_array(ciphertext_2, buf, blen);
 }
 
 int load_from_json_INIT_EPHKEY(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -363,6 +423,16 @@ int load_from_json_G_X(test_context_ptr ctx, uint8_t *buf, size_t blen) {
     return load_json_array(g_x, buf, blen);
 }
 
+int load_from_json_G_Y(test_context_ptr ctx, uint8_t *buf, size_t blen) {
+    cJSON *g_y;
+
+    if ((g_y = cJSON_GetObjectItemCaseSensitive(ctx->responder, "g_y")) == NULL) {
+        return FAILURE;
+    }
+
+    return load_json_array(g_y, buf, blen);
+}
+
 int load_from_json_CONN_IDI(test_context_ptr ctx, uint8_t *buf, size_t blen) {
     cJSON *conn_id;
 
@@ -396,7 +466,7 @@ int load_from_json_CORR(test_context_ptr ctx, int *value) {
 
     *value = correlation->valueint;
 
-    return 0;
+    return SUCCESS;
 }
 
 int load_from_json_METHOD(test_context_ptr ctx, int *value) {
@@ -412,7 +482,7 @@ int load_from_json_METHOD(test_context_ptr ctx, int *value) {
 
     *value = method->valueint;
 
-    return 0;
+    return SUCCESS;
 }
 
 int load_from_json_CIPHERSUITE(test_context_ptr ctx, int *value) {
@@ -428,6 +498,6 @@ int load_from_json_CIPHERSUITE(test_context_ptr ctx, int *value) {
 
     *value = selected->valueint;
 
-    return 0;
+    return SUCCESS;
 }
 

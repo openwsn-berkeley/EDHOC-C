@@ -92,18 +92,18 @@ int cose_key_from_cbor(cose_key_t *key, const unsigned char *key_bytes, size_t k
 
     // check if key is properly initialized
     if (key->kty != COSE_KTY_NONE || key->algo != COSE_ALGO_NONE || key->crv != COSE_EC_NONE) {
-        ret = EDHOC_ERR_INVALID_KEY;
-        goto fail;
+        ret = EDHOC_ERR_INVALID_CBOR_KEY;
+        goto exit;
     }
 
     if ((key_obj = cn_cbor_decode(key_bytes, key_len, &cbor_err)) == NULL) {
-        ret = EDHOC_ERR_INVALID_KEY;
-        goto fail;
+        ret = EDHOC_ERR_INVALID_CBOR_KEY;
+        goto exit;
     }
 
     if ((obj = cn_cbor_mapget_int(key_obj, COSE_KEY_COMMON_PARAM_KTY)) == NULL) {
-        ret = EDHOC_ERR_INVALID_KEY;
-        goto fail;
+        ret = EDHOC_ERR_INVALID_CBOR_KEY;
+        goto exit;
     } else {
         key->kty = obj->v.uint;
     }
@@ -126,17 +126,17 @@ int cose_key_from_cbor(cose_key_t *key, const unsigned char *key_bytes, size_t k
             CBOR_MAP_GET_BYTES_PARAM(key_obj, COSE_KEY_SYMMETRIC_PARAM_K, key->k, key->k_len);
             break;
         default:
-            ret = EDHOC_ERR_INVALID_KEY;
-            goto fail;
+            ret = EDHOC_ERR_INVALID_CBOR_KEY;
+            goto exit;
     }
 
     ret = EDHOC_SUCCESS;
-    fail:
+    exit:
     return ret;
 }
 
 ssize_t cose_x5t_attribute(cose_algo_t hash, const uint8_t *cert, size_t cert_len, uint8_t *out, size_t olen) {
-    int ret;
+    ssize_t ret;
     size_t hash_len;
     uint8_t digest[COSE_DIGEST_LEN];
     cn_cbor_errback err;
@@ -152,15 +152,15 @@ ssize_t cose_x5t_attribute(cose_algo_t hash, const uint8_t *cert, size_t cert_le
 #endif
 
     if ((ret = crypt_hash_init(&cert_digest_ctx)) != EDHOC_SUCCESS) {
-        goto fail;
+        goto exit;
     }
 
     if ((ret = crypt_hash_update(&cert_digest_ctx, cert, cert_len)) != EDHOC_SUCCESS) {
-        goto fail;
+        goto exit;
     }
 
     if ((ret = crypt_hash_finish(&cert_digest_ctx, digest)) != EDHOC_SUCCESS) {
-        goto fail;
+        goto exit;
     }
 
     if (hash == COSE_ALGO_SHA256_64) {
@@ -171,37 +171,36 @@ ssize_t cose_x5t_attribute(cose_algo_t hash, const uint8_t *cert, size_t cert_le
 
     if ((cbor_array = cn_cbor_array_create(&err)) == NULL) {
         ret = EDHOC_ERR_CBOR_ENCODING;
-        goto fail;
+        goto exit;
     }
 
     if ((cbor_int = cn_cbor_int_create(COSE_ALGO_SHA256_64, &err)) == NULL) {
         ret = EDHOC_ERR_CBOR_ENCODING;
-        goto fail;
+        goto exit;
     } else {
         cn_cbor_array_append(cbor_array, cbor_int, &err);
     }
 
     if ((cbor_digest = cn_cbor_data_create(digest, hash_len, &err)) == NULL) {
         ret = EDHOC_ERR_CBOR_ENCODING;
-        goto fail;
+        goto exit;
     } else {
         cn_cbor_array_append(cbor_array, cbor_digest, &err);
     }
 
     if ((cbor_map = cn_cbor_map_create(&err)) == NULL) {
         ret = EDHOC_ERR_CBOR_ENCODING;
-        goto fail;
+        goto exit;
     } else {
         cn_cbor_mapput_int(cbor_map, COSE_KEY_COMMON_PARAM_X5T, cbor_array, &err);
     }
 
-    if ((cn_cbor_encoder_write(out, 0, olen, cbor_map)) < EDHOC_SUCCESS) {
+    if ((ret = cn_cbor_encoder_write(out, 0, olen, cbor_map)) < EDHOC_SUCCESS) {
         ret = EDHOC_ERR_CBOR_ENCODING;
-        goto fail;
+        goto exit;
     }
 
-    ret = EDHOC_SUCCESS;
-    fail:
+    exit:
     return ret;
 
 }

@@ -32,40 +32,99 @@ target_include_directories(test_cbor PRIVATE ../src/cbor)
 
 
 add_test(
-        NAME TEST_MESSAGE_1
+        NAME TEST_MESSAGE_1_DECODE_1
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMAND test_message --decode_msg1 test_vectors/vector1.json
 )
 
 add_test(
-        NAME TEST_MESSAGE_2
+        NAME TEST_MESSAGE_1_DECODE_2
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_message --decode_msg1 test_vectors/vector2.json
+)
+
+add_test(
+        NAME TEST_DATA_2_ENCODE_1
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMAND test_message --encode-data2 test_vectors/vector1.json
 )
 
 add_test(
-        NAME TEST_MESSAGE_3
+        NAME TEST_DATA_2_ENCODE_2
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_message --encode-data2 test_vectors/vector2.json
+)
+
+add_test(
+        NAME TEST_INFO_K2M_ENCODE_1
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMAND test_message --encode-info-k2m test_vectors/vector1.json
 )
 
 add_test(
-        NAME TEST_MESSAGE_4
+        NAME TEST_INFO_K2M_ENCODE_2
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_message --encode-info-k2m test_vectors/vector2.json
+)
+
+add_test(
+        NAME TEST_INFO_IV2M_ENCODE_1
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMAND test_message --encode-info-iv2m test_vectors/vector1.json
 )
 
-
 add_test(
-        NAME TEST_INITIATOR_1
+        NAME TEST_INFO_IV2M_ENCODE_2
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMAND test_initiator --initiator test_vectors/vector1.json
+        COMMAND test_message --encode-info-iv2m test_vectors/vector2.json
 )
 
 add_test(
-        NAME TEST_RESPONDER_1
+        NAME TEST_MESSAGE_2_DECODE_1
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_message --decode_msg2 test_vectors/vector1.json
+)
+
+add_test(
+        NAME TEST_MESSAGE_2_DECODE_2
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_message --decode_msg2 test_vectors/vector2.json
+)
+
+add_test(
+        NAME TEST_INITIATOR_MESSAGE_1_1
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_initiator --initiator-msg1 test_vectors/vector1.json
+)
+
+add_test(
+        NAME TEST_INITIATOR_MESSAGE_1_2
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_initiator --initiator-msg1 test_vectors/vector2.json
+)
+
+add_test(
+        NAME TEST_INITIATOR_MESSAGE_3_1
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_initiator --initiator-msg3 test_vectors/vector1.json
+)
+
+add_test(
+        NAME TEST_INITIATOR_MESSAGE_3_2
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_initiator --initiator-msg3 test_vectors/vector2.json
+)
+
+add_test(
+        NAME TEST_RESPONDER_MESSAGE_2_1
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMAND test_responder --responder test_vectors/vector1.json
+)
+
+add_test(
+        NAME TEST_RESPONDER_MESSAGE_2_2
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_responder --responder test_vectors/vector2.json
 )
 
 add_test(
@@ -99,21 +158,57 @@ add_test(
 )
 
 add_test(
-        NAME TEST_CRYPTO_KDF_1
+        NAME TEST_CRYPTO_HMAC_2
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_crypto --hmac test_vectors/vector2.json
+)
+
+add_test(
+        NAME TEST_CRYPTO_KDF_K2M_1
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMAND test_crypto --edhoc-kdf-k2m test_vectors/vector1.json
 )
 
 add_test(
-        NAME TEST_CRYPTO_KDF_2
+        NAME TEST_CRYPTO_KDF_K2M_2
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_crypto --edhoc-kdf-k2m test_vectors/vector2.json
+)
+
+add_test(
+        NAME TEST_CRYPTO_KDF_IV2M_1
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMAND test_crypto --edhoc-kdf-iv2m test_vectors/vector1.json
 )
 
 add_test(
-        NAME TEST_CRYPTO_ED25519
+        NAME TEST_CRYPTO_KDF_IV2M_2
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_crypto --edhoc-kdf-iv2m test_vectors/vector2.json
+)
+
+add_test(
+        NAME TEST_CRYPTO_KDF_K2E_1
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_crypto --edhoc-kdf-k2e test_vectors/vector1.json
+)
+
+add_test(
+        NAME TEST_CRYPTO_KDF_K2E_2
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_crypto --edhoc-kdf-k2e test_vectors/vector2.json
+)
+
+add_test(
+        NAME TEST_CRYPTO_ED25519_1
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMAND test_crypto --ed25519 test_vectors/vector1.json
+)
+
+add_test(
+        NAME TEST_CRYPTO_ED25519_2
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_crypto --ed25519 test_vectors/vector2.json
 )
 
 add_test(
