@@ -1,2 +1,2 @@
-# Ephermeral Diffie-Hellman Over COSE (EDHOC)
+# Ephemeral Diffie-Hellman Over COSE (EDHOC)
 This repository contains a C implementation of the EDHOC IETF protocol.
