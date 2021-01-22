@@ -32,7 +32,7 @@ set(edhoc_sources
         ${PROJECT_SOURCE_DIR}/src/cbor_cert.c
         ${PROJECT_SOURCE_DIR}/src/cipher_suites.c
         ${PROJECT_SOURCE_DIR}/src/cose.c
-        ${PROJECT_SOURCE_DIR}/src/message.c
+        ${PROJECT_SOURCE_DIR}/src/edhoc_internal.c
         ${PROJECT_SOURCE_DIR}/src/cbor/cn_cbor.c
         ${PROJECT_SOURCE_DIR}/src/cbor/nanocbor.c
         ${PROJECT_SOURCE_DIR}/src/crypto/wolfssl.c
