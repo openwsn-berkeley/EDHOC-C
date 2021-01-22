@@ -61,6 +61,22 @@ int test_message2_decode(edhoc_ctx_t *ctx,
     return ret;
 }
 
+int test_message3_decode(edhoc_ctx_t *ctx,
+                         const uint8_t *msg_buf,
+                         size_t msg_buf_len,
+                         const uint8_t *conn_idr,
+                         size_t conn_idr_len,
+                         uint8_t *ciphertext_3,
+                         size_t ciphertext_3_len) {
+    ssize_t ret;
+    CHECK_TEST_RET_EQ(edhoc_msg2_decode(ctx, msg_buf, msg_buf_len), (long) 0);
+    CHECK_TEST_RET_EQ(ctx->ct_or_pld_3_len, (long) ciphertext_3_len);
+    CHECK_TEST_RET_EQ(compare_arrays(ctx->ct_or_pld_3, ciphertext_3, ctx->ct_or_pld_3_len), (long) 0);
+
+    exit:
+    return ret;
+}
+
 int test_data2_encode(corr_t corr,
                       uint8_t *cidi,
                       size_t cidi_len,
@@ -108,20 +124,25 @@ int main(int argc, char **argv) {
     cose_algo_t id;
 
     uint8_t m1[MESSAGE_1_SIZE];
+    uint8_t m2[MESSAGE_2_SIZE];
+    uint8_t m3[MESSAGE_3_SIZE];
+
     uint8_t g_x[RAW_PUBLIC_KEY];
+    uint8_t g_y[RAW_PUBLIC_KEY];
+
     uint8_t cidi[CONN_ID_SIZE];
     uint8_t cidr[CONN_ID_SIZE];
+
     uint8_t ephkey[EPHKEY_SIZE];
     uint8_t data2[EHDOC_DATA_2_SIZE];
     uint8_t th_2[EDHOC_TH_SIZE];
     uint8_t info_k2m[EDHOC_INFO_SIZE];
     uint8_t info_iv2m[EDHOC_INFO_SIZE];
-    uint8_t m2[MESSAGE_2_SIZE];
-    uint8_t g_y[RAW_PUBLIC_KEY];
     uint8_t ciphertext_2[EDHOC_PAYLOAD_SIZE];
+    uint8_t ciphertext_3[EDHOC_PAYLOAD_SIZE];
 
     size_t msg1_len, g_x_len, cidi_len, cidr_len, eph_key_len, data2_len, info_k2m_len, info_iv2m_len, msg2_len,
-            g_y_len, ciphertext2_len, th2_len;
+            g_y_len, ciphertext2_len, th2_len, msg3_len, ciphertext3_len;
 
     /* test selection */
 
@@ -142,6 +163,20 @@ int main(int argc, char **argv) {
             ret = test_message1_decode(m1, msg1_len, 1, g_x, g_x_len, cidi, cidi_len);
 
             close_test(ctx);
+        } else if (strcmp(argv[1], "--decode-msg3") == 0) {
+            ctx = load_json_test_file(argv[2]);
+
+            msg3_len = load_from_json_MESSAGE3(ctx, m3, sizeof(m3));
+            cidr_len = load_from_json_CONN_IDR(ctx, cidr, sizeof(cidr));
+            ciphertext3_len = load_from_json_CIPHERTEXT3(ctx, ciphertext_3, sizeof(ciphertext_3));
+
+            edhoc_ctx_t edhoc_ctx;
+            edhoc_ctx_init(&edhoc_ctx);
+
+            ret = test_message3_decode(&edhoc_ctx, m3, msg3_len, cidr, cidr_len, ciphertext_3, ciphertext3_len);
+
+            close_test(ctx);
+
         } else if (strcmp(argv[1], "--decode-msg2") == 0) {
             ctx = load_json_test_file(argv[2]);
 
@@ -164,16 +199,16 @@ int main(int argc, char **argv) {
             edhoc_ctx.session.selected_suite = (cipher_suite_t *) edhoc_select_suite(selected);
 
             ret = test_message2_decode(&edhoc_ctx,
-                                        m2,
-                                        msg2_len,
-                                        g_y,
-                                        g_y_len,
-                                        cidi,
-                                        cidi_len,
-                                        cidr,
-                                        cidr_len,
-                                        ciphertext_2,
-                                        ciphertext2_len);
+                                       m2,
+                                       msg2_len,
+                                       g_y,
+                                       g_y_len,
+                                       cidi,
+                                       cidi_len,
+                                       cidr,
+                                       cidr_len,
+                                       ciphertext_2,
+                                       ciphertext2_len);
 
             close_test(ctx);
         } else if (strcmp(argv[1], "--encode-data2") == 0) {
