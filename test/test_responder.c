@@ -1,9 +1,8 @@
 #include <stdint.h>
 #include <string.h>
-#include <assert.h>
+#include <stdlib.h>
 
 #include <edhoc/edhoc.h>
-#include <stdlib.h>
 
 #include "json.h"
 #include "util.h"

@@ -3,10 +3,10 @@
 add_compile_definitions(${EDHOC_CRYPTO_BACKEND})
 
 # create all executables
-add_executable(test_message test_message.c util.c util.h json.h json.c)
-target_link_libraries(test_message PRIVATE edhoc-c::edhoc-c)
-target_link_libraries(test_message PRIVATE cjson)
-target_include_directories(test_message PRIVATE ../src)
+add_executable(test_internal test_internal.c util.c util.h json.h json.c)
+target_link_libraries(test_internal PRIVATE edhoc-c::edhoc-c)
+target_link_libraries(test_internal PRIVATE cjson)
+target_include_directories(test_internal PRIVATE ../src)
 
 add_executable(test_initiator test_initiator.c util.c util.h json.h json.c)
 target_link_libraries(test_initiator PRIVATE edhoc-c::edhoc-c)
@@ -34,61 +34,73 @@ target_include_directories(test_cbor PRIVATE ../src/cbor)
 add_test(
         NAME TEST_MESSAGE_1_DECODE_1
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMAND test_message --decode_msg1 test_vectors/vector1.json
+        COMMAND test_internal --decode_msg1 test_vectors/vector1.json
 )
 
 add_test(
         NAME TEST_MESSAGE_1_DECODE_2
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMAND test_message --decode_msg1 test_vectors/vector2.json
+        COMMAND test_internal --decode_msg1 test_vectors/vector2.json
 )
 
 add_test(
         NAME TEST_DATA_2_ENCODE_1
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMAND test_message --encode-data2 test_vectors/vector1.json
+        COMMAND test_internal --encode-data2 test_vectors/vector1.json
 )
 
 add_test(
         NAME TEST_DATA_2_ENCODE_2
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMAND test_message --encode-data2 test_vectors/vector2.json
+        COMMAND test_internal --encode-data2 test_vectors/vector2.json
 )
 
 add_test(
         NAME TEST_INFO_K2M_ENCODE_1
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMAND test_message --encode-info-k2m test_vectors/vector1.json
+        COMMAND test_internal --encode-info-k2m test_vectors/vector1.json
 )
 
 add_test(
         NAME TEST_INFO_K2M_ENCODE_2
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMAND test_message --encode-info-k2m test_vectors/vector2.json
+        COMMAND test_internal --encode-info-k2m test_vectors/vector2.json
 )
 
 add_test(
         NAME TEST_INFO_IV2M_ENCODE_1
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMAND test_message --encode-info-iv2m test_vectors/vector1.json
+        COMMAND test_internal --encode-info-iv2m test_vectors/vector1.json
 )
 
 add_test(
         NAME TEST_INFO_IV2M_ENCODE_2
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMAND test_message --encode-info-iv2m test_vectors/vector2.json
+        COMMAND test_internal --encode-info-iv2m test_vectors/vector2.json
 )
 
 add_test(
         NAME TEST_MESSAGE_2_DECODE_1
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMAND test_message --decode_msg2 test_vectors/vector1.json
+        COMMAND test_internal --decode_msg2 test_vectors/vector1.json
 )
 
 add_test(
         NAME TEST_MESSAGE_2_DECODE_2
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMAND test_message --decode_msg2 test_vectors/vector2.json
+        COMMAND test_internal --decode_msg2 test_vectors/vector2.json
+)
+
+add_test(
+        NAME TEST_MESSAGE_3_DECODE_1
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_internal --decode_msg3 test_vectors/vector1.json
+)
+
+add_test(
+        NAME TEST_MESSAGE_3_DECODE_2
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_internal --decode_msg3 test_vectors/vector2.json
 )
 
 add_test(
