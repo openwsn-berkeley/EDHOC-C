@@ -26,10 +26,9 @@ int crypt_gen_keypair(cose_curve_t crv, rng_cb_t f_rng, void *p_rng, cose_key_t 
     if (wc_curve25519_make_key((WC_RNG *) p_rng, CURVE25519_KEYSIZE, &_key) != EDHOC_SUCCESS)
         return EDHOC_ERR_KEY_GENERATION;
 
-    memcpy(&key->x, &_key.p, CURVE25519_KEYSIZE);
-    memcpy(&key->d, &_key.k, CURVE25519_KEYSIZE);
-    key->x_len = CURVE25519_KEYSIZE;
-    key->d_len = CURVE25519_KEYSIZE;
+    key->d_len = COSE_MAX_KEY_LEN;
+    key->x_len = COSE_MAX_KEY_LEN;
+    wc_curve25519_export_key_raw(&_key, key->d, (word32 *) &key->d_len, key->x, (word32 *) &key->x_len);
 
     return EDHOC_SUCCESS;
 }
@@ -62,7 +61,7 @@ void crypt_hash_free(void *digest_ctx) {
 int
 crypt_edhoc_kdf(cose_algo_t id, const uint8_t *prk, const uint8_t *th, const char *label, uint8_t *out, size_t olen) {
     ssize_t ret;
-    uint8_t info_buf[EDHOC_MAX_KDFINFO_LEN];
+    uint8_t info_buf[EDHOC_MAX_KDF_INFO_LEN];
     ssize_t info_len;
 
     ret = EDHOC_ERR_CRYPTO;
@@ -229,7 +228,7 @@ int crypt_compute_ecdh(
         cose_key_t *public_key,
         rng_cb_t f_rng,
         void *p_rng,
-        uint8_t* out) {
+        uint8_t *out) {
 
     int ret;
     (void) f_rng;
@@ -269,6 +268,48 @@ int crypt_compute_ecdh(
     wc_curve25519_free(&Q);
 
     return ret;
+}
+
+int crypt_decrypt_aead(
+        cose_algo_t alg,
+        const uint8_t *key,
+        const uint8_t *iv,
+        const uint8_t *aad,
+        size_t aad_len,
+        uint8_t *plaintext,
+        uint8_t *ciphertext,
+        size_t ct_pl_len,
+        uint8_t *tag) {
+
+    Aes aes;
+    int ret, key_len, iv_len, tag_len;
+
+    ret = EDHOC_ERR_CRYPTO;
+
+    key_len = cose_key_len_from_alg(alg);
+    iv_len = cose_iv_len_from_alg(alg);
+    tag_len = cose_tag_len_from_alg(alg);
+
+    if (wc_AesCcmSetKey(&aes, key, key_len) != EDHOC_SUCCESS)
+        goto exit;
+
+    if (wc_AesCcmDecrypt(&aes,
+                         plaintext,
+                         ciphertext,
+                         ct_pl_len,
+                         iv,
+                         iv_len,
+                         tag,
+                         tag_len,
+                         aad,
+                         aad_len) != EDHOC_SUCCESS)
+        goto exit;
+
+    ret = EDHOC_SUCCESS;
+    exit:
+    wc_AesFree(&aes);
+    return ret;
+
 }
 
 int crypt_encrypt_aead(
