@@ -40,7 +40,7 @@
 #define EDHOC_MAX_IV23M_LEN              (16)
 #define EDHOC_MAX_MAC_OR_SIG23_LEN       (64)
 #define EDHOC_MAX_A3AE_LEN               (45)
-#define EDHOC_MAX_KDFINFO_LEN            (50)
+#define EDHOC_MAX_KDF_INFO_LEN           (50)
 #define EDHOC_MAX_PAYLOAD_LEN            (400)
 #define EDHOC_MAX_EXAD_DATA_LEN          (50)
 #define EDHOC_MAX_AUTH_TAG_LEN           (16)
@@ -242,7 +242,6 @@ int edhoc_conf_load_cred_id(edhoc_conf_t *conf, const uint8_t *cred_id, size_t c
  * @param[in] correlation       EDHOC correlation value
  * @param[in] method            EHDOC authentication method
  * @param[in] suite             Preferred cipher suite
- * @param[in] ad1               Callback to fetch additional data (can be NULL)
  * @param[out] out              Output buffer to hold EDHOC message 1
  * @param[in] buf_len           Length of @p out
  *
@@ -296,6 +295,28 @@ ssize_t edhoc_create_msg3(
         size_t msg2_len,
         uint8_t *out,
         size_t olen);
+
+/**
+ * @brief   Finalize the EDHOC ecxhange on the Initiator side
+ *
+ * @param[in,out] ctx       EDHOC context
+ *
+ * @return On success returns EDHOC_SUCCESS
+ * @return On failure a negative value
+ */
+int edhoc_init_finalize(edhoc_ctx_t *ctx);
+
+/**
+ * @brief   Finalize the EDHOC ecxhange on the Responder side
+ *
+ * @param[in,out] ctx       EDHOC context
+ * @param[in] msg3_buf      Buffer containing EDHOC message 3
+ * @param[in] msg3_len      Length of @p msg3_buf
+ *
+ * @return On success returns EDHOC_SUCCESS
+ * @return On failure a negative value
+ */
+int edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3_buf, size_t msg3_len);
 
 #if defined(EDHOC_DEBUG_ENABLE)
 

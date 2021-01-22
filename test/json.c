@@ -363,6 +363,16 @@ int load_from_json_CIPHERTEXT2(test_context_ptr ctx, uint8_t *buf, size_t blen) 
     return load_json_array(ciphertext_2, buf, blen);
 }
 
+int load_from_json_CIPHERTEXT3(test_context_ptr ctx, uint8_t *buf, size_t blen) {
+    cJSON *ciphertext_3;
+
+    if ((ciphertext_3 = cJSON_GetObjectItemCaseSensitive(ctx->shared, "ciphertext_3")) == NULL) {
+        return FAILURE;
+    }
+
+    return load_json_array(ciphertext_3, buf, blen);
+}
+
 int load_from_json_INIT_EPHKEY(test_context_ptr ctx, uint8_t *buf, size_t blen) {
     cJSON *eph_key;
 

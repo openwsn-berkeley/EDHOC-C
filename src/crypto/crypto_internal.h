@@ -144,7 +144,7 @@ int crypt_compute_ecdh(
         uint8_t* out);
 
 /**
- * @brief Computes the authentication tag using a COSE AEAD cipher
+ * @brief Encrypts and authenticates the payload using a COSE AEAD cipher
  *
  * @param[in] alg           COSE algorithm to use
  * @param[in] key           Authentication key
@@ -160,6 +160,34 @@ int crypt_compute_ecdh(
  * @return On failure EDHOC_ERR_CRYPTO or another negative value
  */
 int crypt_encrypt_aead(
+        cose_algo_t alg,
+        const uint8_t *key,
+        const uint8_t *iv,
+        const uint8_t *aad,
+        size_t aad_len,
+        uint8_t *plaintext,
+        uint8_t *ciphertext,
+        size_t ct_pl_len,
+        uint8_t *tag);
+
+
+/**
+ * @brief Decrypts and verifies the authenticity of a ciphertext using a COSE AEAD cipher
+ *
+ * @param[in] alg           COSE algorithm to use
+ * @param[in] key           Authentication key
+ * @param[in] iv            IV for the AEAD cipher
+ * @param[in] aad           Additional data
+ * @param[in] aad_len       Length of @p aad_len
+ * @param[in] plaintext     Plaintext input
+ * @param[out] ciphertext   Ciphertext
+ * @param[in] ct_pl_len     Length of @p plaintext and @p ciphertext
+ * @param[out] tag          Authentication tag
+ *
+ * @return On success, EDHOC_SUCCESS
+ * @return On failure EDHOC_ERR_CRYPTO or another negative value
+ */
+int crypt_decrypt_aead(
         cose_algo_t alg,
         const uint8_t *key,
         const uint8_t *iv,

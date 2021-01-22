@@ -24,11 +24,23 @@ enum msg2_fields {
     M2_FINAL
 };
 
+enum msg3_fields {
+    M3_C_R = 0,
+    M3_CIPHERTEXT,
+    M3_FINAL
+};
+
 enum p2e_fields {
     P2E_ID_CRED = 0,
     P2E_SIG_OR_MAC,
     P2E_AD,
     P2E_FINAL
+};
+
+enum p3ae_fields {
+    P3AE_ID_CRED = 0,
+    P3AE_SIG_OR_MAC,
+    P3AE_FINAL
 };
 
 const int CBOR_ARRAY_INFO_LENGTH = 4;
@@ -153,6 +165,72 @@ verify_cipher_suite(cipher_suite_t preferred_suite, const cipher_suite_t *remote
             return EDHOC_SUCCESS;
         else
             continue;
+    }
+
+    return EDHOC_SUCCESS;
+}
+
+int edhoc_msg3_decode(edhoc_ctx_t *ctx, const uint8_t *msg3, size_t msg3_len) {
+    uint8_t field;
+    uint8_t rSize;
+    cn_cbor *cbor[M3_FINAL] = {NULL};
+    cn_cbor *final_cbor = NULL;
+    cn_cbor_errback cbor_err;
+
+    field = 0;
+
+    // iterate over the CBOR sequence until all elements are decoded
+    while ((final_cbor = cn_cbor_decode(msg3, msg3_len, &cbor_err)) == NULL) {
+        rSize = cbor_err.pos;
+
+        // reset the error
+        memset(&cbor_err, 0, sizeof(cbor_err));
+        cbor[field] = cn_cbor_decode(msg3, rSize, &cbor_err);
+
+        // if a new errors occurs something went wrong, abort
+        if (cbor_err.err != CN_CBOR_NO_ERROR)
+            return EDHOC_ERR_CBOR_DECODING;
+
+        msg3 = &msg3[rSize];
+        msg3_len = msg3_len - rSize;
+        field += 1;
+    }
+
+    cbor[field] = final_cbor;
+
+    // if true, this means there was no C_R in data_3
+    if (field != M3_FINAL - 1) {
+        cbor[M3_CIPHERTEXT] = cbor[M3_C_R];
+        cbor[M3_C_R] = NULL;
+    }
+
+    if(cbor[M3_C_R] != NULL){
+        if (cbor[M3_C_R]->type == CN_CBOR_BYTES && cbor[M3_C_R]->length != 0) {
+
+            if (cbor[M3_C_R]->length <= EDHOC_MAX_CID_LEN) {
+                // TODO: C_R was already set by the responder, so now we have to fetch the context ...
+            } else {
+                return EDHOC_ERR_BUFFER_OVERFLOW;
+            }
+
+        } else if (cbor[M3_C_R]->type == CN_CBOR_BYTES && cbor[M3_C_R]->length == 0) {
+            // TODO: C_R was already set by the responder, so now we have to fetch the context ...
+        } else if (cbor[M3_C_R]->type == CN_CBOR_INT || cbor[M3_C_R]->type == CN_CBOR_UINT) {
+            // TODO: C_R was already set by the responder, so now we have to fetch the context ...
+        } else {
+            return EDHOC_ERR_CBOR_DECODING;
+        }
+    }
+
+    if (cbor[M3_CIPHERTEXT]->type == CN_CBOR_BYTES && cbor[M3_CIPHERTEXT]->length > 0) {
+        if (cbor[M3_CIPHERTEXT]->length <= EDHOC_MAX_PAYLOAD_LEN) {
+            memcpy(ctx->ct_or_pld_3, cbor[M3_CIPHERTEXT]->v.bytes, cbor[M3_CIPHERTEXT]->length);
+            ctx->ct_or_pld_3_len = cbor[M3_CIPHERTEXT]->length;
+        } else {
+            return EDHOC_ERR_BUFFER_OVERFLOW;
+        }
+    } else {
+        return EDHOC_ERR_CBOR_DECODING;
     }
 
     return EDHOC_SUCCESS;
@@ -523,6 +601,37 @@ ssize_t edhoc_msg3_encode(const uint8_t *data3,
 
     exit:
     return size + data3_len;
+}
+
+int edhoc_p3ae_decode(uint8_t *p3ae, size_t p3ae_len){
+    cn_cbor *final_cbor;
+    size_t rSize, field;
+    cn_cbor_errback cbor_err;
+    cn_cbor *cbor[P3AE_FINAL] = {NULL};
+
+    field = 0;
+
+    // iterate over the CBOR sequence until all elements are decoded
+    while ((final_cbor = cn_cbor_decode(p3ae, p3ae_len, &cbor_err)) == NULL) {
+        rSize = cbor_err.pos;
+
+        // reset the error
+        memset(&cbor_err, 0, sizeof(cbor_err));
+        cbor[field] = cn_cbor_decode(p3ae, rSize, &cbor_err);
+
+        // if a new errors occurs something went wrong, abort
+        if (cbor_err.err != CN_CBOR_NO_ERROR)
+            return EDHOC_ERR_CBOR_DECODING;
+
+        p3ae = &p3ae[rSize];
+        p3ae_len = p3ae_len - rSize;
+        field += 1;
+    }
+
+    cbor[field] = final_cbor;
+
+    // TODO: verify signature
+    return EDHOC_SUCCESS;
 }
 
 int edhoc_p2e_decode(uint8_t *p2e, size_t p2e_len) {

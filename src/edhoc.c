@@ -688,4 +688,150 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx,
     return ret;
 }
 
+int edhoc_init_finalize(edhoc_ctx_t *ctx) {
+    return EDHOC_SUCCESS;
+}
+
+int edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3_buf, size_t msg3_len) {
+    int ret;
+    cose_algo_t aead;
+    ssize_t size, written, data3_len, a3ae_len, key_len, iv_len, tag_len;
+    uint8_t cbor_enc_buf[EDHOC_MAX_PAYLOAD_LEN + 2], k3m_or_k3ae_buf[EDHOC_MAX_K23M_LEN],
+            iv3m_or_iv3ae_buf[EDHOC_MAX_IV23M_LEN], a_3ae[EDHOC_MAX_A3AE_LEN], k2e_buf[ctx->ct_or_pld_2_len];
+
+#if defined(MBEDTLS)
+    mbedtls_sha256_context transcript_ctx;
+#elif defined(WOLFSSL)
+    wc_Sha256 transcript_ctx;
+#else
+#error "No cryptographic backend selected"
+#endif
+
+    if ((aead = edhoc_aead_from_suite(*ctx->session.selected_suite)) == COSE_ALGO_NONE)
+        return EDHOC_ERR_INVALID_CIPHERSUITE;
+
+    if ((key_len = cose_key_len_from_alg(aead)) < EDHOC_SUCCESS)
+        return EDHOC_ERR_INVALID_CIPHERSUITE;
+
+    if ((iv_len = cose_iv_len_from_alg(aead)) < EDHOC_SUCCESS)
+        return EDHOC_ERR_INVALID_CIPHERSUITE;
+
+    if ((tag_len = cose_tag_len_from_alg(aead)) < 0)
+        return EDHOC_ERR_INVALID_CIPHERSUITE;
+
+    // decode message 1
+    EDHOC_CHECK_RET(edhoc_msg3_decode(ctx, msg3_buf, msg3_len));
+
+    // compute prk_4x3m
+    EDHOC_CHECK_RET(crypt_compute_prk4x3m(ctx->conf->role, *ctx->method, ctx->secret, ctx->prk_3e2m, ctx->prk_4x3m));
+
+    // compute transcript hash 3
+    if ((ret = crypt_hash_init(&transcript_ctx)) != EDHOC_SUCCESS) {
+        goto exit;
+    }
+
+    // update transcript with th_2
+    size = 0;
+    CBOR_CHECK_RET(cbor_bytes_encode(ctx->th_2,
+                                     COSE_DIGEST_LEN,
+                                     cbor_enc_buf,
+                                     size,
+                                     sizeof(cbor_enc_buf)));
+    if ((ret = crypt_hash_update(&transcript_ctx, cbor_enc_buf, size)) != EDHOC_SUCCESS) {
+        goto exit;
+    }
+
+    // update transcript with ciphertext_2
+    size = 0;
+    CBOR_CHECK_RET(cbor_bytes_encode(ctx->ct_or_pld_2,
+                                     ctx->ct_or_pld_2_len,
+                                     cbor_enc_buf,
+                                     size,
+                                     sizeof(cbor_enc_buf)));
+
+    if ((ret = crypt_hash_update(&transcript_ctx, cbor_enc_buf, size)) != EDHOC_SUCCESS) {
+        goto exit;
+    }
+
+    if ((data3_len = edhoc_data3_encode(ctx->correlation,
+                                        ctx->session.cidr,
+                                        ctx->session.cidr_len,
+                                        cbor_enc_buf,
+                                        sizeof(cbor_enc_buf))) < EDHOC_SUCCESS) {
+        ret = data3_len;
+        goto exit;
+    }
+
+    // update transcript with data 3
+    if ((ret = crypt_hash_update(&transcript_ctx, cbor_enc_buf, data3_len)) != EDHOC_SUCCESS) {
+        goto exit;
+    }
+
+    // store th_3 in the EDHOC context
+    if ((ret = crypt_hash_finish(&transcript_ctx, ctx->th_3)) != EDHOC_SUCCESS) {
+        goto exit;
+    }
+
+    if ((a3ae_len = create_a3ae(ctx->th_3, a_3ae, EDHOC_MAX_A3AE_LEN)) < EDHOC_SUCCESS) {
+        ret = a3ae_len;
+        goto exit;
+    }
+
+    // before decryption of ciphertext_3, compute TH_4
+    if ((ret = crypt_hash_init(&transcript_ctx)) != EDHOC_SUCCESS) {
+        goto exit;
+    }
+
+    // update transcript with th_3
+    size = 0;
+    CBOR_CHECK_RET(cbor_bytes_encode(ctx->th_3,
+                                     COSE_DIGEST_LEN,
+                                     cbor_enc_buf,
+                                     size,
+                                     sizeof(cbor_enc_buf)));
+    if ((ret = crypt_hash_update(&transcript_ctx, cbor_enc_buf, size)) != EDHOC_SUCCESS) {
+        goto exit;
+    }
+
+    // update transcript with ciphertext_3
+    size = 0;
+    CBOR_CHECK_RET(cbor_bytes_encode(ctx->ct_or_pld_3,
+                                     ctx->ct_or_pld_3_len,
+                                     cbor_enc_buf,
+                                     size,
+                                     sizeof(cbor_enc_buf)));
+
+    if ((ret = crypt_hash_update(&transcript_ctx, cbor_enc_buf, size)) != EDHOC_SUCCESS) {
+        goto exit;
+    }
+
+    // store th_4 in the EDHOC context
+    if ((ret = crypt_hash_finish(&transcript_ctx, ctx->th_4)) != EDHOC_SUCCESS) {
+        goto exit;
+    }
+
+    EDHOC_CHECK_RET(crypt_edhoc_kdf(aead, ctx->prk_4x3m, ctx->th_3, "K_3ae", k3m_or_k3ae_buf, key_len));
+    EDHOC_CHECK_RET(crypt_edhoc_kdf(aead, ctx->prk_4x3m, ctx->th_3, "IV_3ae", iv3m_or_iv3ae_buf, iv_len));
+
+    if ((ret = crypt_decrypt_aead(aead,
+                                  k3m_or_k3ae_buf,
+                                  iv3m_or_iv3ae_buf,
+                                  a_3ae,
+                                  a3ae_len,
+                                  ctx->ct_or_pld_3,
+                                  ctx->ct_or_pld_3,
+                                  ctx->ct_or_pld_3_len - tag_len,
+                                  &ctx->ct_or_pld_3[ctx->ct_or_pld_3_len - tag_len])) != EDHOC_SUCCESS) {
+        goto exit;
+    }
+
+    if ((ret = edhoc_p3ae_decode(ctx->ct_or_pld_3, ctx->ct_or_pld_3_len - tag_len)) != EDHOC_SUCCESS)
+        goto exit;
+
+
+    ret = EDHOC_SUCCESS;
+    exit:
+    return ret;
+}
+
 

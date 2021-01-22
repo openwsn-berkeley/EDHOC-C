@@ -36,9 +36,9 @@ ssize_t edhoc_msg1_encode(corr_t corr,
 /**
  * @brief Decoding routine for EDHOC message 1
  *
- * @param ctx[in]   Pointer to EDHOC context structure
- * @param msg1[in]    Pointer to buffer containing the EDHOC message 1
- * @param msg1_len[in]  Length of @p msg
+ * @param[in] ctx       Pointer to EDHOC context structure
+ * @param[in] msg1      Pointer to buffer containing the EDHOC message 1
+ * @param[in] msg1_len  Length of @p msg1
  *
  * @return On success, EDHOC_SUCCESS
  * @return On failure a negative return code (EDHOC_ERR_CBOR_DECODING, EDHOC_ERR_BUFFER_OVERFLOW,
@@ -46,6 +46,17 @@ ssize_t edhoc_msg1_encode(corr_t corr,
  */
 int edhoc_msg1_decode(edhoc_ctx_t *ctx, const uint8_t *msg1, size_t msg1_len);
 
+/**
+ * @brief Decoding routine for EDHOC message 3
+ *
+ * @param[in] ctx       Pointer to the EDHOC context structure
+ * @param[in] msg3      Buffer containing the EDHOC message 3
+ * @param[in] msg3_len  Length of @p msg3
+ *
+ * @return On success returns EDHOC_SUCCESS
+ * @return On failure a negative return code
+ */
+int edhoc_msg3_decode(edhoc_ctx_t *ctx, const uint8_t *msg3, size_t msg3_len);
 
 /**
  * @brief Decoding routine for EDHOC message 2
@@ -184,6 +195,17 @@ ssize_t edhoc_msg3_encode(const uint8_t* data3,
  * @return On failure a negative value (i.e., EDHOC_ERR_CRYPTO, EDHOC_ERR_CBOR_DECODING, ...)
  */
 int edhoc_p2e_decode(uint8_t* p2e, size_t p2e_len);
+
+/**
+ * @brief Decodes P_3ae and verifies the included signature
+ *
+ * @param[in] p3ae       Plaintext included in EDHOC message 3
+ * @param[in] p3ae_len   Length of @p p3ae
+ *
+ * @return On success returns EDHOC_SUCCESS
+ * @return On failure a negative value (i.e., EDHOC_ERR_CRYPTO, EDHOC_ERR_CBOR_DECODING, ...)
+ */
+int edhoc_p3ae_decode(uint8_t *p3ae, size_t p3ae_len);
 
 /**
  * @brief Encode the EDHOC data 3 structure
