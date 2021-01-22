@@ -23,6 +23,7 @@ set(includedir ${CMAKE_INSTALL_PREFIX}/include)
 ###############################################################################
 
 option(EDHOC_C_BUILD_TESTS "build tests" ON)
+option(EDHOC_C_BUILD_EXAMPLES "build examples" ON)
 option(BUILD_SHARED_LIBS "Build Shared Libraries" OFF)
 
 if (BUILD_SHARED_LIBS)
@@ -66,11 +67,20 @@ if (EDHOC_C_BUILD_TESTS)
 endif ()
 
 ###############################################################################
+# ADD EXAMPLES
+###############################################################################
+
+if (EDHOC_C_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif ()
+
+###############################################################################
 # PRINT CONFIG
 ###############################################################################
 
 message(STATUS "EDHOC_BUILD_TYPE:...............${CMAKE_BUILD_TYPE}")
 message(STATUS "EDHOC_BUILD_TESTS:..............${EDHOC_C_BUILD_TESTS}")
+message(STATUS "EDHOC_BUILD_EXAMPLES:...........${EDHOC_C_BUILD_EXAMPLES}")
 message(STATUS "EDHOC_SHARED_LIBS:..............${BUILD_SHARED_LIBS}")
 message(STATUS "EDHOC_CRYPTO_BACKEND:...........${EDHOC_CRYPTO_BACKEND}")
 message(STATUS "EDHOC_CBOR_BACKEND:.............${EDHOC_CBOR_BACKEND}")
