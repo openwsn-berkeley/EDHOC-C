@@ -112,35 +112,29 @@ void close_test(test_context_ptr ctx) {
     free(ctx);
 }
 
-static int load_json_array(cJSON *array, uint8_t *buf, size_t blen) {
-    int len;
-    int counter;
+static size_t load_json_hexString(cJSON *string, uint8_t *buf, size_t blen) {
+    const char *hex_string;
+    const char *pos;
+    size_t i, hex_len;
 
-    cJSON *iterator;
-
-    if (!cJSON_IsArray(array)) {
+    if (!cJSON_IsString(string)) {
         return FAILURE;
     }
 
-    len = cJSON_GetArraySize(array);
+    hex_string = cJSON_GetStringValue(string);
+    hex_len = strlen(hex_string) / 2;
+    pos = hex_string;
 
-    if (len > blen) {
+    if (hex_len > blen || strlen(hex_string) % 2 != 0) {
         return FAILURE;
     }
 
-    counter = 0;
-    cJSON_ArrayForEach(iterator, array) {
-        if (cJSON_IsNumber(iterator)) {
-            buf[counter] = iterator->valueint;
-            counter++;
-        } else {
-            return FAILURE;
-        }
+    for (i = 0; i <= hex_len; i++) {
+        sscanf(pos, "%2hhx", &buf[i]);
+        pos += 2;
     }
 
-    assert(counter == len);
-
-    return len;
+    return hex_len;
 }
 
 int load_from_json_MESSAGE1(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -150,27 +144,27 @@ int load_from_json_MESSAGE1(test_context_ptr ctx, uint8_t *buf, size_t blen) {
         return FAILURE;
     }
 
-    return load_json_array(message1, buf, blen);
+    return load_json_hexString(message1, buf, blen);
 }
 
-int load_from_json_SIGNATURE(test_context_ptr ctx, uint8_t *buf, size_t blen){
+int load_from_json_SIGNATURE(test_context_ptr ctx, uint8_t *buf, size_t blen) {
     cJSON *signature;
 
     if ((signature = cJSON_GetObjectItemCaseSensitive(ctx->shared, "signature_2")) == NULL) {
         return FAILURE;
     }
 
-    return load_json_array(signature, buf, blen);
+    return load_json_hexString(signature, buf, blen);
 }
 
-int load_from_json_M2(test_context_ptr ctx, uint8_t *buf, size_t blen){
+int load_from_json_M2(test_context_ptr ctx, uint8_t *buf, size_t blen) {
     cJSON *m_2;
 
     if ((m_2 = cJSON_GetObjectItemCaseSensitive(ctx->shared, "m_2")) == NULL) {
         return FAILURE;
     }
 
-    return load_json_array(m_2, buf, blen);
+    return load_json_hexString(m_2, buf, blen);
 }
 
 int load_from_json_MESSAGE2(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -180,7 +174,7 @@ int load_from_json_MESSAGE2(test_context_ptr ctx, uint8_t *buf, size_t blen) {
         return FAILURE;
     }
 
-    return load_json_array(message2, buf, blen);
+    return load_json_hexString(message2, buf, blen);
 }
 
 int load_from_json_MESSAGE3(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -190,7 +184,7 @@ int load_from_json_MESSAGE3(test_context_ptr ctx, uint8_t *buf, size_t blen) {
         return FAILURE;
     }
 
-    return load_json_array(message3, buf, blen);
+    return load_json_hexString(message3, buf, blen);
 }
 
 int load_from_json_DATA2(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -200,7 +194,7 @@ int load_from_json_DATA2(test_context_ptr ctx, uint8_t *buf, size_t blen) {
         return FAILURE;
     }
 
-    return load_json_array(data_2, buf, blen);
+    return load_json_hexString(data_2, buf, blen);
 }
 
 int load_from_json_INIT_SALT(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -210,7 +204,7 @@ int load_from_json_INIT_SALT(test_context_ptr ctx, uint8_t *buf, size_t blen) {
         return FAILURE;
     }
 
-    return load_json_array(salt, buf, blen);
+    return load_json_hexString(salt, buf, blen);
 }
 
 int load_from_json_RESP_SALT(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -220,7 +214,7 @@ int load_from_json_RESP_SALT(test_context_ptr ctx, uint8_t *buf, size_t blen) {
         return FAILURE;
     }
 
-    return load_json_array(salt, buf, blen);
+    return load_json_hexString(salt, buf, blen);
 }
 
 int load_from_json_PRK2E(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -230,7 +224,7 @@ int load_from_json_PRK2E(test_context_ptr ctx, uint8_t *buf, size_t blen) {
         return FAILURE;
     }
 
-    return load_json_array(prk2e, buf, blen);
+    return load_json_hexString(prk2e, buf, blen);
 }
 
 int load_from_json_PRK3E2M(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -240,7 +234,7 @@ int load_from_json_PRK3E2M(test_context_ptr ctx, uint8_t *buf, size_t blen) {
         return FAILURE;
     }
 
-    return load_json_array(prk3e2m, buf, blen);
+    return load_json_hexString(prk3e2m, buf, blen);
 }
 
 int load_from_json_K2M(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -250,77 +244,77 @@ int load_from_json_K2M(test_context_ptr ctx, uint8_t *buf, size_t blen) {
         return FAILURE;
     }
 
-    return load_json_array(k2m, buf, blen);
+    return load_json_hexString(k2m, buf, blen);
 }
 
-int load_from_json_INFO_K2M(test_context_ptr ctx, uint8_t *buf, size_t blen){
+int load_from_json_INFO_K2M(test_context_ptr ctx, uint8_t *buf, size_t blen) {
     cJSON *info_k2m;
 
     if ((info_k2m = cJSON_GetObjectItemCaseSensitive(ctx->shared, "info_k2m")) == NULL) {
         return FAILURE;
     }
 
-    return load_json_array(info_k2m, buf, blen);
+    return load_json_hexString(info_k2m, buf, blen);
 }
 
-int load_from_json_IV2M(test_context_ptr ctx, uint8_t *buf, size_t blen){
+int load_from_json_IV2M(test_context_ptr ctx, uint8_t *buf, size_t blen) {
     cJSON *iv2m;
 
     if ((iv2m = cJSON_GetObjectItemCaseSensitive(ctx->shared, "iv2m")) == NULL) {
         return FAILURE;
     }
 
-    return load_json_array(iv2m, buf, blen);
+    return load_json_hexString(iv2m, buf, blen);
 }
 
-int load_from_json_RESP_CRED(test_context_ptr ctx, uint8_t *buf, size_t blen){
+int load_from_json_RESP_CRED(test_context_ptr ctx, uint8_t *buf, size_t blen) {
     cJSON *cred;
 
     if ((cred = cJSON_GetObjectItemCaseSensitive(ctx->responder, "cred")) == NULL) {
         return FAILURE;
     }
 
-    return load_json_array(cred, buf, blen);
+    return load_json_hexString(cred, buf, blen);
 }
 
-int load_from_json_INIT_CRED(test_context_ptr ctx, uint8_t *buf, size_t blen){
+int load_from_json_INIT_CRED(test_context_ptr ctx, uint8_t *buf, size_t blen) {
     cJSON *cred;
 
     if ((cred = cJSON_GetObjectItemCaseSensitive(ctx->initiator, "cred")) == NULL) {
         return FAILURE;
     }
 
-    return load_json_array(cred, buf, blen);
+    return load_json_hexString(cred, buf, blen);
 }
 
-int load_from_json_RESP_CRED_ID(test_context_ptr ctx, uint8_t *buf, size_t blen){
+int load_from_json_RESP_CRED_ID(test_context_ptr ctx, uint8_t *buf, size_t blen) {
     cJSON *cred_id;
 
     if ((cred_id = cJSON_GetObjectItemCaseSensitive(ctx->responder, "cred_id")) == NULL) {
         return FAILURE;
     }
 
-    return load_json_array(cred_id, buf, blen);
+    return load_json_hexString(cred_id, buf, blen);
 }
 
-int load_from_json_INIT_CRED_ID(test_context_ptr ctx, uint8_t *buf, size_t blen){
+int load_from_json_INIT_CRED_ID(test_context_ptr ctx, uint8_t *buf, size_t blen) {
     cJSON *cred_id;
 
     if ((cred_id = cJSON_GetObjectItemCaseSensitive(ctx->initiator, "cred_id")) == NULL) {
         return FAILURE;
     }
 
-    return load_json_array(cred_id, buf, blen);
+    return load_json_hexString(cred_id, buf, blen);
 }
 
-int load_from_json_INFO_IV2M(test_context_ptr ctx, uint8_t *buf, size_t blen){
+int load_from_json_INFO_IV2M(test_context_ptr ctx, uint8_t *buf, size_t blen) {
     cJSON *info_iv2m;
 
     if ((info_iv2m = cJSON_GetObjectItemCaseSensitive(ctx->shared, "info_iv2m")) == NULL) {
         return FAILURE;
     }
 
-    return load_json_array(info_iv2m, buf, blen);
+    return load_json_hexString(info_iv2m, buf, blen);
 }
 
 int load_from_json_TH2(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -330,7 +324,7 @@ int load_from_json_TH2(test_context_ptr ctx, uint8_t *buf, size_t blen) {
         return FAILURE;
     }
 
-    return load_json_array(th_2, buf, blen);
+    return load_json_hexString(th_2, buf, blen);
 }
 
 int load_from_json_K2E(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -340,7 +334,7 @@ int load_from_json_K2E(test_context_ptr ctx, uint8_t *buf, size_t blen) {
         return FAILURE;
     }
 
-    return load_json_array(k_2e, buf, blen);
+    return load_json_hexString(k_2e, buf, blen);
 }
 
 int load_from_json_P2E(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -350,7 +344,7 @@ int load_from_json_P2E(test_context_ptr ctx, uint8_t *buf, size_t blen) {
         return FAILURE;
     }
 
-    return load_json_array(p_2e, buf, blen);
+    return load_json_hexString(p_2e, buf, blen);
 }
 
 int load_from_json_CIPHERTEXT2(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -360,7 +354,7 @@ int load_from_json_CIPHERTEXT2(test_context_ptr ctx, uint8_t *buf, size_t blen) 
         return FAILURE;
     }
 
-    return load_json_array(ciphertext_2, buf, blen);
+    return load_json_hexString(ciphertext_2, buf, blen);
 }
 
 int load_from_json_CIPHERTEXT3(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -370,7 +364,7 @@ int load_from_json_CIPHERTEXT3(test_context_ptr ctx, uint8_t *buf, size_t blen) 
         return FAILURE;
     }
 
-    return load_json_array(ciphertext_3, buf, blen);
+    return load_json_hexString(ciphertext_3, buf, blen);
 }
 
 int load_from_json_INIT_EPHKEY(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -380,7 +374,7 @@ int load_from_json_INIT_EPHKEY(test_context_ptr ctx, uint8_t *buf, size_t blen) 
         return FAILURE;
     }
 
-    return load_json_array(eph_key, buf, blen);
+    return load_json_hexString(eph_key, buf, blen);
 }
 
 int load_from_json_INIT_AUTHKEY(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -390,7 +384,7 @@ int load_from_json_INIT_AUTHKEY(test_context_ptr ctx, uint8_t *buf, size_t blen)
         return FAILURE;
     }
 
-    return load_json_array(auth_key, buf, blen);
+    return load_json_hexString(auth_key, buf, blen);
 }
 
 int load_from_json_RESP_AUTHKEY(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -400,7 +394,7 @@ int load_from_json_RESP_AUTHKEY(test_context_ptr ctx, uint8_t *buf, size_t blen)
         return FAILURE;
     }
 
-    return load_json_array(auth_key, buf, blen);
+    return load_json_hexString(auth_key, buf, blen);
 }
 
 int load_from_json_RESP_EPHKEY(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -410,7 +404,7 @@ int load_from_json_RESP_EPHKEY(test_context_ptr ctx, uint8_t *buf, size_t blen) 
         return FAILURE;
     }
 
-    return load_json_array(eph_key, buf, blen);
+    return load_json_hexString(eph_key, buf, blen);
 }
 
 int load_from_json_DH_SECRET(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -420,7 +414,7 @@ int load_from_json_DH_SECRET(test_context_ptr ctx, uint8_t *buf, size_t blen) {
         return FAILURE;
     }
 
-    return load_json_array(secret, buf, blen);
+    return load_json_hexString(secret, buf, blen);
 }
 
 int load_from_json_G_X(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -430,7 +424,7 @@ int load_from_json_G_X(test_context_ptr ctx, uint8_t *buf, size_t blen) {
         return FAILURE;
     }
 
-    return load_json_array(g_x, buf, blen);
+    return load_json_hexString(g_x, buf, blen);
 }
 
 int load_from_json_G_Y(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -440,7 +434,7 @@ int load_from_json_G_Y(test_context_ptr ctx, uint8_t *buf, size_t blen) {
         return FAILURE;
     }
 
-    return load_json_array(g_y, buf, blen);
+    return load_json_hexString(g_y, buf, blen);
 }
 
 int load_from_json_CONN_IDI(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -450,7 +444,7 @@ int load_from_json_CONN_IDI(test_context_ptr ctx, uint8_t *buf, size_t blen) {
         return FAILURE;
     }
 
-    return load_json_array(conn_id, buf, blen);
+    return load_json_hexString(conn_id, buf, blen);
 }
 
 int load_from_json_CONN_IDR(test_context_ptr ctx, uint8_t *buf, size_t blen) {
@@ -460,7 +454,7 @@ int load_from_json_CONN_IDR(test_context_ptr ctx, uint8_t *buf, size_t blen) {
         return FAILURE;
     }
 
-    return load_json_array(conn_id, buf, blen);
+    return load_json_hexString(conn_id, buf, blen);
 }
 
 int load_from_json_CORR(test_context_ptr ctx, int *value) {
