@@ -7,7 +7,7 @@
 
 // #define IPV6
 
-int counter = 0;
+int counter = 1;
 
 const uint8_t auth_key[] = {0xa4, 0x01, 0x01, 0x20, 0x06, 0x23, 0x58, 0x20, 0xdf, 0x69, 0x27, 0x4d, 0x71, 0x32, 0x96,
                             0xe2, 0x46, 0x30, 0x63, 0x65, 0x37, 0x2b, 0x46, 0x83, 0xce, 0xd5, 0x38, 0x1b, 0xfc, 0xad,
@@ -34,17 +34,10 @@ const uint8_t eph_key[] = {0xa5, 0x01, 0x01, 0x20, 0x04, 0x21, 0x58, 0x20, 0x71,
 
 void print_bstr(const uint8_t *bstr, size_t bstr_len) {
     for (int i = 0; i < bstr_len; i++) {
-        if ((i + 1) % 10 == 0) {
-            if (bstr[i] <= 0x0f)
-                printf("0x0%x \n", bstr[i]);
-            else
-                printf("0x%x \n", bstr[i]);
-        } else {
-            if (bstr[i] <= 0x0f)
-                printf("0x0%x ", bstr[i]);
-            else
-                printf("0x%x ", bstr[i]);
-        }
+        if ((i + 1) % 10 == 0)
+            printf("0x%02x \n", bstr[i]);
+        else
+            printf("0x%02x ", bstr[i]);
     }
     printf("\n");
 }
@@ -60,17 +53,14 @@ int edhoc_handshake(int sockfd) {
     edhoc_ctx_init(&ctx);
     edhoc_conf_init(&conf);
 
-    counter++;
-    printf("[%d] Set up EDHOC configuration...\n", counter);
+    printf("[%d] Set up EDHOC configuration...\n", counter++);
     if (edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, NULL, NULL, NULL, NULL, NULL, NULL) != 0)
         return -1;
 
-    counter++;
-    printf("[%d] Load private authentication key...\n", counter);
+    printf("[%d] Load private authentication key...\n", counter++);
     edhoc_conf_load_authkey(&conf, auth_key, sizeof(auth_key));
 
-    counter++;
-    printf("[%d] Load CBOR certificate...\n", counter);
+    printf("[%d] Load CBOR certificate...\n", counter++);
     edhoc_conf_load_cborcert(&conf, cbor_cert, sizeof(cbor_cert));
 
     cred_id_len = cose_x5t_attribute(COSE_ALGO_SHA256_64,
@@ -82,8 +72,7 @@ int edhoc_handshake(int sockfd) {
     if (cred_id_len < 0)
         return -1;
 
-    counter++;
-    printf("[%d] Compute and load CBOR certificate hash:\n", counter);
+    printf("[%d] Compute and load CBOR certificate hash:\n", counter++);
     print_bstr(cred_id, cred_id_len);
 
     if (edhoc_conf_load_cred_id(&conf, cred_id, cred_id_len) != 0)
@@ -101,13 +90,11 @@ int edhoc_handshake(int sockfd) {
     if ((bread = read(sockfd, incoming, sizeof(incoming))) < 0)
         return -1;
 
-    counter++;
-    printf("[%d] Received a message (%ld):\n", counter, bread);
+    printf("[%d] Received a message (%ld):\n", counter++, bread);
     print_bstr(incoming, bread);
 
     if ((len = edhoc_create_msg2(&ctx, incoming, bread, outgoing, sizeof(outgoing))) > 0) {
-        counter++;
-        printf("[%d] Sending message (%ld bytes):\n", counter, len);
+        printf("[%d] Sending message (%ld bytes):\n", counter++, len);
         print_bstr(outgoing, len);
 
         written = write(sockfd, outgoing, len);
@@ -121,14 +108,12 @@ int edhoc_handshake(int sockfd) {
     if ((bread = read(sockfd, incoming, sizeof(incoming))) < 0)
         return -1;
 
-    counter++;
-    printf("[%d] Received a message (%ld bytes):\n", counter, bread);
+    printf("[%d] Received a message (%ld bytes):\n", counter++, bread);
     print_bstr(incoming, bread);
 
     edhoc_resp_finalize(&ctx, incoming, bread);
 
-    counter++;
-    printf("[%d] Handshake successfully completed...\n", counter);
+    printf("[%d] Handshake successfully completed...\n", counter++);
 
     return 0;
 }
@@ -195,8 +180,7 @@ int main(void) {
         goto exit;
     }
 
-    counter++;
-    printf("[%d] Start listening on port: %d...\n", counter, PORT);
+    printf("[%d] Start listening on port: %d...\n", counter++, PORT);
 
     client_addr_len = sizeof(cli);
     connfd = accept(sockfd, (struct sockaddr *) &cli, (socklen_t *) &client_addr_len);
@@ -206,13 +190,11 @@ int main(void) {
         goto exit;
     }
 
-    counter++;
-    printf("[%d] Accepting client...\n", counter);
+    printf("[%d] Accepting client...\n", counter++);
 
     edhoc_handshake(connfd);
 
-    counter++;
-    printf("[%d] Closing socket...\n", counter);
+    printf("[%d] Closing socket...\n", counter++);
     close(sockfd);
 
     ret = 0;
