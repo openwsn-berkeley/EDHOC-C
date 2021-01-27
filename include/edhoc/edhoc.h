@@ -131,9 +131,9 @@ struct edhoc_conf {
 
 struct edhoc_session {
     uint8_t cidi[EDHOC_MAX_CID_LEN];
-    uint8_t cidi_len;
+    size_t cidi_len;
     uint8_t cidr[EDHOC_MAX_CID_LEN];
-    uint8_t cidr_len;
+    size_t cidr_len;
     cipher_suite_t *selected_suite;
 };
 
