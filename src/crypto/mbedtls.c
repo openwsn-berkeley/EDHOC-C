@@ -333,7 +333,7 @@ int crypt_hash_update(void *digest_ctx, const uint8_t *in, size_t ilen) {
 
     ret = EDHOC_ERR_CRYPTO;
 
-    EDHOC_CHECK_RET(mbedtls_sha256_update_ret((mbedtls_sha256_context *) digest_ctx, in, ilen));
+    EDHOC_CHECK_SUCCESS(mbedtls_sha256_update_ret((mbedtls_sha256_context *) digest_ctx, in, ilen));
 
     ret = EDHOC_SUCCESS;
     exit:
@@ -345,7 +345,7 @@ int crypt_hash_finish(void *digest_ctx, uint8_t *output) {
 
     ret = EDHOC_ERR_CRYPTO;
 
-    EDHOC_CHECK_RET(mbedtls_sha256_finish_ret((mbedtls_sha256_context *) digest_ctx, output));
+    EDHOC_CHECK_SUCCESS(mbedtls_sha256_finish_ret((mbedtls_sha256_context *) digest_ctx, output));
 
     ret = EDHOC_SUCCESS;
     exit:

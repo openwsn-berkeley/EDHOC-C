@@ -59,24 +59,31 @@
 #define EDHOC_ERR_INVALID_CORR          (-5)
 #define EDHOC_ERR_INVALID_CIPHERSUITE   (-6)
 #define EDHOC_ERR_AEAD_UNAVAILABLE      (-7)
-#define EDHOC_ERR_CURVE_UNAVAILABLE     (-8)
-#define EDHOC_ERR_INVALID_CBOR_KEY      (-9)
+#define EDHOC_ERR_AEAD_UNKNOWN          (-8)
+#define EDHOC_ERR_CURVE_UNAVAILABLE     (-9)
+#define EDHOC_ERR_INVALID_CBOR_KEY      (-10)
 
-#define EDHOC_ERR_KEY_GENERATION        (-10)
+#define EDHOC_ERR_KEY_GENERATION        (-11)
 
-#define EDHOC_ERR_BUFFER_OVERFLOW       (-11)
+#define EDHOC_ERR_BUFFER_OVERFLOW       (-12)
 
-#define EDHOC_ERR_CBOR_ENCODING         (-12)
-#define EDHOC_ERR_CBOR_DECODING         (-13)
+#define EDHOC_ERR_CBOR_ENCODING         (-13)
+#define EDHOC_ERR_CBOR_DECODING         (-14)
 
 
-#define EDHOC_CHECK_RET(f)                                      \
+#define EDHOC_CHECK_SUCCESS(f)                                  \
 do{                                                             \
     if((ret = (f)) != EDHOC_SUCCESS){                           \
         goto exit;                                              \
     }                                                           \
 } while(0)
 
+#define EDHOC_CHECK_SIZE(f)                                     \
+do{                                                             \
+    if((ret = (f)) < 0){                                        \
+        goto exit;                                              \
+    }                                                           \
+} while(0)
 
 /* Callback functions */
 typedef int (*rng_cb_t)(void *, unsigned char *, size_t);
