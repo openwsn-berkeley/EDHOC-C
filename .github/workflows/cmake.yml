@@ -23,6 +23,10 @@ jobs:
 
     - name: Install cJSON dependancy
       run: cd .. && git clone https://github.com/DaveGamble/cJSON.git && cd cJSON && mkdir -p build && cd build && cmake .. -DENABLE_CJSON_TEST=OFF && sudo cmake --build . --target install && cd ../../EDHOC-C
+
+    - name: Install NanoCBOR dependancy
+      run: cd .. && git clone https://github.com/bergzand/NanoCBOR.git && cd NanoCBOR && make && sudo mv bin/nanocbor.so /usr/local/lib/libnanocbor.so && sudo mv include/nanocbor /usr/local/include && cd ../EDHOC-C
+
     - uses: actions/checkout@v2
 
     - name: Reload libraries
