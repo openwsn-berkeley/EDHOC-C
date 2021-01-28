@@ -72,21 +72,21 @@ int test_ecdh_computation(cose_curve_t crv, const uint8_t *priv_key, size_t priv
     mbedtls_entropy_init(&entropy);
     mbedtls_ctr_drbg_init(&ctr_drbg);
 
-    EDHOC_CHECK_RET(mbedtls_ctr_drbg_seed(&ctr_drbg,
+    EDHOC_CHECK_SUCCESS(mbedtls_ctr_drbg_seed(&ctr_drbg,
                                           mbedtls_entropy_func,
                                           &entropy,
                                           (const unsigned char *) pers,
                                           strlen(pers)));
 
 
-    EDHOC_CHECK_RET(edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, mbedtls_entropy_func, &entropy, NULL));
+    EDHOC_CHECK_SUCCESS(edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, mbedtls_entropy_func, &entropy, NULL));
 #elif defined(WOLFSSL)
     RNG rng;
 
     if (wc_InitRng(&rng) != EDHOC_SUCCESS)
         exit(-1);
 
-    EDHOC_CHECK_RET(edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, NULL, &rng, NULL, NULL, NULL, NULL));
+    EDHOC_CHECK_SUCCESS(edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, NULL, &rng, NULL, NULL, NULL, NULL));
 #endif
 
     // loading the configuration
@@ -132,13 +132,13 @@ int test_key_generation(void) {
     mbedtls_entropy_init(&entropy);
     mbedtls_ctr_drbg_init(&ctr_drbg);
 
-    EDHOC_CHECK_RET(mbedtls_ctr_drbg_seed(&ctr_drbg,
+    EDHOC_CHECK_SUCCESS(mbedtls_ctr_drbg_seed(&ctr_drbg,
                                           mbedtls_entropy_func,
                                           &entropy,
                                           (const unsigned char *) pers,
                                           strlen(pers)));
 
-    EDHOC_CHECK_RET(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, mbedtls_entropy_func, &entropy, NULL));
+    EDHOC_CHECK_SUCCESS(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, mbedtls_entropy_func, &entropy, NULL));
 #endif
 
     // loading the configuration

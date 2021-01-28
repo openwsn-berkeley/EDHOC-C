@@ -35,14 +35,14 @@ int initiator_create_message1(
     mbedtls_entropy_init(&entropy);
     mbedtls_ctr_drbg_init(&ctr_drbg);
 
-    EDHOC_CHECK_RET(mbedtls_ctr_drbg_seed(&ctr_drbg,
+    EDHOC_CHECK_SUCCESS(mbedtls_ctr_drbg_seed(&ctr_drbg,
                                           mbedtls_entropy_func,
                                           &entropy,
                                           (const unsigned char *) pers,
                                           strlen(pers)));
 
 
-    EDHOC_CHECK_RET(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, mbedtls_entropy_func, &entropy, NULL));
+    EDHOC_CHECK_SUCCESS(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, mbedtls_entropy_func, &entropy, NULL));
 #elif defined(WOLFSSL)
     CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, NULL, NULL, NULL, NULL, NULL, NULL), (long) 0);
 #endif
@@ -98,14 +98,14 @@ int initiator_create_message3(const uint8_t *eph_key,
     mbedtls_entropy_init(&entropy);
     mbedtls_ctr_drbg_init(&ctr_drbg);
 
-    EDHOC_CHECK_RET(mbedtls_ctr_drbg_seed(&ctr_drbg,
+    EDHOC_CHECK_SUCCESS(mbedtls_ctr_drbg_seed(&ctr_drbg,
                                           mbedtls_entropy_func,
                                           &entropy,
                                           (const unsigned char *) pers,
                                           strlen(pers)));
 
 
-    EDHOC_CHECK_RET(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, mbedtls_entropy_func, &entropy, NULL));
+    EDHOC_CHECK_SUCCESS(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, mbedtls_entropy_func, &entropy, NULL));
 #elif defined(WOLFSSL)
     CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, NULL, NULL, NULL, NULL, NULL, NULL), (long) 0);
 #endif

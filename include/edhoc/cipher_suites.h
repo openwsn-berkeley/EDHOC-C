@@ -86,6 +86,16 @@ cose_curve_t edhoc_dh_curve_from_suite(cipher_suite_t suite);
 cose_algo_t edhoc_aead_from_suite(cipher_suite_t suite);
 
 /*
+ * @brief Get the COSE Application AEAD identifier from the EDHOC cipher suite
+ *
+ * @param[in]   suite   An EDHOC cipher suite
+ *
+ * @return  On success, A COSE Application AEAD identifier used in this cipher suite.
+ * @return  On failure, COSE_ALGO_NONE
+ */
+cose_algo_t edhoc_app_aead_from_suite(cipher_suite_t suite);
+
+/*
  * @brief Get the COSE key type from the EDHOC cipher suite
  *
  * @param[in]   suite   An EDHOC cipher suite

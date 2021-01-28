@@ -11,7 +11,7 @@
 
 // #define IPV6
 
-int counter = 0;
+int counter = 1;
 
 corr_t corr = CORR_1_2;
 method_t method = EDHOC_AUTH_SIGN_SIGN;
@@ -41,17 +41,10 @@ const uint8_t auth_key[] = {0xa4, 0x01, 0x01, 0x20, 0x06, 0x23, 0x58, 0x20, 0x2f
 
 void print_bstr(const uint8_t *bstr, size_t bstr_len) {
     for (int i = 0; i < bstr_len; i++) {
-        if ((i + 1) % 10 == 0) {
-            if (bstr[i] <= 0x0f)
-                printf("0x0%x \n", bstr[i]);
-            else
-                printf("0x%x \n", bstr[i]);
-        } else {
-            if (bstr[i] <= 0x0f)
-                printf("0x0%x ", bstr[i]);
-            else
-                printf("0x%x ", bstr[i]);
-        }
+        if ((i + 1) % 10 == 0)
+            printf("0x%02x \n", bstr[i]);
+        else
+            printf("0x%02x ", bstr[i]);
     }
     printf("\n");
 }
@@ -67,17 +60,14 @@ int edhoc_handshake(int sockfd) {
     edhoc_ctx_init(&ctx);
     edhoc_conf_init(&conf);
 
-    counter++;
-    printf("[%d] Set up EDHOC configuration...\n", counter);
+    printf("[%d] Set up EDHOC configuration...\n", counter++);
     if (edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, NULL, NULL, NULL, NULL, NULL, NULL) != 0)
         return -1;
 
-    counter++;
-    printf("[%d] Load private authentication key...\n", counter);
+    printf("[%d] Load private authentication key...\n", counter++);
     edhoc_conf_load_authkey(&conf, auth_key, sizeof(auth_key));
 
-    counter++;
-    printf("[%d] Load CBOR certificate...\n", counter);
+    printf("[%d] Load CBOR certificate...\n", counter++);
     edhoc_conf_load_cborcert(&conf, cbor_cert, sizeof(cbor_cert));
 
     cred_id_len = cose_x5t_attribute(COSE_ALGO_SHA256_64,
@@ -89,8 +79,7 @@ int edhoc_handshake(int sockfd) {
     if (cred_id_len < 0)
         return -1;
 
-    counter++;
-    printf("[%d] Compute and load CBOR certificate hash:\n", counter);
+    printf("[%d] Compute and load CBOR certificate hash:\n", counter++);
     print_bstr(cred_id, cred_id_len);
 
     if (edhoc_conf_load_cred_id(&conf, cred_id, cred_id_len) != 0)
@@ -106,8 +95,7 @@ int edhoc_handshake(int sockfd) {
         return -1;
 
     if ((len = edhoc_create_msg1(&ctx, corr, method, suite, outgoing, sizeof(outgoing))) > 0) {
-        counter++;
-        printf("[%d] Sending message (%ld bytes):\n", counter, len);
+        printf("[%d] Sending message (%ld bytes):\n", counter++, len);
         print_bstr(outgoing, len);
 
         written = write(sockfd, outgoing, len);
@@ -121,13 +109,11 @@ int edhoc_handshake(int sockfd) {
     if ((bread = read(sockfd, incoming, sizeof(incoming))) < 0)
         return -1;
 
-    counter++;
-    printf("[%d] Received a message (%ld bytes):\n", counter, bread);
+    printf("[%d] Received a message (%ld bytes):\n", counter++, bread);
     print_bstr(incoming, bread);
 
     if ((len = edhoc_create_msg3(&ctx, incoming, bread, outgoing, sizeof(outgoing))) > 0) {
-        counter++;
-        printf("[%d] Sending message (%ld bytes):\n", counter, len);
+        printf("[%d] Sending message (%ld bytes):\n", counter++, len);
         print_bstr(outgoing, len);
 
         written = write(sockfd, outgoing, len);
@@ -140,18 +126,30 @@ int edhoc_handshake(int sockfd) {
 
     edhoc_init_finalize(&ctx);
 
-    counter++;
-    printf("[%d] Handshake successfully completed...\n", counter);
+    printf("[%d] Handshake successfully completed...\n", counter++);
+    printf("[%d] Transcript hash 4:\n", counter++);
+    print_bstr(ctx.th_4, COSE_DIGEST_LEN);
+
+    uint8_t oscore_secret[16];
+    uint8_t oscore_salt[8];
+
+    printf("[%d] OSCORE Master Secret:\n", counter++);
+    edhoc_exporter(&ctx, "OSCORE Master Secret", 16, oscore_secret, 16);
+    print_bstr(oscore_secret, 16);
+
+    printf("[%d] OSCORE Master Salt:\n", counter++);
+    edhoc_exporter(&ctx, "OSCORE Master Salt", 8, oscore_salt, 8);
+    print_bstr(oscore_salt, 8);
 
     return 0;
 }
 
 int main(void) {
-    int sockfd, connfd;
+    int sockfd;
 #if defined(IPV6)
     struct sockaddr_in6 servaddr;
 #else
-    struct sockaddr_in servaddr, cli;
+    struct sockaddr_in servaddr;
 #endif
 
 #if defined(IPV6)
@@ -191,13 +189,11 @@ int main(void) {
         return -1;
     }
 
-    counter++;
-    printf("[%d] Connecting to server...\n", counter);
+    printf("[%d] Connecting to server...\n", counter++);
 
     edhoc_handshake(sockfd);
 
-    counter++;
-    printf("[%d] Closing socket...\n", counter);
+    printf("[%d] Closing socket...\n", counter++);
     close(sockfd);
 
     return 0;

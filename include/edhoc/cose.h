@@ -163,7 +163,7 @@ int cose_tag_len_from_alg(cose_algo_t alg);
  * @param[out]  out         The output buffer, will contain the CBOR encoded X5T attribute
  * @param[in]   olen        Total size of @p out
  *
- * @return On success the length of the CBOR encoded header attribute on success,
+ * @return On success the length of the CBOR encoded header attribute
  * @return On failure a negative value
  */
 ssize_t cose_x5t_attribute(cose_algo_t hash, const uint8_t *cert, size_t cert_len, uint8_t *out, size_t olen);

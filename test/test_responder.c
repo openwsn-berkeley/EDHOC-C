@@ -93,7 +93,7 @@ int main(int argc, char **argv) {
     ret = 0;
 
     if (argc == 3) {
-        if (strcmp(argv[1], "--responder") == 0) {
+        if (strcmp(argv[1], "--responder-msg2") == 0) {
             if ((ctx = load_json_test_file(argv[2])) == NULL) {
                 return EXIT_FAILURE;
             }
