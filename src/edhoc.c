@@ -26,7 +26,7 @@ void edhoc_ctx_init(edhoc_ctx_t *ctx) {
 }
 
 void edhoc_conf_init(edhoc_conf_t *conf) {
-    memset(conf, 0, sizeof(edhoc_ctx_t));
+    memset(conf, 0, sizeof(edhoc_conf_t));
 
     cose_key_init(&conf->auth_key);
 }

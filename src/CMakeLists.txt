@@ -1,28 +1,23 @@
-if (CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_COMPILER_ID MATCHES "Clang")
+if (CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
     message(STATUS "Adding GCC/Clang options ")
     add_definitions(-Wall -Wextra -pedantic)
-    if (EDHOC_C_FATAL_WARNINGS)
+    if (EDHOC_FATAL_WARNINGS)
         add_definitions(-Werror)
-    endif ()
-    if (EDHOC_C_OPTIMIZE)
-        add_definitions(-Os)
-        add_definitions(-DNDEBUG)
     endif ()
 elseif (MSVC)
     add_definitions(/W4)
-    if (EDHOC_C_FATAL_WARNINGS)
+    if (EDHOC_FATAL_WARNINGS)
         add_definitions(/WX)
-    endif ()
-    if (EDHOC_C_OPTIMIZE)
-        add_definitions(-DNDEBUG)
     endif ()
 else ()
     message(FATAL_ERROR "unhandled compiler id: ${CMAKE_C_COMPILER_ID}")
 endif ()
 
+###############################################################################
+# COMPILE DEFINITIONS
+###############################################################################
+
 add_compile_definitions(${EDHOC_CRYPTO_BACKEND})
-add_compile_definitions(${EDHOC_SELECTED_SUITE})
-add_compile_definitions(${EDHOC_CIPHER_SUITES})
 add_compile_definitions(${EDHOC_CBOR_BACKEND})
 
 add_library(${PROJECT_NAME})
