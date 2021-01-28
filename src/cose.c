@@ -120,7 +120,8 @@ int cose_key_from_cbor(cose_key_t *key, const uint8_t *key_bytes, size_t key_len
 }
 
 ssize_t cose_x5t_attribute(cose_algo_t hash, const uint8_t *cert, size_t cert_len, uint8_t *out, size_t olen) {
-    ssize_t ret, size, written;
+    int ret;
+    ssize_t size, written;
     size_t hash_len;
     uint8_t digest[COSE_DIGEST_LEN];
 
@@ -151,7 +152,7 @@ ssize_t cose_x5t_attribute(cose_algo_t hash, const uint8_t *cert, size_t cert_le
     CBOR_CHECK_RET(cbor_int_encode(COSE_ALGO_SHA256_64, out, size, olen));
     CBOR_CHECK_RET(cbor_bytes_encode(digest, hash_len, out, size, olen));
 
+    ret = size;
     exit:
     return ret;
-
 }

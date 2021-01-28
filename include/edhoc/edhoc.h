@@ -225,7 +225,12 @@ int edhoc_conf_load_authkey(edhoc_conf_t *conf, const uint8_t *auth_key, size_t 
 /**
  * @brief Load a CBOR certificate as credential for authentication
  *
- * @param conf
+ * @param[in,out] conf          The EDHOC configuration
+ * @param[in] cbor_cert         Byte string containing the CBOR encoded certificate
+ * @param[in] cbor_cert_len     Length of @p cbor_cert
+ *
+ * @return On success returns EDHOC_SUCCESS
+ * @return On failure returns EDHOC_ERR_CBOR_DECODING
  */
 int edhoc_conf_load_cborcert(edhoc_conf_t *conf, const uint8_t *cbor_cert, size_t cbor_cert_len);
 
