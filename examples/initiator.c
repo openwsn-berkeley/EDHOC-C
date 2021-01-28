@@ -127,6 +127,8 @@ int edhoc_handshake(int sockfd) {
     edhoc_init_finalize(&ctx);
 
     printf("[%d] Handshake successfully completed...\n", counter++);
+    printf("[%d] Transcript hash 4:\n", counter++);
+    print_bstr(ctx.th_4, COSE_DIGEST_LEN);
 
     return 0;
 }
