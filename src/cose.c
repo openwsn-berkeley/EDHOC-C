@@ -90,23 +90,28 @@ int cose_key_from_cbor(cose_key_t *key, const uint8_t *key_bytes, size_t key_len
             cbor_map_get_int_int(COSE_KEY_OKP_PARAM_CRV, (int *) &key->crv, key_bytes, 0, key_len);
 
             cbor_map_get_int_bytes(COSE_KEY_OKP_PARAM_X, &pt, &key->x_len, key_bytes, 0, key_len);
-            memcpy(key->x, pt, key->x_len);
+            if (pt != NULL && key->x_len > 0)
+                memcpy(key->x, pt, key->x_len);
 
             cbor_map_get_int_bytes(COSE_KEY_OKP_PARAM_D, &pt, &key->d_len, key_bytes, 0, key_len);
-            memcpy(key->d, pt, key->d_len);
+            if (pt != NULL && key->d_len > 0)
+                memcpy(key->d, pt, key->d_len);
 
             break;
         case COSE_KTY_EC2:
             cbor_map_get_int_int(COSE_KEY_EC2_PARAM_CRV, (int *) &key->crv, key_bytes, 0, key_len);
 
             cbor_map_get_int_bytes(COSE_KEY_EC2_PARAM_X, &pt, &key->x_len, key_bytes, 0, key_len);
-            memcpy(key->x, pt, key->x_len);
+            if (pt != NULL && key->x_len > 0)
+                memcpy(key->x, pt, key->x_len);
 
             cbor_map_get_int_bytes(COSE_KEY_EC2_PARAM_Y, &pt, &key->y_len, key_bytes, 0, key_len);
-            memcpy(key->y, pt, key->y_len);
+            if (pt != NULL && key->y_len > 0)
+                memcpy(key->y, pt, key->y_len);
 
             cbor_map_get_int_bytes(COSE_KEY_EC2_PARAM_D, &pt, &key->d_len, key_bytes, 0, key_len);
-            memcpy(key->d, pt, key->d_len);
+            if (pt != NULL && key->d_len > 0)
+                memcpy(key->d, pt, key->d_len);
 
             break;
         default:

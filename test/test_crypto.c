@@ -109,6 +109,7 @@ int test_ecdh_computation(cose_curve_t crv, const uint8_t *priv_key, size_t priv
     CHECK_TEST_RET_EQ(compare_arrays(outbuf, secret, secret_len), (long) 0);
 
     exit:
+    wc_FreeRng(&rng);
     return ret;
 }
 

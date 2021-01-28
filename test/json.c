@@ -70,25 +70,25 @@ test_context_ptr load_json_test_file(const char *filename) {
     }
 
     // start JSON parsing
-    root = cJSON_Parse(ctx->json_buffer);
+    ctx->root = cJSON_Parse(ctx->json_buffer);
 
-    if (!cJSON_IsObject(root)) {
+    if (!cJSON_IsObject(ctx->root)) {
         close_test(ctx);
 
         return NULL;
     }
 
-    if ((ctx->initiator = cJSON_GetObjectItemCaseSensitive(root, "I")) == NULL) {
+    if ((ctx->initiator = cJSON_GetObjectItemCaseSensitive(ctx->root, "I")) == NULL) {
         close_test(ctx);
         return NULL;
     }
 
-    if ((ctx->responder = cJSON_GetObjectItemCaseSensitive(root, "R")) == NULL) {
+    if ((ctx->responder = cJSON_GetObjectItemCaseSensitive(ctx->root, "R")) == NULL) {
         close_test(ctx);
         return NULL;
     }
 
-    if ((ctx->shared = cJSON_GetObjectItemCaseSensitive(root, "S")) == NULL) {
+    if ((ctx->shared = cJSON_GetObjectItemCaseSensitive(ctx->root, "S")) == NULL) {
         close_test(ctx);
         return NULL;
     }
