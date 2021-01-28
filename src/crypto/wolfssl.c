@@ -66,6 +66,9 @@ crypt_edhoc_kdf(cose_algo_t id, const uint8_t *prk, const uint8_t *th, const cha
 
     ret = EDHOC_ERR_CRYPTO;
 
+    // TODO: check if the label length doesn't cause a buffer overflow. If label is too long, it will cause info_buf to
+    //  overflow.
+
     if ((info_len = edhoc_info_encode(id, th, label, olen, info_buf, EDHOC_MAX_MAC_OR_SIG23_LEN)) < EDHOC_SUCCESS) {
         ret = info_len;     // store the error code and return
         goto exit;

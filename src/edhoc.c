@@ -632,6 +632,23 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx,
     return ret;
 }
 
+int edhoc_exporter(edhoc_ctx_t* ctx, const char* label, size_t length, uint8_t* out, size_t olen){
+    int ret;
+    cose_algo_t aead;
+
+    if (olen < length)
+        return EDHOC_ERR_BUFFER_OVERFLOW;
+
+    if ((aead = edhoc_app_aead_from_suite(*ctx->session.selected_suite)) == COSE_ALGO_NONE)
+        return EDHOC_ERR_AEAD_UNAVAILABLE;
+
+    EDHOC_CHECK_SUCCESS(crypt_edhoc_kdf(aead, ctx->prk_4x3m, ctx->th_4, label, out, length));
+
+    ret = EDHOC_SUCCESS;
+    exit:
+    return ret;
+}
+
 int edhoc_init_finalize(edhoc_ctx_t *ctx) {
     int ret;
     ssize_t size, written;

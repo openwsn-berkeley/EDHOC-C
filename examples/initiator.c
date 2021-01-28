@@ -130,6 +130,17 @@ int edhoc_handshake(int sockfd) {
     printf("[%d] Transcript hash 4:\n", counter++);
     print_bstr(ctx.th_4, COSE_DIGEST_LEN);
 
+    uint8_t oscore_secret[16];
+    uint8_t oscore_salt[8];
+
+    printf("[%d] OSCORE Master Secret:\n", counter++);
+    edhoc_exporter(&ctx, "OSCORE Master Secret", 16, oscore_secret, 16);
+    print_bstr(oscore_secret, 16);
+
+    printf("[%d] OSCORE Master Salt:\n", counter++);
+    edhoc_exporter(&ctx, "OSCORE Master Salt", 8, oscore_salt, 8);
+    print_bstr(oscore_salt, 8);
+
     return 0;
 }
 

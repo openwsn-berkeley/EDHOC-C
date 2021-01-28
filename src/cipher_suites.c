@@ -111,6 +111,10 @@ cose_algo_t edhoc_aead_from_suite(cipher_suite_t suite){
     return aead;
 }
 
+cose_algo_t edhoc_app_aead_from_suite(cipher_suite_t suite){
+    return COSE_ALGO_AESCCM_16_64_128;
+}
+
 cose_curve_t edhoc_dh_curve_from_suite(cipher_suite_t suite) {
     cose_curve_t crv;
 
