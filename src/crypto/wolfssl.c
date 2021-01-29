@@ -112,6 +112,8 @@ int crypt_compute_prk4x3m(edhoc_role_t role,
                           const uint8_t *shared_secret,
                           const uint8_t *prk_3e2m,
                           uint8_t *prk_4x3m) {
+    (void) shared_secret;
+
     int ret;
 
     if (role == EDHOC_IS_RESPONDER) {
@@ -150,8 +152,10 @@ int crypt_compute_prk4x3m(edhoc_role_t role,
 int crypt_compute_prk3e2m(edhoc_role_t role,
                           method_t method,
                           const uint8_t *prk_2e,
-                          uint8_t *shared_secret,
+                          const uint8_t *shared_secret,
                           uint8_t *prk_3e2m) {
+    (void) shared_secret;
+
     int ret;
 
     if (role == EDHOC_IS_RESPONDER) {
@@ -363,6 +367,10 @@ int crypt_compute_signature(cose_curve_t crv,
                             rng_cb_t f_rng,
                             void *p_rng,
                             uint8_t *signature) {
+    (void) crv;
+    (void) f_rng;
+    (void) p_rng;
+
     int ret;
     ed25519_key sk;
     wc_ed25519_init(&sk);

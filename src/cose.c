@@ -74,7 +74,7 @@ int cose_tag_len_from_alg(cose_algo_t alg) {
 
 int cose_key_from_cbor(cose_key_t *key, const uint8_t *key_bytes, size_t key_len) {
     int ret;
-    const uint8_t *pt;
+    const uint8_t *pt = NULL;
 
     // check if key is properly initialized
     if (key->kty != COSE_KTY_NONE || key->algo != COSE_ALGO_NONE || key->crv != COSE_EC_NONE) {
@@ -128,7 +128,7 @@ ssize_t cose_x5t_attribute(cose_algo_t hash, const uint8_t *cert, size_t cert_le
     int ret;
     ssize_t size, written;
     size_t hash_len;
-    uint8_t digest[COSE_DIGEST_LEN];
+    uint8_t digest[COSE_DIGEST_LEN] = {0};
 
     size = 0;
 

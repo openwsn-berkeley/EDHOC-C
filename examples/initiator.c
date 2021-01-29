@@ -51,8 +51,7 @@ void print_bstr(const uint8_t *bstr, size_t bstr_len) {
 
 int edhoc_handshake(int sockfd) {
     ssize_t cred_id_len, bread, len, written;
-    uint8_t cred_id[50];
-    uint8_t incoming[500], outgoing[500];
+    uint8_t cred_id[50] = {0}, incoming[500] = {0}, outgoing[500] = {0};
 
     edhoc_ctx_t ctx;
     edhoc_conf_t conf;

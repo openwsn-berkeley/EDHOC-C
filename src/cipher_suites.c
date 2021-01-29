@@ -25,6 +25,7 @@ static const cipher_suite_t ciphersuites_supported[] =
 #endif
         };
 
+
 const cipher_suite_t *edhoc_supported_suites(void) {
 
     if (sizeof(ciphersuites_supported) >= 1) {
@@ -112,6 +113,7 @@ cose_algo_t edhoc_aead_from_suite(cipher_suite_t suite){
 }
 
 cose_algo_t edhoc_app_aead_from_suite(cipher_suite_t suite){
+    (void) suite;
     return COSE_ALGO_AESCCM_16_64_128;
 }
 

@@ -43,9 +43,10 @@ void print_bstr(const uint8_t *bstr, size_t bstr_len) {
 }
 
 int edhoc_handshake(int sockfd) {
-    ssize_t cred_id_len, bread, len, written;
-    uint8_t cred_id[50];
-    uint8_t incoming[500], outgoing[500];
+    ssize_t cred_id_len, bread, len, written ;
+    uint8_t cred_id[50] = {0};
+    uint8_t incoming[500] = {0};
+    uint8_t outgoing[500] = {0};
 
     edhoc_ctx_t ctx;
     edhoc_conf_t conf;
@@ -148,10 +149,10 @@ int main(void) {
 
 #if defined(IPV6)
     sockfd = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
-	if (sockfd == -1) {
+    if (sockfd == -1) {
         printf("[ERR] Socket creation failed...\n");
         goto exit;
-	}
+    }
 
     int enable = 1;
     if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)

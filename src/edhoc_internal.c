@@ -88,18 +88,23 @@ ssize_t edhoc_msg1_encode(corr_t corr,
  * @return On failure EDHOC_ERR_ILLEGAL_CIPHERSUITE
  **/
 static int has_support(cipher_suite_t suite) {
-    int ret;
+    const cipher_suite_t *supported_suites = NULL;
 
-    ret = EDHOC_ERR_INVALID_CIPHERSUITE;
+    supported_suites = edhoc_supported_suites();
 
-    for (size_t i = 0; i < edhoc_supported_suites_len(); ++i) {
-        if (suite == edhoc_supported_suites()[i]) {
-            ret = EDHOC_SUCCESS;
-            break;
+    if (suite > EDHOC_CIPHER_SUITE_3)
+        return EDHOC_ERR_INVALID_CIPHERSUITE;
+
+    if (supported_suites == NULL)
+        return EDHOC_ERR_INVALID_CIPHERSUITE;
+
+    for (size_t i = 0; i < edhoc_supported_suites_len(); i++) {
+        if (suite == supported_suites[i]) {
+            return EDHOC_SUCCESS;
         }
     }
 
-    return ret;
+    return EDHOC_ERR_INVALID_CIPHERSUITE;
 }
 
 /**
@@ -196,7 +201,11 @@ int edhoc_msg1_decode(edhoc_ctx_t *ctx, const uint8_t *msg1, size_t msg1_len) {
     // uint8_t ad[EDHOC_MAX_EXAD_DATA_LEN];
     uint8_t suites[EDHOC_MAX_SUPPORTED_SUITES];
 
+    tmp = 0;
+    len = 0;
+    method_corr = 0;
     size = 0;
+
     ret = EDHOC_ERR_CBOR_DECODING;
 
     CBOR_CHECK_RET(cbor_int_decode(&method_corr, msg1, size, msg1_len));
@@ -213,7 +222,11 @@ int edhoc_msg1_decode(edhoc_ctx_t *ctx, const uint8_t *msg1, size_t msg1_len) {
 
     pt = &tmp;
     CBOR_CHECK_RET(cbor_suites_decode((uint8_t **) &pt, &len, msg1, size, msg1_len));
-    memcpy(suites, pt, len);
+
+    if (len < EDHOC_MAX_SUPPORTED_SUITES && len > 0)
+        memcpy(suites, pt, len);
+    else
+        return EDHOC_ERR_BUFFER_OVERFLOW;
 
     EDHOC_CHECK_SUCCESS(verify_cipher_suite(suites[0], &suites[0], len));
     if ((ctx->session.selected_suite = (cipher_suite_t *) edhoc_select_suite(suites[0])) == NULL) {
@@ -282,7 +295,6 @@ ssize_t edhoc_data2_encode(corr_t corr,
         } else if (cidi_len > 1) {
             CBOR_CHECK_RET(cbor_bytes_encode(cidi, cidi_len, out, size, olen));
         }
-
     }
 
     CBOR_CHECK_RET(cbor_bytes_encode(eph_key->x, eph_key->x_len, out, size, olen));
@@ -384,12 +396,16 @@ ssize_t edhoc_msg3_encode(const uint8_t *data3,
 }
 
 int edhoc_p3ae_decode(uint8_t *p3ae, size_t p3ae_len) {
+    (void) p3ae;
+    (void) p3ae_len;
 
     // TODO: verify signature
     return EDHOC_SUCCESS;
 }
 
 int edhoc_p2e_decode(uint8_t *p2e, size_t p2e_len) {
+    (void) p2e;
+    (void) p2e_len;
 
     // TODO: verify signature
     return EDHOC_SUCCESS;
