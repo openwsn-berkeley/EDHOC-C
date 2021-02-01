@@ -4,7 +4,8 @@
 #include "edhoc/cipher_suites.h"
 #include "cbor/cbor_internal.h"
 
-const int CBOR_ARRAY_INFO_LENGTH = 4;
+#define CBOR_ARRAY_INFO_LEN         (4)
+#define SUPPORTED_SUITES_BUFLEN     (5)
 
 ssize_t edhoc_info_encode(
         cose_algo_t id,
@@ -18,7 +19,7 @@ ssize_t edhoc_info_encode(
 
     size = 0;
 
-    CBOR_CHECK_RET(cbor_create_array(out, CBOR_ARRAY_INFO_LENGTH, size, olen));
+    CBOR_CHECK_RET(cbor_create_array(out, CBOR_ARRAY_INFO_LEN, size, olen));
     CBOR_CHECK_RET(cbor_array_append_int(id, out, size, olen));
     CBOR_CHECK_RET(cbor_array_append_bytes(th, COSE_DIGEST_LEN, out, size, olen));
     CBOR_CHECK_RET(cbor_array_append_string(label, out, size, olen));
@@ -199,7 +200,7 @@ int edhoc_msg1_decode(edhoc_ctx_t *ctx, const uint8_t *msg1, size_t msg1_len) {
     uint8_t tmp;
     const uint8_t *pt;
     // uint8_t ad[EDHOC_MAX_EXAD_DATA_LEN];
-    uint8_t suites[EDHOC_MAX_SUPPORTED_SUITES];
+    uint8_t suites[SUPPORTED_SUITES_BUFLEN];
 
     tmp = 0;
     len = 0;
@@ -223,7 +224,7 @@ int edhoc_msg1_decode(edhoc_ctx_t *ctx, const uint8_t *msg1, size_t msg1_len) {
     pt = &tmp;
     CBOR_CHECK_RET(cbor_suites_decode((uint8_t **) &pt, &len, msg1, size, msg1_len));
 
-    if (len < EDHOC_MAX_SUPPORTED_SUITES && len > 0)
+    if (len < SUPPORTED_SUITES_BUFLEN && len > 0)
         memcpy(suites, pt, len);
     else
         return EDHOC_ERR_BUFFER_OVERFLOW;

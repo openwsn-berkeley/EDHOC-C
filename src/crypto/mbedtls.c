@@ -1,6 +1,11 @@
 #include <string.h>
 
+#include "edhoc/cipher_suites.h"
+#include "edhoc_internal.h"
+#include "crypto_internal.h"
+
 #if defined(MBEDTLS)
+
 #include <mbedtls/ecp.h>
 #include <mbedtls/sha256.h>
 #include <mbedtls/ecdh.h>
@@ -8,13 +13,6 @@
 #include <mbedtls/hkdf.h>
 #include <mbedtls/ccm.h>
 #include <mbedtls/ecdsa.h>
-#endif
-
-#include "edhoc/cipher_suites.h"
-#include "edhoc_internal.h"
-#include "crypto_internal.h"
-
-#if defined(MBEDTLS)
 
 /**
  * @brief Map a COSE curve to an MBEDTLS curve
@@ -315,45 +313,45 @@ int crypt_compute_ecdh(
     return ret;
 }
 
-int crypt_hash_init(void *digest_ctx) {
+int crypt_hash_init(hash_ctx_t* ctx) {
     int ret;
 
     ret = EDHOC_ERR_CRYPTO;
 
-    mbedtls_sha256_init((mbedtls_sha256_context *) digest_ctx);
-    EDHOC_CHECK_RET(mbedtls_sha256_starts_ret((mbedtls_sha256_context *) digest_ctx, 0));
+    mbedtls_sha256_init(&ctx->digest_ctx);
+    EDHOC_CHECK_RET(mbedtls_sha256_starts_ret(&ctx->digest_ctx, 0));
 
     ret = EDHOC_SUCCESS;
     exit:
     return ret;
 }
 
-int crypt_hash_update(void *digest_ctx, const uint8_t *in, size_t ilen) {
+int crypt_hash_update(hash_ctx_t* ctx, const uint8_t *in, size_t ilen) {
     int ret;
 
     ret = EDHOC_ERR_CRYPTO;
 
-    EDHOC_CHECK_SUCCESS(mbedtls_sha256_update_ret((mbedtls_sha256_context *) digest_ctx, in, ilen));
+    EDHOC_CHECK_SUCCESS(mbedtls_sha256_update_ret(&ctx->digest_ctx, in, ilen));
 
     ret = EDHOC_SUCCESS;
     exit:
     return ret;
 }
 
-int crypt_hash_finish(void *digest_ctx, uint8_t *output) {
+int crypt_hash_finish(hash_ctx_t* ctx, uint8_t *output) {
     int ret;
 
     ret = EDHOC_ERR_CRYPTO;
 
-    EDHOC_CHECK_SUCCESS(mbedtls_sha256_finish_ret((mbedtls_sha256_context *) digest_ctx, output));
+    EDHOC_CHECK_SUCCESS(mbedtls_sha256_finish_ret(&ctx->digest_ctx, output));
 
     ret = EDHOC_SUCCESS;
     exit:
     return ret;
 }
 
-void crypt_hash_free(void *digest_ctx) {
-    mbedtls_sha256_free((mbedtls_sha256_context *) digest_ctx);
+void crypt_hash_free(hash_ctx_t* ctx) {
+    mbedtls_sha256_free(&ctx->digest_ctx);
 }
 
 int crypt_compute_signature(cose_curve_t crv,

@@ -1,21 +1,12 @@
 #include <string.h>
 
-#if defined(MBEDTLS)
-#include <mbedtls/sha256.h>
-#elif defined(WOLFSSL)
-
-#include <wolfssl/wolfcrypt/sha256.h>
-
-#else
-#error "No cryptographic backend selected"
-#endif
-
 #include "edhoc/edhoc.h"
 #include "edhoc/cipher_suites.h"
 
 #include "crypto_internal.h"
 #include "cbor_internal.h"
 #include "edhoc_internal.h"
+
 
 void edhoc_ctx_init(edhoc_ctx_t *ctx) {
     memset(ctx, 0, sizeof(edhoc_ctx_t));
@@ -161,16 +152,15 @@ static int compute_signature_or_mac23(edhoc_ctx_t *ctx,
         goto exit;
     }
 
-    uint8_t ciphertext, plaintext;
-    EDHOC_CHECK_SUCCESS(crypt_encrypt_aead(aead,
-                                           k_23m,
-                                           iv_23m,
-                                           m23_or_a23m_buf,
-                                           enc_structure_len,
-                                           &plaintext,
-                                           &ciphertext,
-                                           0,
-                                           out));
+    EDHOC_CHECK_SUCCESS(crypt_encrypt_aead(aead,                // COSE algorithm ID
+                                           k_23m,               // encryption key
+                                           iv_23m,              // nonce
+                                           m23_or_a23m_buf,     // aad
+                                           enc_structure_len,   // aad len
+                                           out,                 // plaintext
+                                           out,                 // ciphertext
+                                           0,                   // length of plaintext and ciphertext
+                                           out));               // pointer to tag (size depends on selected algorithm)
 
     // here we start reusing the m2_or_a2m buffer
     if (*ctx->method == EDHOC_AUTH_SIGN_SIGN || *ctx->method == EDHOC_AUTH_STATIC_SIGN) {
@@ -342,21 +332,15 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx,
                           size_t msg2_len,
                           uint8_t *out,
                           size_t olen) {
+
     int ret;
     ssize_t data3_len, size, written, p3ae_len, a3ae_len, key_len, iv_len, tag_len;
     cose_curve_t crv;
     cose_algo_t aead;
+    hash_ctx_t hash_ctx;
     uint8_t k3m_or_k3ae_buf[EDHOC_MAX_K23M_LEN], iv3m_or_iv3ae_buf[EDHOC_MAX_IV23M_LEN], k2e_buf[EDHOC_MAX_PAYLOAD_LEN];
     uint8_t cbor_enc_buf[EDHOC_MAX_PAYLOAD_LEN + 2], a_3ae[EDHOC_MAX_A3AE_LEN], tag[EDHOC_MAX_AUTH_TAG_LEN];
     uint8_t signature_or_mac3_buf[EDHOC_MAX_MAC_OR_SIG23_LEN];
-
-#if defined(MBEDTLS)
-    mbedtls_sha256_context transcript_ctx;
-#elif defined(WOLFSSL)
-    wc_Sha256 transcript_ctx;
-#else
-#error "No cryptographic backend selected"
-#endif
 
     if ((crv = edhoc_dh_curve_from_suite(*ctx->session.selected_suite)) == COSE_EC_NONE)
         return EDHOC_ERR_INVALID_CIPHERSUITE;
@@ -376,7 +360,7 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx,
     EDHOC_CHECK_SUCCESS(edhoc_msg2_decode(ctx, msg2_buf, msg2_len));
 
     // Start computation transcript hash 2
-    EDHOC_CHECK_SUCCESS(crypt_hash_init(&transcript_ctx));
+    EDHOC_CHECK_SUCCESS(crypt_hash_init(&hash_ctx));
 
     EDHOC_CHECK_SIZE(edhoc_msg1_encode(ctx->correlation,
                                        *ctx->method,
@@ -389,7 +373,7 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx,
                                        olen));
 
     // update transcript context with EHDOC message 1
-    EDHOC_CHECK_SUCCESS(crypt_hash_update(&transcript_ctx, out, ret));
+    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hash_ctx, out, ret));
 
     // generate data_2
     EDHOC_CHECK_SIZE(edhoc_data2_encode(ctx->correlation,
@@ -402,10 +386,10 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx,
                                         olen));
 
     // update transcript context with EHDOC message 1
-    EDHOC_CHECK_SUCCESS(crypt_hash_update(&transcript_ctx, out, ret));
+    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hash_ctx, out, ret));
 
     // store th_2 in the EDHOC context
-    EDHOC_CHECK_SUCCESS(crypt_hash_finish(&transcript_ctx, ctx->th_2));
+    EDHOC_CHECK_SUCCESS(crypt_hash_finish(&hash_ctx, ctx->th_2));
 
     // compute the shared secret
     EDHOC_CHECK_SUCCESS(crypt_compute_ecdh(crv,
@@ -433,7 +417,7 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx,
             crypt_compute_prk4x3m(ctx->conf->role, *ctx->method, ctx->secret, ctx->prk_3e2m, ctx->prk_4x3m));
 
     // Start computation transcript hash 3
-    EDHOC_CHECK_SUCCESS(crypt_hash_init(&transcript_ctx));
+    EDHOC_CHECK_SUCCESS(crypt_hash_init(&hash_ctx));
 
     // update transcript with th_2
     size = 0;
@@ -442,7 +426,7 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx,
                                      cbor_enc_buf,
                                      size,
                                      sizeof(cbor_enc_buf)));
-    EDHOC_CHECK_SUCCESS(crypt_hash_update(&transcript_ctx, cbor_enc_buf, size));
+    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hash_ctx, cbor_enc_buf, size));
 
     // update transcript with ciphertext_2
     size = 0;
@@ -452,13 +436,13 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx,
                                      size,
                                      sizeof(cbor_enc_buf)));
 
-    EDHOC_CHECK_SUCCESS(crypt_hash_update(&transcript_ctx, cbor_enc_buf, size));
+    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hash_ctx, cbor_enc_buf, size));
 
     // update transcript with data_3
-    EDHOC_CHECK_SUCCESS(crypt_hash_update(&transcript_ctx, out, data3_len));
+    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hash_ctx, out, data3_len));
 
     // store th_3 in the EDHOC context
-    EDHOC_CHECK_SUCCESS(crypt_hash_finish(&transcript_ctx, ctx->th_3));
+    EDHOC_CHECK_SUCCESS(crypt_hash_finish(&hash_ctx, ctx->th_3));
 
     // XOR decryption P_2e XOR K_2e
     for (size_t i = 0; i < ctx->ct_or_pld_2_len; i++) {
@@ -507,7 +491,7 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx,
         ret = EDHOC_ERR_BUFFER_OVERFLOW;
         goto exit;
     } else {
-        memcpy(ctx->ct_or_pld_3 + p3ae_len, &tag, tag_len);
+        memcpy(ctx->ct_or_pld_3 + p3ae_len, tag, tag_len);
         ctx->ct_or_pld_3_len = p3ae_len + tag_len;
     }
 
@@ -515,7 +499,7 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx,
     EDHOC_CHECK_SIZE(edhoc_msg3_encode(out, data3_len, ctx->ct_or_pld_3, ctx->ct_or_pld_3_len, out, olen));
 
     exit:
-    crypt_hash_free(&transcript_ctx);
+    crypt_hash_free(&hash_ctx);
     return ret;
 }
 
@@ -528,20 +512,12 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx,
     cose_curve_t crv;
     cose_algo_t aead;
     ssize_t data2_len, p2e_len;
+    hash_ctx_t hash_ctx;
 
     // temporary buffers
     uint8_t k2e_buf[EDHOC_MAX_PAYLOAD_LEN];
     uint8_t signature_or_mac2_buf[EDHOC_MAX_MAC_OR_SIG23_LEN];
     uint8_t k2m_buf[EDHOC_MAX_K23M_LEN], iv2m_buf[EDHOC_MAX_IV23M_LEN];
-
-#if defined(MBEDTLS)
-    // always SHA-256 (only hash algorithm supported by the EDHOC cipher suites)
-    mbedtls_sha256_context transcript_ctx;
-#elif defined(WOLFSSL)
-    wc_Sha256 transcript_ctx;
-#else
-#error "No cryptographic backend selected"
-#endif
 
     // decode message 1
     EDHOC_CHECK_SUCCESS(edhoc_msg1_decode(ctx, msg1_buf, msg1_len));
@@ -578,10 +554,10 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx,
     }
 
     // compute transcript hash 2: TH_2 = H ( msg1, data_2 )
-    EDHOC_CHECK_SUCCESS(crypt_hash_init(&transcript_ctx));
-    EDHOC_CHECK_SUCCESS(crypt_hash_update(&transcript_ctx, msg1_buf, msg1_len));
-    EDHOC_CHECK_SUCCESS(crypt_hash_update(&transcript_ctx, out, data2_len));
-    EDHOC_CHECK_SUCCESS(crypt_hash_finish(&transcript_ctx, ctx->th_2));
+    EDHOC_CHECK_SUCCESS(crypt_hash_init(&hash_ctx));
+    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hash_ctx, msg1_buf, msg1_len));
+    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hash_ctx, out, data2_len));
+    EDHOC_CHECK_SUCCESS(crypt_hash_finish(&hash_ctx, ctx->th_2));
 
     // compute the shared secret
     EDHOC_CHECK_SUCCESS(crypt_compute_ecdh(crv,
@@ -628,7 +604,7 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx,
     EDHOC_CHECK_SIZE(edhoc_msg2_encode(out, data2_len, ctx->ct_or_pld_2, ctx->ct_or_pld_2_len, out, olen));
 
     exit:
-    crypt_hash_free(&transcript_ctx);
+    crypt_hash_free(&hash_ctx);
     return ret;
 }
 
@@ -654,18 +630,11 @@ int edhoc_init_finalize(edhoc_ctx_t *ctx) {
     ssize_t size, written;
     uint8_t cbor_enc_buf[EDHOC_MAX_PAYLOAD_LEN + 2];
 
-#if defined(MBEDTLS)
-    mbedtls_sha256_context transcript_ctx;
-#elif defined(WOLFSSL)
-    wc_Sha256 transcript_ctx;
-#else
-#error "No cryptographic backend selected"
-#endif
-
+    hash_ctx_t hash_ctx;
     size = 0;
 
     // before decryption of ciphertext_3, start computation TH_4
-    EDHOC_CHECK_SUCCESS(crypt_hash_init(&transcript_ctx));
+    EDHOC_CHECK_SUCCESS(crypt_hash_init(&hash_ctx));
 
     // update transcript with th_3
     size = 0;
@@ -674,7 +643,7 @@ int edhoc_init_finalize(edhoc_ctx_t *ctx) {
                                      cbor_enc_buf,
                                      size,
                                      sizeof(cbor_enc_buf)));
-    EDHOC_CHECK_SUCCESS(crypt_hash_update(&transcript_ctx, cbor_enc_buf, size));
+    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hash_ctx, cbor_enc_buf, size));
 
     // update transcript with ciphertext_3
     size = 0;
@@ -684,10 +653,10 @@ int edhoc_init_finalize(edhoc_ctx_t *ctx) {
                                      size,
                                      sizeof(cbor_enc_buf)));
 
-    EDHOC_CHECK_SUCCESS(crypt_hash_update(&transcript_ctx, cbor_enc_buf, size));
+    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hash_ctx, cbor_enc_buf, size));
 
     // store th_4 in the EDHOC context
-    EDHOC_CHECK_SUCCESS(crypt_hash_finish(&transcript_ctx, ctx->th_4));
+    EDHOC_CHECK_SUCCESS(crypt_hash_finish(&hash_ctx, ctx->th_4));
 
     exit:
     return ret;
@@ -700,13 +669,7 @@ int edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3_buf, size_t msg3_l
     uint8_t cbor_enc_buf[EDHOC_MAX_PAYLOAD_LEN + 2], k3m_or_k3ae_buf[EDHOC_MAX_K23M_LEN],
             iv3m_or_iv3ae_buf[EDHOC_MAX_IV23M_LEN], a_3ae[EDHOC_MAX_A3AE_LEN];
 
-#if defined(MBEDTLS)
-    mbedtls_sha256_context transcript_ctx;
-#elif defined(WOLFSSL)
-    wc_Sha256 transcript_ctx;
-#else
-#error "No cryptographic backend selected"
-#endif
+    hash_ctx_t hash_ctx;
 
     if ((aead = edhoc_aead_from_suite(*ctx->session.selected_suite)) == COSE_ALGO_NONE)
         return EDHOC_ERR_AEAD_UNAVAILABLE;
@@ -728,7 +691,7 @@ int edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3_buf, size_t msg3_l
             crypt_compute_prk4x3m(ctx->conf->role, *ctx->method, ctx->secret, ctx->prk_3e2m, ctx->prk_4x3m));
 
     // Start computation transcript hash 3
-    EDHOC_CHECK_SUCCESS(crypt_hash_init(&transcript_ctx));
+    EDHOC_CHECK_SUCCESS(crypt_hash_init(&hash_ctx));
 
     // update transcript with th_2
     size = 0;
@@ -737,7 +700,7 @@ int edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3_buf, size_t msg3_l
                                      cbor_enc_buf,
                                      size,
                                      sizeof(cbor_enc_buf)));
-    EDHOC_CHECK_SUCCESS(crypt_hash_update(&transcript_ctx, cbor_enc_buf, size));
+    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hash_ctx, cbor_enc_buf, size));
 
     // update transcript with ciphertext_2
     size = 0;
@@ -747,7 +710,7 @@ int edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3_buf, size_t msg3_l
                                      size,
                                      sizeof(cbor_enc_buf)));
 
-    EDHOC_CHECK_SUCCESS(crypt_hash_update(&transcript_ctx, cbor_enc_buf, size));
+    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hash_ctx, cbor_enc_buf, size));
 
     if ((data3_len = edhoc_data3_encode(ctx->correlation,
                                         ctx->session.cidr,
@@ -759,10 +722,10 @@ int edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3_buf, size_t msg3_l
     }
 
     // update transcript with data 3
-    EDHOC_CHECK_SUCCESS(crypt_hash_update(&transcript_ctx, cbor_enc_buf, data3_len));
+    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hash_ctx, cbor_enc_buf, data3_len));
 
     // store th_3 in the EDHOC context
-    EDHOC_CHECK_SUCCESS(crypt_hash_finish(&transcript_ctx, ctx->th_3));
+    EDHOC_CHECK_SUCCESS(crypt_hash_finish(&hash_ctx, ctx->th_3));
 
     if ((a3ae_len = create_a3ae(ctx->th_3, a_3ae, EDHOC_MAX_A3AE_LEN)) < EDHOC_SUCCESS) {
         ret = a3ae_len;
@@ -770,7 +733,7 @@ int edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3_buf, size_t msg3_l
     }
 
     // before decryption of ciphertext_3, start computation TH_4
-    EDHOC_CHECK_SUCCESS(crypt_hash_init(&transcript_ctx));
+    EDHOC_CHECK_SUCCESS(crypt_hash_init(&hash_ctx));
 
     // update transcript with th_3
     size = 0;
@@ -779,7 +742,7 @@ int edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3_buf, size_t msg3_l
                                      cbor_enc_buf,
                                      size,
                                      sizeof(cbor_enc_buf)));
-    EDHOC_CHECK_SUCCESS(crypt_hash_update(&transcript_ctx, cbor_enc_buf, size));
+    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hash_ctx, cbor_enc_buf, size));
 
     // update transcript with ciphertext_3
     size = 0;
@@ -789,10 +752,10 @@ int edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3_buf, size_t msg3_l
                                      size,
                                      sizeof(cbor_enc_buf)));
 
-    EDHOC_CHECK_SUCCESS(crypt_hash_update(&transcript_ctx, cbor_enc_buf, size));
+    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hash_ctx, cbor_enc_buf, size));
 
     // store th_4 in the EDHOC context
-    EDHOC_CHECK_SUCCESS(crypt_hash_finish(&transcript_ctx, ctx->th_4));
+    EDHOC_CHECK_SUCCESS(crypt_hash_finish(&hash_ctx, ctx->th_4));
 
     EDHOC_CHECK_SUCCESS(crypt_edhoc_kdf(aead, ctx->prk_4x3m, ctx->th_3, "K_3ae", k3m_or_k3ae_buf, key_len));
     EDHOC_CHECK_SUCCESS(crypt_edhoc_kdf(aead, ctx->prk_4x3m, ctx->th_3, "IV_3ae", iv3m_or_iv3ae_buf, iv_len));

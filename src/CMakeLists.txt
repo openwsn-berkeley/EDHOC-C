@@ -31,6 +31,9 @@ set(edhoc_sources
         ${PROJECT_SOURCE_DIR}/src/cbor/cn_cbor.c
         ${PROJECT_SOURCE_DIR}/src/cbor/nanocbor.c
         ${PROJECT_SOURCE_DIR}/src/crypto/wolfssl.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/hacl.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
         ${PROJECT_SOURCE_DIR}/src/crypto/mbedtls.c)
 
 target_sources(${PROJECT_NAME} PRIVATE ${edhoc_sources})
@@ -47,16 +50,30 @@ find_package(cn-cbor REQUIRED)
 
 if ("${EDHOC_CBOR_BACKEND}" STREQUAL "CN_CBOR")
     target_link_libraries(${PROJECT_NAME} PRIVATE cn-cbor::cn-cbor)
-endif ()
-
-if ("${EDHOC_CBOR_BACKEND}" STREQUAL "NANOCBOR")
+elseif ("${EDHOC_CBOR_BACKEND}" STREQUAL "NANOCBOR")
     target_link_libraries(${PROJECT_NAME} PRIVATE nanocbor)
 endif ()
 
 if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "MBEDTLS")
     target_link_libraries(${PROJECT_NAME} PRIVATE mbedcrypto)
-elseif("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
+elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
     target_link_libraries(${PROJECT_NAME} PRIVATE wolfssl)
+elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
+    if (DEFINED ENV{HACL_HOME})
+
+        # find libevercrypt
+        find_library(EVERCRYPT NAMES evercrypt HINTS "$ENV{HACL_HOME}/dist/portable-gcc-compatible" REQUIRED)
+
+        # link against libevercrypt
+        target_link_libraries(${PROJECT_NAME} PRIVATE ${EVERCRYPT})
+
+        # provide the header search paths
+        target_include_directories(${PROJECT_NAME} PRIVATE "$ENV{HACL_HOME}/dist/portable-gcc-compatible")
+        target_include_directories(${PROJECT_NAME} PRIVATE "$ENV{HACL_HOME}/dist/kremlin/include")
+        target_include_directories(${PROJECT_NAME} PRIVATE "$ENV{HACL_HOME}/dist/kremlin/kremlib/dist/minimal")
+    else ()
+        message(FATAL_ERROR "Set HACL_HOME environment variable")
+    endif ()
 endif ()
 
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})

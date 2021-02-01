@@ -1,16 +1,6 @@
 #include <string.h>
 #include <edhoc/edhoc.h>
 
-#if defined(MBEDTLS)
-#include <mbedtls/sha256.h>
-#elif defined(WOLFSSL)
-
-#include <wolfssl/wolfcrypt/sha.h>
-
-#else
-#error "No cryptographic backend selected"
-#endif
-
 #include "crypto_internal.h"
 #include "cbor_internal.h"
 
@@ -129,21 +119,13 @@ ssize_t cose_x5t_attribute(cose_algo_t hash, const uint8_t *cert, size_t cert_le
     ssize_t size, written;
     size_t hash_len;
     uint8_t digest[COSE_DIGEST_LEN] = {0};
+    hash_ctx_t hash_ctx;
 
     size = 0;
 
-#if defined(MBEDTLS)
-    // always SHA-256 (only hash algorithm supported by the EDHOC cipher suites)
-    mbedtls_sha256_context cert_digest_ctx;
-#elif defined(WOLFSSL)
-    wc_Sha cert_digest_ctx;
-#else
-#error "No cryptographic backend selected"
-#endif
-
-    EDHOC_CHECK_SUCCESS(crypt_hash_init(&cert_digest_ctx));
-    EDHOC_CHECK_SUCCESS(crypt_hash_update(&cert_digest_ctx, cert, cert_len));
-    EDHOC_CHECK_SUCCESS(crypt_hash_finish(&cert_digest_ctx, digest));
+    EDHOC_CHECK_SUCCESS(crypt_hash_init(&hash_ctx));
+    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hash_ctx, cert, cert_len));
+    EDHOC_CHECK_SUCCESS(crypt_hash_finish(&hash_ctx, digest));
 
     if (hash == COSE_ALGO_SHA256_64) {
         hash_len = 8;

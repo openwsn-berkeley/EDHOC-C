@@ -2,16 +2,16 @@
 #define EDHOC_COSE_H
 
 #include <stdint.h>
-#include <stddef.h>
-#include <cn-cbor/cn-cbor.h>
+#include <stdlib.h>
 
 #define COSE_MAX_KEY_LEN        (32)
 #define COSE_MAX_IV_LEN         (16)
 #define COSE_DIGEST_LEN         (32)
-#define COSE_MAX_KID_LEN        (8)
-#define COSE_NUM_KEY_OPS        (5)
 #define COSE_MAX_TAG_LEN        (16)
 #define COSE_MAX_SIGNATURE_LEN  (64)
+
+#define COSE_MAX_KID_LEN        (8)
+#define COSE_NUM_KEY_OPS        (5)
 
 typedef enum {
     COSE_KEY_COMMON_PARAM_KTY = 1,        /**< Key type identifier */

@@ -27,18 +27,14 @@ int test_hashing(const uint8_t *msg1, size_t msg1_len, const uint8_t *data2, siz
     ssize_t ret;
     uint8_t buf[32];
 
-#if defined(MBEDTLS)
-    mbedtls_sha256_context sha256_ctx;
-#elif defined(WOLFSSL)
-    wc_Sha256 sha256_ctx;
-#endif
+    hash_ctx_t hash_ctx;
 
-    crypt_hash_init(&sha256_ctx);
+    crypt_hash_init(&hash_ctx);
 
-    crypt_hash_update(&sha256_ctx, msg1, msg1_len);
-    crypt_hash_update(&sha256_ctx, data2, data2_len);
+    crypt_hash_update(&hash_ctx, msg1, msg1_len);
+    crypt_hash_update(&hash_ctx, data2, data2_len);
 
-    crypt_hash_finish(&sha256_ctx, buf);
+    crypt_hash_finish(&hash_ctx, buf);
 
     CHECK_TEST_RET_EQ(compare_arrays(buf, th2, COSE_DIGEST_LEN), (long) 0);
 
@@ -64,7 +60,6 @@ int test_ecdh_computation(cose_curve_t crv, const uint8_t *priv_key, size_t priv
     cose_key_init(&private_key);
 
 #if defined(MBEDTLS)
-
     char *pers = "edhoc_responder";
     mbedtls_entropy_context entropy;
     mbedtls_ctr_drbg_context ctr_drbg;
@@ -109,7 +104,12 @@ int test_ecdh_computation(cose_curve_t crv, const uint8_t *priv_key, size_t priv
     CHECK_TEST_RET_EQ(compare_arrays(outbuf, secret, secret_len), (long) 0);
 
     exit:
+#if defined(MBEDTLS)
+    // TODO: free mbedtls structures
+#elif defined(WOLFSSL)
     wc_FreeRng(&rng);
+#elif defined(HACL)
+#endif
     return ret;
 }
 

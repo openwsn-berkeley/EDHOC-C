@@ -51,6 +51,10 @@ int test_message2_encoding(
     CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, mbedtls_entropy_func, &entropy, NULL), (long)0);
 #elif defined(WOLFSSL)
     CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, NULL, NULL, NULL, NULL, NULL, NULL), (long) 0);
+#elif defined(HACL)
+    CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, NULL, NULL, NULL, NULL, NULL, NULL), (long) 0);
+#else
+#error "No crypto backend selected"
 #endif
 
     CHECK_TEST_RET_EQ(edhoc_conf_load_authkey(&conf, auth_key, auth_key_len), (long) 0);

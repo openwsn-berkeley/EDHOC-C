@@ -2,7 +2,36 @@
 #define EDHOC_CRYPTO_INTERNAL_H
 
 
+#if defined(WOLFSSL)
+#include <wolfssl/options.h>
+#include <wolfssl/wolfcrypt/sha256.h>
+#elif defined(MBEDTLS)
+#include <mbedtls/sha256.h>
+#elif defined(HACL)
+#else
+#error "No crypto backend selected"
+#endif
+
 #include "edhoc/edhoc.h"
+
+#if defined(HACL)
+#define HASH_INPUT_BLEN         (1000)
+#endif
+
+typedef struct hash_ctx hash_ctx_t;
+
+struct hash_ctx{
+#if defined(WOLFSSL)
+    wc_Sha256 digest_ctx;
+#elif defined(MBEDTLS)
+    mbedtls_sha256_context digest_ctx;
+#elif defined(HACL)
+    size_t fill_level;
+    uint8_t input_buffer[HASH_INPUT_BLEN];
+#else
+#error "No crypto backend selected"
+#endif
+};
 
 /**
  * @brief Generate a random key pair over a COSE curve
@@ -20,24 +49,24 @@ int crypt_gen_keypair(cose_curve_t crv, rng_cb_t f_rng, void *p_rng, cose_key_t 
 /**
  * @brief Initialize and start a hashing context
  *
- * @param digest_ctx[in]    Hashing context
+ * @param ctx[in]    Hashing context
  *
  * @return On success EDHOC_SUCCESS
  * @return On failure EDHOC_ERR_CRYPTO
  */
-int crypt_hash_init(void *digest_ctx);
+int crypt_hash_init(hash_ctx_t* ctx);
 
 /**
  * @brief Update the hashing context with
  *
- * @param digest_ctx[in]    Hashing context
+ * @param ctx[in]    Hashing context
  * @param in[in]            Input buffer
  * @param ilen[in]          Length of @p in
  *
  * @return On success EDHOC_SUCCESS
  * @return On failure EDHOC_ERR_CRYPTO
  */
-int crypt_hash_update(void *digest_ctx, const uint8_t *in, size_t ilen);
+int crypt_hash_update(hash_ctx_t* ctx, const uint8_t *in, size_t ilen);
 
 /**
  * @brief Finalize a hashing context
@@ -48,14 +77,14 @@ int crypt_hash_update(void *digest_ctx, const uint8_t *in, size_t ilen);
  * @return On success EDHOC_SUCCESS
  * @return On failure EDHOC_ERR_CRYPTO
  */
-int crypt_hash_finish(void *digest_ctx, uint8_t *output);
+int crypt_hash_finish(hash_ctx_t* ctx, uint8_t *output);
 
 /**
  * @brief Free the hashing context
  *
  * @param digest_ctx[in]        Hashing context
  */
-void crypt_hash_free(void *digest_ctx);
+void crypt_hash_free(hash_ctx_t* ctx);
 
 /**
  * @brief Compute the EDHOC-KDF

@@ -20,18 +20,6 @@
 #define EDHOC_MAX_CID_LEN                (4)
 #endif
 
-#if !defined(EDHOX_MAX_SUPPORTED_SUITES)
-#define EDHOC_MAX_SUPPORTED_SUITES       (5)
-#endif
-
-#if !defined(EDHOC_MAX_CRED_SIZE)
-#define EDHOC_MAX_CRED_SIZE              (200)
-#endif
-
-#if !defined(EDHOC_MAX_CRED_ID_SIZE)
-#define EDHOC_MAX_CRED_ID_SIZE           (50)
-#endif
-
 /**
  * Internal buffer sizes
  */
@@ -116,6 +104,17 @@ typedef enum edhoc_role {
     EDHOC_IS_RESPONDER = 0,
     EDHOC_IS_INITIATOR
 } edhoc_role_t;
+
+typedef enum edhoc_state {
+    EDHOC_WAITING = 0,
+    EDHOC_SENT_MESSAGE_1,
+    EDHOC_RECEIVED_MESSAGE_1,
+    EDHOC_SENT_MESSAGE_2,
+    EDHOC_RECEIVED_MESSAGE_2,
+    EDHOC_SENT_MESSAGE_3,
+    EDHOC_RECEIVED_MESSAGE_3,
+    EDHOC_FINALIZED
+} edhoc_state_t;
 
 struct edhoc_conf {
     edhoc_role_t role;

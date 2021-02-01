@@ -50,12 +50,4 @@
  */
 // #define EDHOC_AUTH_PUB_KEY
 
-/**
- * @def EDHOC_MAX_CREDENTIAL_SIZE
- *
- * Sets an upper-bound on the size of the credentials (either raw public key or CBOR certificate)
- *
- */
-#define EDHOC_MAX_CRED_SIZE       150
-
 #endif //EDHOC_CONFIG_H

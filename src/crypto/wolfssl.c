@@ -1,16 +1,19 @@
+
+#include "edhoc/cose.h"
+#include "edhoc/edhoc.h"
+#include "edhoc_internal.h"
+#include "edhoc/cipher_suites.h"
+#include "crypto_internal.h"
+
+#if defined(WOLFSSL)
+
+// do not remove
 #include <wolfssl/options.h>
 
 #include <wolfssl/wolfcrypt/curve25519.h>
 #include <wolfssl/wolfcrypt/hmac.h>
 #include <wolfssl/wolfcrypt/aes.h>
 #include <wolfssl/wolfcrypt/ed25519.h>
-
-#include "edhoc/cose.h"
-#include "edhoc/edhoc.h"
-#include "edhoc_internal.h"
-#include "edhoc/cipher_suites.h"
-
-#if defined(WOLFSSL)
 
 int crypt_gen_keypair(cose_curve_t crv, rng_cb_t f_rng, void *p_rng, cose_key_t *key) {
     (void) crv;
@@ -33,29 +36,29 @@ int crypt_gen_keypair(cose_curve_t crv, rng_cb_t f_rng, void *p_rng, cose_key_t 
     return EDHOC_SUCCESS;
 }
 
-int crypt_hash_init(void *digest_ctx) {
-    if (wc_InitSha256((wc_Sha256 *) digest_ctx) != EDHOC_SUCCESS)
+int crypt_hash_init(hash_ctx_t* ctx) {
+    if (wc_InitSha256(&ctx->digest_ctx) != EDHOC_SUCCESS)
         return EDHOC_ERR_CRYPTO;
     else
         return EDHOC_SUCCESS;
 }
 
-int crypt_hash_update(void *digest_ctx, const uint8_t *in, size_t ilen) {
-    if (wc_Sha256Update((wc_Sha256 *) digest_ctx, in, ilen) != EDHOC_SUCCESS)
+int crypt_hash_update(hash_ctx_t* ctx, const uint8_t *in, size_t ilen) {
+    if (wc_Sha256Update(&ctx->digest_ctx, in, ilen) != EDHOC_SUCCESS)
         return EDHOC_ERR_CRYPTO;
     else
         return EDHOC_SUCCESS;
 }
 
-int crypt_hash_finish(void *digest_ctx, uint8_t *output) {
-    if (wc_Sha256Final((wc_Sha256 *) digest_ctx, output) != EDHOC_SUCCESS)
+int crypt_hash_finish(hash_ctx_t* ctx, uint8_t *output) {
+    if (wc_Sha256Final(&ctx->digest_ctx, output) != EDHOC_SUCCESS)
         return EDHOC_ERR_CRYPTO;
     else
         return EDHOC_SUCCESS;
 }
 
-void crypt_hash_free(void *digest_ctx) {
-    wc_Sha256Free((wc_Sha256 *) digest_ctx);
+void crypt_hash_free(hash_ctx_t* ctx) {
+    wc_Sha256Free(&ctx->digest_ctx);
 }
 
 int
