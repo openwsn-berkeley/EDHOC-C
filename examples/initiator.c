@@ -103,9 +103,11 @@ int edhoc_handshake(int sockfd) {
             printf("[ERR] Not all bytes were sent...");
             return -1;
         }
+    } else {
+        return -1;
     }
 
-    if ((bread = read(sockfd, incoming, sizeof(incoming))) < 0)
+    if ((bread = read(sockfd, incoming, sizeof(incoming))) <= 0)
         return -1;
 
     printf("[%d] Received a message (%ld bytes):\n", counter++, bread);
@@ -121,6 +123,8 @@ int edhoc_handshake(int sockfd) {
             printf("[ERR] Not all bytes were sent...");
             return -1;
         }
+    } else {
+        return -1;
     }
 
     edhoc_init_finalize(&ctx);

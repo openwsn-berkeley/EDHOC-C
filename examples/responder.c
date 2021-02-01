@@ -1,6 +1,7 @@
 #include <edhoc/edhoc.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <unistd.h>
 #include <string.h>
 
 #define PORT 9830
@@ -43,7 +44,7 @@ void print_bstr(const uint8_t *bstr, size_t bstr_len) {
 }
 
 int edhoc_handshake(int sockfd) {
-    ssize_t cred_id_len, bread, len, written ;
+    ssize_t cred_id_len, bread, len, written;
     uint8_t cred_id[50] = {0};
     uint8_t incoming[500] = {0};
     uint8_t outgoing[500] = {0};
@@ -88,7 +89,7 @@ int edhoc_handshake(int sockfd) {
     if (edhoc_session_preset_cidr(&ctx, cid, sizeof(cid)) != 0)
         return -1;
 
-    if ((bread = read(sockfd, incoming, sizeof(incoming))) < 0)
+    if ((bread = read(sockfd, incoming, sizeof(incoming))) <= 0)
         return -1;
 
     printf("[%d] Received a message (%ld):\n", counter++, bread);
@@ -104,9 +105,11 @@ int edhoc_handshake(int sockfd) {
             printf("[ERR] Not all bytes were sent...");
             return -1;
         }
+    } else {
+        return -1;
     }
 
-    if ((bread = read(sockfd, incoming, sizeof(incoming))) < 0)
+    if ((bread = read(sockfd, incoming, sizeof(incoming))) <= 0)
         return -1;
 
     printf("[%d] Received a message (%ld bytes):\n", counter++, bread);
