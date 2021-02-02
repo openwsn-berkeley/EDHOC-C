@@ -82,4 +82,6 @@
 #define EDHOC_ADD_DATA_MAX_SIZE             (64)
 
 
-#endif //EDHOC_CONFIG_H
+#include "check_config.h"
+
+#endif /* EDHOC_CONFIG_H */
