@@ -2,26 +2,18 @@
 #include <assert.h>
 #include <string.h>
 
-#include <wolfssl/options.h>
-#include <wolfssl/wolfcrypt/ed25519.h>
+#include "cipher_suites.h"
 
-#if defined(MBEDTLS)
+#include "util.h"
+#include "json.h"
+#include "crypto.h"
 
-#include <mbedtls/sha256.h>
-#include <mbedtls/dhm.h>
-
-#elif defined(WOLFSSL)
+#if defined(WOLFSSL)
 
 #include <wolfssl/options.h>
 #include <wolfssl/wolfcrypt/random.h>
 
-#endif
-
-#include <edhoc/cipher_suites.h>
-
-#include "util.h"
-#include "json.h"
-#include "crypto_internal.h"
+#endif /* WOLFSSL */
 
 int test_hashing(const uint8_t *msg1, size_t msg1_len, const uint8_t *data2, size_t data2_len, const uint8_t *th2) {
     ssize_t ret;
@@ -36,7 +28,7 @@ int test_hashing(const uint8_t *msg1, size_t msg1_len, const uint8_t *data2, siz
 
     crypt_hash_finish(&hash_ctx, buf);
 
-    CHECK_TEST_RET_EQ(compare_arrays(buf, th2, COSE_DIGEST_LEN), (long) 0);
+    CHECK_TEST_RET_EQ(compare_arrays(buf, th2, EDHOC_HASH_MAX_SIZE), (long) 0);
 
     exit:
     return ret;
@@ -45,7 +37,7 @@ int test_hashing(const uint8_t *msg1, size_t msg1_len, const uint8_t *data2, siz
 int test_ecdh_computation(cose_curve_t crv, const uint8_t *priv_key, size_t priv_key_len, const uint8_t *pub_key,
                           size_t pub_key_len, const uint8_t *secret, size_t secret_len) {
     ssize_t ret;
-    uint8_t outbuf[COSE_MAX_KEY_LEN];
+    uint8_t outbuf[EDHOC_ECC_KEY_MAX_SIZE];
 
     edhoc_ctx_t ctx;
     edhoc_conf_t conf;
@@ -177,7 +169,7 @@ int test_compute_ed25519_signature(uint8_t *sk, size_t sk_len, uint8_t *m_2, siz
 
     CHECK_TEST_RET_EQ(crypt_compute_signature(COSE_EC_CURVE_ED25519, &authkey, m_2, m_2_len, NULL, NULL, signature),
                       (long) 0);
-    CHECK_TEST_RET_EQ(compare_arrays(signature, expected, COSE_MAX_SIGNATURE_LEN), (long) 0);
+    CHECK_TEST_RET_EQ(compare_arrays(signature, expected, EDHOC_SIG23_MAX_SIZE), (long) 0);
 
     exit:
     return ret;
@@ -194,7 +186,7 @@ int test_edhoc_kdf(
     ssize_t ret;
     uint8_t out[expected_len];
 
-    CHECK_TEST_RET_EQ(crypt_edhoc_kdf(id, prk, transcript, label, out, expected_len), (long) 0);
+    CHECK_TEST_RET_EQ(crypt_edhoc_kdf(id, prk, transcript, label, expected_len, out), (long) 0);
     CHECK_TEST_RET_EQ(compare_arrays(expected, out, expected_len), (long) 0);
 
     exit:
@@ -209,25 +201,23 @@ int main(int argc, char **argv) {
 
     cose_algo_t id;
 
-    uint8_t m1[MESSAGE_1_SIZE];
-    uint8_t data_2[EHDOC_DATA_2_SIZE];
-    uint8_t th_2[EDHOC_TH_SIZE];
-    uint8_t salt[EDHOC_TH_SIZE];
-    uint8_t prk2e[EDHOC_TH_SIZE];
-    uint8_t prk3e2m[EDHOC_TH_SIZE];
-    uint8_t k2m[SYMMETRIC_KEY_SIZE];
-    uint8_t iv2m[IV_SIZE];
-    uint8_t resp_authkey[AUTHKEY_SIZE];
-    uint8_t m_2[EDHOC_M2_SIZE];
-    uint8_t sig[EDHOC_SIGNATURE_SIZE];
-    uint8_t k_2e[EDHOC_PAYLOAD_SIZE];
-    uint8_t init_ephkey[EPHKEY_SIZE];
-    uint8_t resp_ephkey[EPHKEY_SIZE];
-    uint8_t secret[EDHOC_SECRET_SIZE];
+    uint8_t m1[MESSAGE_1_SIZE]; size_t msg1_len;
+    uint8_t data_2[EHDOC_DATA_2_SIZE]; size_t data2_len;
+    uint8_t th_2[EDHOC_TH_SIZE]; size_t th2_len;
+    uint8_t salt[EDHOC_TH_SIZE]; size_t salt_len;
+    uint8_t prk2e[EDHOC_TH_SIZE]; size_t prk2e_len;
+    uint8_t prk3e2m[EDHOC_TH_SIZE]; size_t prk3e2m_len;
+    uint8_t k2m[SYMMETRIC_KEY_SIZE]; size_t k2m_len;
+    uint8_t iv2m[IV_SIZE]; size_t iv2m_len;
+    uint8_t resp_authkey[AUTHKEY_SIZE]; size_t resp_authkey_len;
+    uint8_t m2[EDHOC_M2_SIZE]; size_t m2_len;
+    uint8_t sig[EDHOC_SIGNATURE_SIZE]; size_t sig_len;
+    uint8_t k2e[EDHOC_PAYLOAD_SIZE]; size_t k2e_len;
+    uint8_t init_ephkey[EPHKEY_SIZE]; size_t init_ephkey_len;
+    uint8_t resp_ephkey[EPHKEY_SIZE]; size_t resp_ephkey_len;
+    uint8_t secret[EDHOC_SECRET_SIZE]; size_t secret_len;
 
     int selected;
-    ssize_t init_ephkey_len, resp_ephkey_len, secret_len, prk2e_len, salt_len, prk3e2m_len, k2m_len, k_2e_len, msg1_len,
-            data2_len, th2_len, resp_authkey_len, m_2_len, iv2m_len, sig_len;
 
     /* test selection */
 
@@ -244,7 +234,7 @@ int main(int argc, char **argv) {
 
             assert(msg1_len >= 0);
             assert(data2_len >= 0);
-            assert(th2_len == COSE_DIGEST_LEN);
+            assert(th2_len == EDHOC_HASH_MAX_SIZE);
 
             ret = test_hashing(m1, msg1_len, data_2, data2_len, th_2);
 
@@ -264,7 +254,7 @@ int main(int argc, char **argv) {
             assert(resp_ephkey_len >= 0);
             assert(secret_len > 0);
 
-            ret = test_ecdh_computation(edhoc_dh_curve_from_suite(selected),
+            ret = test_ecdh_computation(edhoc_cipher_suite_from_id(selected)->dh_curve,
                                         init_ephkey,
                                         init_ephkey_len,
                                         resp_ephkey,
@@ -282,7 +272,7 @@ int main(int argc, char **argv) {
             salt_len = load_from_json_RESP_SALT(ctx, salt, sizeof(salt));
 
             assert(secret_len >= 0);
-            assert(prk2e_len == COSE_DIGEST_LEN);
+            assert(prk2e_len == EDHOC_HASH_MAX_SIZE);
             assert(salt_len == 0);
 
             ret = test_compute_prk2e(secret, salt, salt_len, prk2e);
@@ -299,11 +289,11 @@ int main(int argc, char **argv) {
             th2_len = load_from_json_TH2(ctx, th_2, sizeof(th_2));
             k2m_len = load_from_json_K2M(ctx, k2m, sizeof(k2m));
 
-            assert(prk3e2m_len == COSE_DIGEST_LEN);
-            assert(th2_len >= COSE_DIGEST_LEN);
+            assert(prk3e2m_len == EDHOC_HASH_MAX_SIZE);
+            assert(th2_len >= EDHOC_HASH_MAX_SIZE);
             assert(k2m_len >= 0);
 
-            id = edhoc_aead_from_suite(selected);
+            id = edhoc_cipher_suite_from_id(selected)->aead_algo;
 
             ret = test_edhoc_kdf(id, prk3e2m, th_2, label, k2m, k2m_len);
 
@@ -318,11 +308,11 @@ int main(int argc, char **argv) {
             th2_len = load_from_json_TH2(ctx, th_2, sizeof(th_2));
             iv2m_len = load_from_json_IV2M(ctx, iv2m, sizeof(iv2m));
 
-            assert(prk3e2m_len == COSE_DIGEST_LEN);
-            assert(th2_len >= COSE_DIGEST_LEN);
+            assert(prk3e2m_len == EDHOC_HASH_MAX_SIZE);
+            assert(th2_len >= EDHOC_HASH_MAX_SIZE);
             assert(iv2m_len >= 0);
 
-            id = edhoc_aead_from_suite(selected);
+            id = edhoc_cipher_suite_from_id(selected)->aead_algo;
 
             ret = test_edhoc_kdf(id, prk3e2m, th_2, label, iv2m, iv2m_len);
 
@@ -336,15 +326,15 @@ int main(int argc, char **argv) {
 
             prk2e_len = load_from_json_PRK2E(ctx, prk2e, sizeof(prk2e));
             th2_len = load_from_json_TH2(ctx, th_2, sizeof(th_2));
-            k_2e_len = load_from_json_K2E(ctx, k_2e, sizeof(k_2e));
+            k2e_len = load_from_json_K2E(ctx, k2e, sizeof(k2e));
 
-            assert(prk2e_len == COSE_DIGEST_LEN);
-            assert(th2_len >= COSE_DIGEST_LEN);
-            assert(k_2e_len >= 0);
+            assert(prk2e_len == EDHOC_HASH_MAX_SIZE);
+            assert(th2_len >= EDHOC_HASH_MAX_SIZE);
+            assert(k2e_len >= 0);
 
-            id = edhoc_aead_from_suite(selected);
+            id = edhoc_cipher_suite_from_id(selected)->aead_algo;
 
-            ret = test_edhoc_kdf(id, prk2e, th_2, label, k_2e, k_2e_len);
+            ret = test_edhoc_kdf(id, prk2e, th_2, label, k2e, k2e_len);
 
             close_test(ctx);
         } else if (strcmp(argv[1], "--ed25519") == 0) {
@@ -352,14 +342,14 @@ int main(int argc, char **argv) {
             assert(ctx != NULL);
 
             resp_authkey_len = load_from_json_RESP_AUTHKEY(ctx, resp_authkey, sizeof(resp_authkey));
-            m_2_len = load_from_json_M2(ctx, m_2, sizeof(m_2));
+            m2_len = load_from_json_M2(ctx, m2, sizeof(m2));
             sig_len = load_from_json_SIGNATURE(ctx, sig, sizeof(sig));
 
             assert(resp_authkey_len >= 0);
-            assert(m_2_len >= 0);
+            assert(m2_len >= 0);
             assert(sig_len >= 0);
 
-            ret = test_compute_ed25519_signature(resp_authkey, resp_authkey_len, m_2, m_2_len, sig);
+            ret = test_compute_ed25519_signature(resp_authkey, resp_authkey_len, m2, m2_len, sig);
 
             close_test(ctx);
         }

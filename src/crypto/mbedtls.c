@@ -1,8 +1,7 @@
 #include <string.h>
 
-#include "edhoc/cipher_suites.h"
-#include "edhoc_internal.h"
-#include "crypto_internal.h"
+#include "cipher_suites.h"
+#include "crypto.h"
 
 #if defined(MBEDTLS)
 

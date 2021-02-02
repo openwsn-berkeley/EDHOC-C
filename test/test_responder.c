@@ -58,7 +58,7 @@ int test_message2_encoding(
 #endif
 
     CHECK_TEST_RET_EQ(edhoc_conf_load_authkey(&conf, auth_key, auth_key_len), (long) 0);
-    CHECK_TEST_RET_EQ(edhoc_conf_load_cborcert(&conf, cbor_certificate, cert_len), (long) 0);
+    CHECK_TEST_RET_EQ(edhoc_conf_load_cbor_cert(&conf, cbor_certificate, cert_len), (long) 0);
     CHECK_TEST_RET_EQ(edhoc_conf_load_cred_id(&conf, cred_id, cred_id_len), (long) 0);
 
     // loading the configuration

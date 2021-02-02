@@ -1,9 +1,8 @@
 
-#include "edhoc/cose.h"
+#include "cose.h"
 #include "edhoc/edhoc.h"
-#include "edhoc_internal.h"
-#include "edhoc/cipher_suites.h"
-#include "crypto_internal.h"
+#include "format.h"
+#include "crypto.h"
 
 #if defined(WOLFSSL)
 
@@ -29,42 +28,42 @@ int crypt_gen_keypair(cose_curve_t crv, rng_cb_t f_rng, void *p_rng, cose_key_t 
     if (wc_curve25519_make_key((WC_RNG *) p_rng, CURVE25519_KEYSIZE, &_key) != EDHOC_SUCCESS)
         return EDHOC_ERR_KEY_GENERATION;
 
-    key->d_len = COSE_MAX_KEY_LEN;
-    key->x_len = COSE_MAX_KEY_LEN;
+    key->d_len = EDHOC_ECC_KEY_MAX_SIZE;
+    key->x_len = EDHOC_ECC_KEY_MAX_SIZE;
     wc_curve25519_export_key_raw(&_key, key->d, (word32 *) &key->d_len, key->x, (word32 *) &key->x_len);
 
     return EDHOC_SUCCESS;
 }
 
-int crypt_hash_init(hash_ctx_t* ctx) {
+int crypt_hash_init(hash_ctx_t *ctx) {
     if (wc_InitSha256(&ctx->digest_ctx) != EDHOC_SUCCESS)
         return EDHOC_ERR_CRYPTO;
     else
         return EDHOC_SUCCESS;
 }
 
-int crypt_hash_update(hash_ctx_t* ctx, const uint8_t *in, size_t ilen) {
+int crypt_hash_update(hash_ctx_t *ctx, const uint8_t *in, size_t ilen) {
     if (wc_Sha256Update(&ctx->digest_ctx, in, ilen) != EDHOC_SUCCESS)
         return EDHOC_ERR_CRYPTO;
     else
         return EDHOC_SUCCESS;
 }
 
-int crypt_hash_finish(hash_ctx_t* ctx, uint8_t *output) {
-    if (wc_Sha256Final(&ctx->digest_ctx, output) != EDHOC_SUCCESS)
+int crypt_hash_finish(hash_ctx_t *ctx, uint8_t *out) {
+    if (wc_Sha256Final(&ctx->digest_ctx, out) != EDHOC_SUCCESS)
         return EDHOC_ERR_CRYPTO;
     else
         return EDHOC_SUCCESS;
 }
 
-void crypt_hash_free(hash_ctx_t* ctx) {
+void crypt_hash_free(hash_ctx_t *ctx) {
     wc_Sha256Free(&ctx->digest_ctx);
 }
 
 int
-crypt_edhoc_kdf(cose_algo_t id, const uint8_t *prk, const uint8_t *th, const char *label, uint8_t *out, size_t olen) {
+crypt_edhoc_kdf(cose_algo_t id, const uint8_t *prk, const uint8_t *th, const char *label, int length, uint8_t *out) {
     ssize_t ret;
-    uint8_t info_buf[EDHOC_MAX_KDF_INFO_LEN];
+    uint8_t info_buf[EDHOC_KDF_INFO_MAX_SIZE];
     ssize_t info_len;
 
     ret = EDHOC_ERR_CRYPTO;
@@ -72,12 +71,12 @@ crypt_edhoc_kdf(cose_algo_t id, const uint8_t *prk, const uint8_t *th, const cha
     // TODO: check if the label length doesn't cause a buffer overflow. If label is too long, it will cause info_buf to
     //  overflow.
 
-    if ((info_len = edhoc_info_encode(id, th, label, olen, info_buf, EDHOC_MAX_MAC_OR_SIG23_LEN)) < EDHOC_SUCCESS) {
+    if ((info_len = edhoc_info_encode(id, th, label, length, info_buf, EDHOC_SIG23_MAX_SIZE)) < EDHOC_SUCCESS) {
         ret = info_len;     // store the error code and return
         goto exit;
     }
 
-    if (wc_HKDF_Expand(SHA256, prk, COSE_DIGEST_LEN, info_buf, info_len, out, olen) != EDHOC_SUCCESS) {
+    if (wc_HKDF_Expand(SHA256, prk, EDHOC_HASH_MAX_SIZE, info_buf, info_len, out, length) != EDHOC_SUCCESS) {
         ret = EDHOC_ERR_CRYPTO;
         goto exit;
     }
@@ -111,7 +110,7 @@ int crypt_compute_prk2e(const uint8_t *shared_secret, const uint8_t *salt, size_
 }
 
 int crypt_compute_prk4x3m(edhoc_role_t role,
-                          method_t method,
+                          uint8_t method,
                           const uint8_t *shared_secret,
                           const uint8_t *prk_3e2m,
                           uint8_t *prk_4x3m) {
@@ -123,7 +122,7 @@ int crypt_compute_prk4x3m(edhoc_role_t role,
         switch (method) {
             case EDHOC_AUTH_SIGN_SIGN:
             case EDHOC_AUTH_STATIC_SIGN:
-                memcpy(prk_4x3m, prk_3e2m, COSE_DIGEST_LEN);
+                memcpy(prk_4x3m, prk_3e2m, EDHOC_HASH_MAX_SIZE);
                 break;
             case EDHOC_AUTH_STATIC_STATIC:
             case EDHOC_AUTH_SIGN_STATIC:
@@ -136,7 +135,7 @@ int crypt_compute_prk4x3m(edhoc_role_t role,
         switch (method) {
             case EDHOC_AUTH_SIGN_SIGN:
             case EDHOC_AUTH_SIGN_STATIC:
-                memcpy(prk_4x3m, prk_3e2m, COSE_DIGEST_LEN);
+                memcpy(prk_4x3m, prk_3e2m, EDHOC_HASH_MAX_SIZE);
                 break;
             case EDHOC_AUTH_STATIC_STATIC:
             case EDHOC_AUTH_STATIC_SIGN:
@@ -153,7 +152,7 @@ int crypt_compute_prk4x3m(edhoc_role_t role,
 
 
 int crypt_compute_prk3e2m(edhoc_role_t role,
-                          method_t method,
+                          uint8_t method,
                           const uint8_t *prk_2e,
                           const uint8_t *shared_secret,
                           uint8_t *prk_3e2m) {
@@ -166,7 +165,7 @@ int crypt_compute_prk3e2m(edhoc_role_t role,
         switch (method) {
             case EDHOC_AUTH_SIGN_SIGN:
             case EDHOC_AUTH_STATIC_SIGN:
-                memcpy(prk_3e2m, prk_2e, COSE_DIGEST_LEN);
+                memcpy(prk_3e2m, prk_2e, EDHOC_HASH_MAX_SIZE);
                 break;
             case EDHOC_AUTH_STATIC_STATIC:
             case EDHOC_AUTH_SIGN_STATIC:
@@ -180,7 +179,7 @@ int crypt_compute_prk3e2m(edhoc_role_t role,
         switch (method) {
             case EDHOC_AUTH_SIGN_SIGN:
             case EDHOC_AUTH_SIGN_STATIC:
-                memcpy(prk_3e2m, prk_2e, COSE_DIGEST_LEN);
+                memcpy(prk_3e2m, prk_2e, EDHOC_HASH_MAX_SIZE);
                 break;
             case EDHOC_AUTH_STATIC_STATIC:
             case EDHOC_AUTH_STATIC_SIGN:
@@ -244,7 +243,7 @@ int crypt_compute_ecdh(
     (void) f_rng;
     (void) p_rng;
 
-    word32 key_size = COSE_MAX_KEY_LEN;
+    word32 key_size = EDHOC_ECC_KEY_MAX_SIZE;
 
     curve25519_key d;
     curve25519_key Q;
@@ -293,12 +292,18 @@ int crypt_decrypt_aead(
 
     Aes aes;
     int ret, key_len, iv_len, tag_len;
+    const aead_info_t *aead_info;
 
     ret = EDHOC_ERR_CRYPTO;
 
-    key_len = cose_key_len_from_alg(alg);
-    iv_len = cose_iv_len_from_alg(alg);
-    tag_len = cose_tag_len_from_alg(alg);
+    aead_info = cose_aead_info_from_id(alg);
+
+    if (aead_info == NULL)
+        return EDHOC_ERR_AEAD_UNAVAILABLE;
+
+    key_len = aead_info->key_length;
+    iv_len = aead_info->iv_length;
+    tag_len = aead_info->tag_length;
 
     if (wc_AesCcmSetKey(&aes, key, key_len) != EDHOC_SUCCESS)
         goto exit;
@@ -335,12 +340,18 @@ int crypt_encrypt_aead(
 
     Aes aes;
     int ret, key_len, iv_len, tag_len;
+    const aead_info_t *aead_info;
 
     ret = EDHOC_ERR_CRYPTO;
 
-    key_len = cose_key_len_from_alg(alg);
-    iv_len = cose_iv_len_from_alg(alg);
-    tag_len = cose_tag_len_from_alg(alg);
+    aead_info = cose_aead_info_from_id(alg);
+
+    if (aead_info == NULL)
+        return EDHOC_ERR_AEAD_UNAVAILABLE;
+
+    key_len = aead_info->key_length;
+    iv_len = aead_info->iv_length;
+    tag_len = aead_info->tag_length;
 
     if (wc_AesCcmSetKey(&aes, key, key_len) != EDHOC_SUCCESS)
         goto exit;
@@ -377,18 +388,18 @@ int crypt_compute_signature(cose_curve_t crv,
     int ret;
     ed25519_key sk;
     wc_ed25519_init(&sk);
-    size_t sig_len = COSE_MAX_SIGNATURE_LEN;
-    uint8_t pk[COSE_MAX_KEY_LEN];
+    size_t sig_len = EDHOC_SIG23_MAX_SIZE;
+    uint8_t pk[EDHOC_ECC_KEY_MAX_SIZE];
 
     ret = EDHOC_ERR_CRYPTO;
 
     if (wc_ed25519_import_private_only(authkey->d, authkey->d_len, &sk) != EDHOC_SUCCESS)
         goto exit;
 
-    if (wc_ed25519_make_public(&sk, pk, COSE_MAX_KEY_LEN) != EDHOC_SUCCESS)
+    if (wc_ed25519_make_public(&sk, pk, EDHOC_ECC_KEY_MAX_SIZE) != EDHOC_SUCCESS)
         goto exit;
 
-    if (wc_ed25519_import_private_key(authkey->d, authkey->d_len, pk, COSE_MAX_KEY_LEN, &sk) != EDHOC_SUCCESS)
+    if (wc_ed25519_import_private_key(authkey->d, authkey->d_len, pk, EDHOC_ECC_KEY_MAX_SIZE, &sk) != EDHOC_SUCCESS)
         goto exit;
 
     if (wc_ed25519_sign_msg(msg, msg_len, signature, (word32 *) &sig_len, &sk) != EDHOC_SUCCESS)

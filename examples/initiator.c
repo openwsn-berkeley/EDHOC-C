@@ -5,7 +5,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <edhoc/edhoc.h>
-#include <edhoc/cipher_suites.h>
+#include "../src/cipher_suites.h"
 
 #define PORT 9830
 
@@ -14,8 +14,8 @@
 int counter = 1;
 
 corr_t corr = CORR_1_2;
-method_t method = EDHOC_AUTH_SIGN_SIGN;
-cipher_suite_t suite = EDHOC_CIPHER_SUITE_0;
+uint8_t method = EDHOC_AUTH_SIGN_SIGN;
+uint8_t suite = EDHOC_CIPHER_SUITE_0;
 
 const uint8_t cid[] = {};
 
@@ -38,6 +38,8 @@ const uint8_t auth_key[] = {0xa4, 0x01, 0x01, 0x20, 0x06, 0x23, 0x58, 0x20, 0x2f
                             0xd3, 0x97, 0xd0, 0xcb, 0x54, 0xf7, 0x46, 0xe3, 0xda, 0x3f, 0x27, 0x59, 0x6e, 0xe0, 0x6b,
                             0x53, 0x71, 0x48, 0x1d, 0xc0, 0xe0, 0x12, 0xbc, 0x34, 0xd7, 0x04, 0x80};
 
+const uint8_t cred_id[] = {0xa1, 0x18, 0x22, 0x82, 0x2e, 0x48, 0x5b, 0x78, 0x69, 0x88, 0x43, 0x9e, 0xbc, 0xf2};
+
 
 void print_bstr(const uint8_t *bstr, size_t bstr_len) {
     for (int i = 0; i < bstr_len; i++) {
@@ -50,8 +52,8 @@ void print_bstr(const uint8_t *bstr, size_t bstr_len) {
 }
 
 int edhoc_handshake(int sockfd) {
-    ssize_t cred_id_len, bread, len, written;
-    uint8_t cred_id[50] = {0}, incoming[500] = {0}, outgoing[500] = {0};
+    ssize_t bread, len, written;
+    uint8_t incoming[500] = {0}, outgoing[500] = {0};
 
     edhoc_ctx_t ctx;
     edhoc_conf_t conf;
@@ -67,21 +69,12 @@ int edhoc_handshake(int sockfd) {
     edhoc_conf_load_authkey(&conf, auth_key, sizeof(auth_key));
 
     printf("[%d] Load CBOR certificate...\n", counter++);
-    edhoc_conf_load_cborcert(&conf, cbor_cert, sizeof(cbor_cert));
-
-    cred_id_len = cose_x5t_attribute(COSE_ALGO_SHA256_64,
-                                     conf.certificate.cert,
-                                     conf.certificate.cert_len,
-                                     cred_id,
-                                     sizeof(cred_id));
-
-    if (cred_id_len < 0)
-        return -1;
+    edhoc_conf_load_cbor_cert(&conf, cbor_cert, sizeof(cbor_cert));
 
     printf("[%d] Compute and load CBOR certificate hash:\n", counter++);
-    print_bstr(cred_id, cred_id_len);
+    print_bstr(cred_id, sizeof(cred_id));
 
-    if (edhoc_conf_load_cred_id(&conf, cred_id, cred_id_len) != 0)
+    if (edhoc_conf_load_cred_id(&conf, cred_id, sizeof(cred_id)) != 0)
         return -1;
 
     // loading the configuration
@@ -131,7 +124,7 @@ int edhoc_handshake(int sockfd) {
 
     printf("[%d] Handshake successfully completed...\n", counter++);
     printf("[%d] Transcript hash 4:\n", counter++);
-    print_bstr(ctx.th_4, COSE_DIGEST_LEN);
+    print_bstr(ctx.session.th_4, EDHOC_HASH_MAX_SIZE);
 
     uint8_t oscore_secret[16];
     uint8_t oscore_salt[8];

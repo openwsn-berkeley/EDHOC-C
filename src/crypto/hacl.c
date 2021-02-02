@@ -1,6 +1,6 @@
-#include "edhoc/cose.h"
+#include "cose.h"
 #include "edhoc/edhoc.h"
-#include "crypto_internal.h"
+#include "crypto.h"
 
 #if defined(HACL)
 
@@ -9,7 +9,7 @@
 #include <Hacl_Hash.h>
 #include <edhoc_internal.h>
 #include <Hacl_HKDF.h>
-#include <edhoc/cipher_suites.h>
+#include <cipher_suites.h>
 #include <Hacl_Ed25519.h>
 #include "ccm.h"
 
@@ -87,7 +87,7 @@ int crypt_compute_prk2e(const uint8_t *shared_secret, const uint8_t *salt, size_
 }
 
 int crypt_compute_prk4x3m(edhoc_role_t role,
-                          method_t method,
+                          uint8_t method,
                           const uint8_t *shared_secret,
                           const uint8_t *prk_3e2m,
                           uint8_t *prk_4x3m) {
@@ -129,7 +129,7 @@ int crypt_compute_prk4x3m(edhoc_role_t role,
 
 
 int crypt_compute_prk3e2m(edhoc_role_t role,
-                          method_t method,
+                          uint8_t method,
                           const uint8_t *prk_2e,
                           const uint8_t *shared_secret,
                           uint8_t *prk_3e2m) {

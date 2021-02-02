@@ -7,7 +7,7 @@
 
 #endif
 
-#include "cbor_internal.h"
+#include "cbor.h"
 
 #if defined(NANOCBOR)
 

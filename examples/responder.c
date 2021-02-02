@@ -33,6 +33,8 @@ const uint8_t eph_key[] = {0xa5, 0x01, 0x01, 0x20, 0x04, 0x21, 0x58, 0x20, 0x71,
                            0xa8, 0x31, 0xc8, 0xba, 0x33, 0x13, 0x4f, 0xd4, 0xcd, 0x71, 0x67, 0xca, 0xba, 0xec, 0xda,
                            0x04, 0x80};
 
+const uint8_t cred_id[] = {0xa1, 0x18, 0x22, 0x82, 0x2e, 0x48, 0xfc, 0x79, 0x99, 0x0f, 0x24, 0x31, 0xa3, 0xf5};
+
 void print_bstr(const uint8_t *bstr, size_t bstr_len) {
     for (int i = 0; i < bstr_len; i++) {
         if ((i + 1) % 10 == 0)
@@ -44,8 +46,7 @@ void print_bstr(const uint8_t *bstr, size_t bstr_len) {
 }
 
 int edhoc_handshake(int sockfd) {
-    ssize_t cred_id_len, bread, len, written;
-    uint8_t cred_id[50] = {0};
+    ssize_t bread, len, written;
     uint8_t incoming[500] = {0};
     uint8_t outgoing[500] = {0};
 
@@ -63,21 +64,12 @@ int edhoc_handshake(int sockfd) {
     edhoc_conf_load_authkey(&conf, auth_key, sizeof(auth_key));
 
     printf("[%d] Load CBOR certificate...\n", counter++);
-    edhoc_conf_load_cborcert(&conf, cbor_cert, sizeof(cbor_cert));
-
-    cred_id_len = cose_x5t_attribute(COSE_ALGO_SHA256_64,
-                                     conf.certificate.cert,
-                                     conf.certificate.cert_len,
-                                     cred_id,
-                                     sizeof(cred_id));
-
-    if (cred_id_len < 0)
-        return -1;
+    edhoc_conf_load_cbor_cert(&conf, cbor_cert, sizeof(cbor_cert));
 
     printf("[%d] Compute and load CBOR certificate hash:\n", counter++);
-    print_bstr(cred_id, cred_id_len);
+    print_bstr(cred_id, sizeof(cred_id));
 
-    if (edhoc_conf_load_cred_id(&conf, cred_id, cred_id_len) != 0)
+    if (edhoc_conf_load_cred_id(&conf, cred_id, sizeof(cred_id)) != 0)
         return -1;
 
     // loading the configuration
@@ -119,7 +111,7 @@ int edhoc_handshake(int sockfd) {
 
     printf("[%d] Handshake successfully completed...\n", counter++);
     printf("[%d] Transcript hash 4:\n", counter++);
-    print_bstr(ctx.th_4, COSE_DIGEST_LEN);
+    print_bstr(ctx.session.th_4, EDHOC_HASH_MAX_SIZE);
 
     uint8_t oscore_secret[16];
     uint8_t oscore_salt[8];

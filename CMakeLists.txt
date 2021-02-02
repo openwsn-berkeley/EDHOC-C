@@ -48,7 +48,7 @@ endif ()
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "MinSizeRel, Release")
 
 if (NOT EDHOC_CRYPTO_BACKEND)
-    set(EDHOC_CRYPTO_BACKEND "HACL" CACHE STRING "Backend for cryptography" FORCE)
+    set(EDHOC_CRYPTO_BACKEND "WOLFSSL" CACHE STRING "Backend for cryptography" FORCE)
 endif ()
 
 set_property(CACHE EDHOC_CRYPTO_BACKEND PROPERTY STRINGS "MBEDTLS" "WOLFSSL" "HACL")

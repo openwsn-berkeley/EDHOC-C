@@ -1,8 +1,8 @@
 #include <stdint.h>
 
-#include "cbor_internal.h"
+#include "cbor.h"
 #include "edhoc/edhoc.h"
-#include "edhoc/cbor_cert.h"
+#include "credentials.h"
 
 int cbor_cert_load_from_cbor(cbor_cert_t *cert_ctx, const uint8_t* certificate, size_t length){
     int ret;
@@ -13,7 +13,7 @@ int cbor_cert_load_from_cbor(cbor_cert_t *cert_ctx, const uint8_t* certificate, 
     ret = EDHOC_ERR_CBOR_DECODING;
 
     CBOR_CHECK_RET(cbor_bytes_decode(&pt, &cert_ctx->cert_len, certificate, size, length));
-    cert_ctx->cert = pt;
+    cert_ctx->certificate = pt;
 
     ret = EDHOC_SUCCESS;
     exit:

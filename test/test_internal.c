@@ -2,12 +2,12 @@
 #include <string.h>
 
 #include <edhoc/edhoc.h>
-#include <edhoc/cipher_suites.h>
+#include <cipher_suites.h>
 
 #include "util.h"
 #include "json.h"
 
-#include "edhoc_internal.h"
+#include "format.h"
 
 int test_message1_decode(const uint8_t *msg_buf,
                          size_t msg_buf_len,
@@ -24,7 +24,7 @@ int test_message1_decode(const uint8_t *msg_buf,
 
     CHECK_TEST_RET_EQ(edhoc_msg1_decode(&ctx, msg_buf, msg_buf_len), (long) 0);
     CHECK_TEST_RET_EQ(ctx.correlation, (long) method_corr % 4);
-    CHECK_TEST_RET_EQ(*ctx.method, (long) (method_corr - ctx.correlation) / 4);
+    CHECK_TEST_RET_EQ(ctx.method, (long) (method_corr - ctx.correlation) / 4);
     CHECK_TEST_RET_EQ(ctx.session.cidi_len, (long) conn_idi_len);
     CHECK_TEST_RET_EQ(compare_arrays(ctx.session.cidi, conn_idi, conn_idi_len), (long) 0);
     CHECK_TEST_RET_EQ(ctx.remote_eph_key.x_len, (long) g_x_len);
@@ -196,7 +196,7 @@ int main(int argc, char **argv) {
 
             edhoc_ctx_t edhoc_ctx;
             edhoc_ctx_init(&edhoc_ctx);
-            edhoc_ctx.session.selected_suite = (cipher_suite_t *) edhoc_select_suite(selected);
+            edhoc_ctx.session.cipher_suite = edhoc_cipher_suite_from_id(selected)->id;
 
             ret = test_message2_decode(&edhoc_ctx,
                                        m2,
@@ -245,8 +245,8 @@ int main(int argc, char **argv) {
             assert(info_k2m_len > 0);
             assert(th2_len > 0);
 
-            id = edhoc_aead_from_suite(selected);
-            key_length = cose_key_len_from_alg(id);
+            id = edhoc_cipher_suite_from_id(selected)->aead_algo;
+            key_length = cose_aead_info_from_id(id)->key_length;
 
             ret = test_info_encode(id, th_2, label, key_length, info_k2m, info_k2m_len);
 
@@ -263,8 +263,8 @@ int main(int argc, char **argv) {
             assert(info_iv2m_len > 0);
             assert(th2_len > 0);
 
-            id = edhoc_aead_from_suite(selected);
-            iv_length = cose_iv_len_from_alg(id);
+            id = edhoc_cipher_suite_from_id(selected)->aead_algo;
+            iv_length = cose_aead_info_from_id(id)->iv_length;
 
             ret = test_info_encode(id, th_2, label, iv_length, info_iv2m, info_iv2m_len);
 
