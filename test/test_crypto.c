@@ -202,20 +202,20 @@ int main(int argc, char **argv) {
     cose_algo_t id;
 
     uint8_t m1[MESSAGE_1_SIZE]; size_t msg1_len;
-    uint8_t data_2[EHDOC_DATA_2_SIZE]; size_t data2_len;
-    uint8_t th_2[EDHOC_TH_SIZE]; size_t th2_len;
-    uint8_t salt[EDHOC_TH_SIZE]; size_t salt_len;
-    uint8_t prk2e[EDHOC_TH_SIZE]; size_t prk2e_len;
-    uint8_t prk3e2m[EDHOC_TH_SIZE]; size_t prk3e2m_len;
+    uint8_t data_2[DATA_2_SIZE]; size_t data2_len;
+    uint8_t th_2[TH_SIZE]; size_t th2_len;
+    uint8_t salt[TH_SIZE]; size_t salt_len;
+    uint8_t prk2e[TH_SIZE]; size_t prk2e_len;
+    uint8_t prk3e2m[TH_SIZE]; size_t prk3e2m_len;
     uint8_t k2m[SYMMETRIC_KEY_SIZE]; size_t k2m_len;
     uint8_t iv2m[IV_SIZE]; size_t iv2m_len;
     uint8_t resp_authkey[AUTHKEY_SIZE]; size_t resp_authkey_len;
-    uint8_t m2[EDHOC_M2_SIZE]; size_t m2_len;
-    uint8_t sig[EDHOC_SIGNATURE_SIZE]; size_t sig_len;
-    uint8_t k2e[EDHOC_PAYLOAD_SIZE]; size_t k2e_len;
+    uint8_t m2[M2_SIZE]; size_t m2_len;
+    uint8_t sig[SIGNATURE_SIZE]; size_t sig_len;
+    uint8_t k2e[PAYLOAD_SIZE]; size_t k2e_len;
     uint8_t init_ephkey[EPHKEY_SIZE]; size_t init_ephkey_len;
     uint8_t resp_ephkey[EPHKEY_SIZE]; size_t resp_ephkey_len;
-    uint8_t secret[EDHOC_SECRET_SIZE]; size_t secret_len;
+    uint8_t secret[SECRET_SIZE]; size_t secret_len;
 
     int selected;
 
