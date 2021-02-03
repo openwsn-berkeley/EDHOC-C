@@ -45,10 +45,9 @@ void print_bstr(const uint8_t *bstr, size_t bstr_len) {
     printf("\n");
 }
 
-int edhoc_handshake(int sockfd) {
+int edhoc_handshake(int sockfd, bool epk) {
     ssize_t bread, len, written;
-    uint8_t incoming[500] = {0};
-    uint8_t outgoing[500] = {0};
+    uint8_t incoming[500], outgoing[500];
 
     edhoc_ctx_t ctx;
     edhoc_conf_t conf;
@@ -75,8 +74,10 @@ int edhoc_handshake(int sockfd) {
     // loading the configuration
     edhoc_ctx_setup(&ctx, &conf);
 
-    if (edhoc_load_ephkey(&ctx, eph_key, sizeof(eph_key)) != 0)
-        return -1;
+    if (!epk){
+        if (edhoc_load_ephkey(&ctx, eph_key, sizeof(eph_key)) != 0)
+            return -1;
+    }
 
     if (edhoc_session_preset_cidr(&ctx, cid, sizeof(cid)) != 0)
         return -1;
@@ -128,9 +129,10 @@ int edhoc_handshake(int sockfd) {
 }
 
 
-int main(void) {
+int main(int argc, char** argv) {
     ssize_t ret;
     ssize_t errc;
+    bool epk = false;
 
     int sockfd, connfd;
     socklen_t client_addr_len;
@@ -141,6 +143,14 @@ int main(void) {
 #endif
 
     ret = -1;
+
+    if (argc == 2){
+        if (strcmp(argv[1], "--epk") == 0){
+            epk = true;
+        } else {
+            epk = false;
+        }
+    }
 
 #if defined(IPV6)
     sockfd = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
@@ -201,7 +211,7 @@ int main(void) {
 
     printf("[%d] Accepting client...\n", counter++);
 
-    edhoc_handshake(connfd);
+    edhoc_handshake(connfd, epk);
 
     printf("[%d] Closing socket...\n", counter++);
     close(sockfd);
