@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "cbor_internal.h"
+#include "cbor.h"
 
 
 int test_cbor_encoding(int value, size_t expected, uint8_t* out, size_t olen){

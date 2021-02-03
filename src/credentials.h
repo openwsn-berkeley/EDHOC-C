@@ -1,19 +1,5 @@
-#ifndef EDHOC_CBOR_CERTS_H
-#define EDHOC_CBOR_CERTS_H
-
-typedef struct cbor_cert cbor_cert_t;
-
-struct cbor_cert{
-    uint8_t *type;
-    uint16_t *serial_number;
-    const char* issuer;
-    int* validity;
-    const uint8_t* subject;
-    size_t subject_len;
-    const uint8_t* signature;
-    const uint8_t* cert;
-    size_t cert_len;
-};
+#ifndef EDHOC_CREDENTIALS_H
+#define EDHOC_CREDENTIALS_H
 
 /*
  * @brief Load a CBOR certificate into a cbor_cert_t structure.
@@ -29,4 +15,4 @@ int cbor_cert_load_from_cbor(cbor_cert_t *cert_ctx, const uint8_t* certificate, 
 
 
 
-#endif /* EDHOC_CBOR_CERTS_H */
+#endif /* EDHOC_CREDENTIALS_H */

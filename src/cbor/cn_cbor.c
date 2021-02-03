@@ -1,7 +1,7 @@
 #include <cn-cbor/cn-cbor.h>
 #include <edhoc/edhoc.h>
 
-#include "cbor_internal.h"
+#include "cbor.h"
 
 #if defined(CN_CBOR)
 

@@ -10,10 +10,10 @@ int initiator_create_message1(
         const uint8_t *eph_key,
         size_t eph_key_len,
         corr_t corr,
-        method_t m,
+        uint8_t m,
         const uint8_t *conn_id,
         size_t conn_id_len,
-        cipher_suite_t suite,
+        uint8_t suite,
         const uint8_t *expected_msg,
         size_t expected_len) {
 
@@ -68,10 +68,10 @@ int initiator_create_message3(const uint8_t *eph_key,
                               const uint8_t *auth_key,
                               size_t auth_key_len,
                               corr_t corr,
-                              method_t m,
+                              uint8_t m,
                               const uint8_t *conn_id,
                               size_t conn_id_len,
-                              cipher_suite_t suite,
+                              uint8_t suite,
                               uint8_t *cbor_certificate,
                               size_t cert_len,
                               uint8_t *cred_id,
@@ -108,10 +108,14 @@ int initiator_create_message3(const uint8_t *eph_key,
     EDHOC_CHECK_SUCCESS(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, mbedtls_entropy_func, &entropy, NULL));
 #elif defined(WOLFSSL)
     CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, NULL, NULL, NULL, NULL, NULL, NULL), (long) 0);
+#elif defined(HACL)
+    CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, NULL, NULL, NULL, NULL, NULL, NULL), (long) 0);
+#else
+#error "No crypto backend selected"
 #endif
 
     CHECK_TEST_RET_EQ(edhoc_conf_load_authkey(&conf, auth_key, auth_key_len), (long) 0);
-    CHECK_TEST_RET_EQ(edhoc_conf_load_cborcert(&conf, cbor_certificate, cert_len), (long) 0);
+    CHECK_TEST_RET_EQ(edhoc_conf_load_cbor_cert(&conf, cbor_certificate, cert_len), (long) 0);
     CHECK_TEST_RET_EQ(edhoc_conf_load_cred_id(&conf, cred_id, cred_id_len), (long) 0);
 
     // loading the configuration

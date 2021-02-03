@@ -19,16 +19,12 @@ target_link_libraries(test_responder PRIVATE cjson)
 add_executable(test_crypto test_crypto.c util.c util.h json.h json.c)
 target_link_libraries(test_crypto PRIVATE edhoc-c::edhoc-c)
 target_link_libraries(test_crypto PRIVATE cjson)
-target_include_directories(test_crypto PRIVATE ../src/crypto)
-
-add_executable(test_cose test_cose.c util.c util.h json.h json.c)
-target_link_libraries(test_cose PRIVATE edhoc-c::edhoc-c)
-target_link_libraries(test_cose PRIVATE cjson)
+target_include_directories(test_crypto PRIVATE ../src)
 
 add_executable(test_cbor test_cbor.c util.c util.h json.h json.c)
 target_link_libraries(test_cbor PRIVATE edhoc-c::edhoc-c)
 target_link_libraries(test_cbor PRIVATE cjson)
-target_include_directories(test_cbor PRIVATE ../src/cbor)
+target_include_directories(test_cbor PRIVATE ../src)
 
 
 add_test(
@@ -222,10 +218,3 @@ add_test(
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMAND test_crypto --ed25519 test_vectors/vector2.json
 )
-
-add_test(
-        NAME TEST_COSE_1
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMAND test_cose --x5t test_vectors/vector1.json
-)
-

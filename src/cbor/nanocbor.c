@@ -7,13 +7,15 @@
 
 #endif
 
-#include "cbor_internal.h"
+#include "cbor.h"
 
 #if defined(NANOCBOR)
 
 ssize_t cbor_int_decode(int *value, const uint8_t *buffer, size_t offset, size_t total) {
     nanocbor_value_t decoder;
     ssize_t read;
+
+    memset(&decoder, 0, sizeof decoder);
 
     nanocbor_decoder_init(&decoder, buffer + offset, total);
     if (nanocbor_get_type(&decoder) == NANOCBOR_TYPE_UINT || nanocbor_get_type(&decoder) == NANOCBOR_TYPE_NINT) {
@@ -32,6 +34,8 @@ ssize_t cbor_int_decode(int *value, const uint8_t *buffer, size_t offset, size_t
 ssize_t cbor_bytes_decode(const uint8_t **out, size_t *len, const uint8_t *buffer, size_t offset, size_t total) {
     nanocbor_value_t decoder;
     ssize_t read;
+
+    memset(&decoder, 0, sizeof decoder);
 
     nanocbor_decoder_init(&decoder, buffer + offset, total);
     if (nanocbor_get_type(&decoder) == NANOCBOR_TYPE_BSTR) {
@@ -53,7 +57,9 @@ ssize_t cbor_bytes_decode(const uint8_t **out, size_t *len, const uint8_t *buffe
 void cbor_map_get_int_int(int key, int *value, const uint8_t *buffer, size_t offset, size_t total) {
     nanocbor_value_t decoder;
     nanocbor_value_t map, _map;
-    int _key;
+    int _key = 0;
+
+    memset(&decoder, 0, sizeof decoder);
 
     nanocbor_decoder_init(&decoder, buffer + offset, total);
     nanocbor_enter_map(&decoder, &map);
@@ -62,17 +68,19 @@ void cbor_map_get_int_int(int key, int *value, const uint8_t *buffer, size_t off
         _map = map;
 
         if (nanocbor_get_type(&_map) == NANOCBOR_TYPE_UINT || nanocbor_get_type(&_map) == NANOCBOR_TYPE_NINT) {
-            nanocbor_get_int32(&_map, &_key);
-
-            if (_key == key) {
-                nanocbor_skip(&map);
-                _map = map;
-                if (nanocbor_get_type(&_map) == NANOCBOR_TYPE_UINT || nanocbor_get_type(&_map) == NANOCBOR_TYPE_NINT) {
-                    nanocbor_get_int32(&_map, value);
+            if (nanocbor_get_int32(&_map, &_key) < 0) {
+                value = NULL;
+            } else {
+                if (_key == key) {
+                    nanocbor_skip(&map);
+                    _map = map;
+                    if (nanocbor_get_type(&_map) == NANOCBOR_TYPE_UINT ||
+                        nanocbor_get_type(&_map) == NANOCBOR_TYPE_NINT) {
+                        nanocbor_get_int32(&_map, value);
+                    }
                 }
             }
         }
-
         nanocbor_skip(&map);
     }
 
@@ -83,7 +91,9 @@ void
 cbor_map_get_int_bytes(int key, const uint8_t **out, size_t *len, const uint8_t *buffer, size_t offset, size_t total) {
     nanocbor_value_t decoder;
     nanocbor_value_t map, _map;
-    int _key;
+    int _key = 0;
+
+    memset(&decoder, 0, sizeof decoder);
 
     nanocbor_decoder_init(&decoder, buffer + offset, total);
     nanocbor_enter_map(&decoder, &map);
@@ -92,17 +102,20 @@ cbor_map_get_int_bytes(int key, const uint8_t **out, size_t *len, const uint8_t 
         _map = map;
 
         if (nanocbor_get_type(&_map) == NANOCBOR_TYPE_UINT || nanocbor_get_type(&_map) == NANOCBOR_TYPE_NINT) {
-            nanocbor_get_int32(&_map, &_key);
-
-            if (_key == key) {
-                nanocbor_skip(&map);
-                _map = map;
-                if (nanocbor_get_type(&_map) == NANOCBOR_TYPE_BSTR) {
-                    if (nanocbor_get_bstr(&_map, out, len) < 0) {
-                        *len = 0;
-                        out = NULL;
-                    } else {
-                        return;
+            if (nanocbor_get_int32(&_map, &_key) < 0) {
+                *len = 0;
+                out = NULL;
+            } else {
+                if (_key == key) {
+                    nanocbor_skip(&map);
+                    _map = map;
+                    if (nanocbor_get_type(&_map) == NANOCBOR_TYPE_BSTR) {
+                        if (nanocbor_get_bstr(&_map, out, len) < 0) {
+                            *len = 0;
+                            out = NULL;
+                        } else {
+                            return;
+                        }
                     }
                 }
             }
@@ -120,6 +133,8 @@ cbor_map_get_int_bytes(int key, const uint8_t **out, size_t *len, const uint8_t 
 ssize_t cbor_bstr_id_decode(uint8_t **out, size_t *len, const uint8_t *buffer, size_t offset, size_t total) {
     nanocbor_value_t decoder;
     ssize_t read;
+
+    memset(&decoder, 0, sizeof decoder);
 
     nanocbor_decoder_init(&decoder, buffer + offset, total);
     if (nanocbor_get_type(&decoder) == NANOCBOR_TYPE_BSTR) {
@@ -151,6 +166,8 @@ ssize_t cbor_suites_decode(uint8_t **out, size_t *len, const uint8_t *buffer, si
     nanocbor_value_t decoder;
     ssize_t read;
 
+    memset(&decoder, 0, sizeof decoder);
+
     nanocbor_decoder_init(&decoder, buffer + offset, total);
 
     if (nanocbor_get_type(&decoder) == NANOCBOR_TYPE_ARR) {
@@ -177,6 +194,8 @@ ssize_t cbor_suites_decode(uint8_t **out, size_t *len, const uint8_t *buffer, si
 ssize_t cbor_int_encode(int value, uint8_t *buffer, size_t offset, size_t total) {
     nanocbor_encoder_t encoder;
 
+    memset(&encoder, 0, sizeof(nanocbor_encoder_t));
+
     nanocbor_encoder_init(&encoder, buffer + offset, total - offset);
     if (nanocbor_fmt_int(&encoder, value) < EDHOC_SUCCESS)
         return EDHOC_ERR_CBOR_ENCODING;
@@ -187,6 +206,8 @@ ssize_t cbor_int_encode(int value, uint8_t *buffer, size_t offset, size_t total)
 
 ssize_t cbor_bytes_encode(const uint8_t *bytes, size_t bytes_len, uint8_t *buffer, size_t offset, size_t total) {
     nanocbor_encoder_t encoder;
+
+    memset(&encoder, 0, sizeof(nanocbor_encoder_t));
 
     nanocbor_encoder_init(&encoder, buffer + offset, total - offset);
     if (nanocbor_put_bstr(&encoder, bytes, bytes_len) < EDHOC_SUCCESS)
@@ -199,6 +220,8 @@ ssize_t cbor_bytes_encode(const uint8_t *bytes, size_t bytes_len, uint8_t *buffe
 ssize_t cbor_string_encode(const char *string, uint8_t *buffer, size_t offset, size_t total) {
     nanocbor_encoder_t encoder;
 
+    memset(&encoder, 0, sizeof(nanocbor_encoder_t));
+
     nanocbor_encoder_init(&encoder, buffer + offset, total - offset);
     if (nanocbor_put_tstr(&encoder, string) < EDHOC_SUCCESS)
         return EDHOC_ERR_CBOR_ENCODING;
@@ -210,6 +233,8 @@ ssize_t cbor_string_encode(const char *string, uint8_t *buffer, size_t offset, s
 ssize_t cbor_create_map(uint8_t *buffer, uint8_t elements, size_t offset, size_t total) {
     nanocbor_encoder_t encoder;
 
+    memset(&encoder, 0, sizeof(nanocbor_encoder_t));
+
     nanocbor_encoder_init(&encoder, buffer + offset, total - offset);
     if (nanocbor_fmt_map(&encoder, elements) < EDHOC_SUCCESS)
         return EDHOC_ERR_CBOR_ENCODING;
@@ -219,6 +244,8 @@ ssize_t cbor_create_map(uint8_t *buffer, uint8_t elements, size_t offset, size_t
 
 ssize_t cbor_create_array(uint8_t *buffer, uint8_t elements, size_t offset, size_t total) {
     nanocbor_encoder_t encoder;
+
+    memset(&encoder, 0, sizeof(nanocbor_encoder_t));
 
     nanocbor_encoder_init(&encoder, buffer + offset, total - offset);
     if (nanocbor_fmt_array(&encoder, elements) < EDHOC_SUCCESS)

@@ -2,76 +2,106 @@
 #define EDHOC_CRYPTO_INTERNAL_H
 
 
+#if defined(WOLFSSL)
+#include <wolfssl/options.h>
+#include <wolfssl/wolfcrypt/sha256.h>
+#elif defined(MBEDTLS)
+#include <mbedtls/sha256.h>
+#elif defined(HACL)
+#else
+#error "No crypto backend selected"
+#endif
+
 #include "edhoc/edhoc.h"
+
+#if defined(HACL)
+#define HASH_INPUT_BLEN         (1000)
+#endif
+
+typedef struct hash_ctx hash_ctx_t;
+
+struct hash_ctx{
+#if defined(WOLFSSL)
+    wc_Sha256 digest_ctx;
+#elif defined(MBEDTLS)
+    mbedtls_sha256_context digest_ctx;
+#elif defined(HACL)
+    size_t fill_level;
+    uint8_t input_buffer[HASH_INPUT_BLEN];
+#else
+#error "No crypto backend selected"
+#endif
+};
 
 /**
  * @brief Generate a random key pair over a COSE curve
  *
- * @param[in] crv                   COSE Curve over which the key will be generated
- * @param f_rng[in]                 A function providing strong randomness
- * @param p_rng[in]                 Optional RNG context info (can be NULL)
- * @param key[out]                  Pointer to COSE key structure to store the generated key
+ * @param[in] crv       COSE Curve over which the key will be generated
+ * @param[in] f_rng     A function providing strong randomness
+ * @param[in] p_rng     Optional RNG context info (can be NULL)
+ * @param[in] key       Pointer to COSE key structure to store the generated key
  *
- * @return On success, EDHOC_SUCCESS
- * @return On failure, a negative value (EDHOC_ERR_KEY_GENERATION, EDHOC_ERR_CURVE_UNAVAILABLE, ..)
+ * @return On success returns EDHOC_SUCCESS
+ * @return On failure returns a negative value (EDHOC_ERR_KEY_GENERATION, EDHOC_ERR_CURVE_UNAVAILABLE, ..)
  */
 int crypt_gen_keypair(cose_curve_t crv, rng_cb_t f_rng, void *p_rng, cose_key_t *key);
 
 /**
  * @brief Initialize and start a hashing context
  *
- * @param digest_ctx[in]    Hashing context
+ * @param[in] ctx   Hashing context
  *
- * @return On success EDHOC_SUCCESS
- * @return On failure EDHOC_ERR_CRYPTO
+ * @return On success returns EDHOC_SUCCESS
+ * @return On failure returns EDHOC_ERR_CRYPTO
  */
-int crypt_hash_init(void *digest_ctx);
+int crypt_hash_init(hash_ctx_t* ctx);
 
 /**
  * @brief Update the hashing context with
  *
- * @param digest_ctx[in]    Hashing context
- * @param in[in]            Input buffer
- * @param ilen[in]          Length of @p in
+ * @param[in] ctx   Hashing context
+ * @param[in] in    Input buffer
+ * @param[in] ilen  Length of @p in
  *
- * @return On success EDHOC_SUCCESS
- * @return On failure EDHOC_ERR_CRYPTO
+ * @return On success returns EDHOC_SUCCESS
+ * @return On failure returns EDHOC_ERR_CRYPTO
  */
-int crypt_hash_update(void *digest_ctx, const uint8_t *in, size_t ilen);
+int crypt_hash_update(hash_ctx_t* ctx, const uint8_t *in, size_t ilen);
 
 /**
  * @brief Finalize a hashing context
  *
- * @param digest_ctx[in]        Hashing context
- * @param output[out]           Output buffer to store digest, must be at least of size COSE_DIGEST_LEN
+ * @param[in] ctx    Hashing context
+ * @param[out] out   Output buffer to store digest
  *
- * @return On success EDHOC_SUCCESS
- * @return On failure EDHOC_ERR_CRYPTO
+ * @return On success returns EDHOC_SUCCESS
+ * @return On failure returns EDHOC_ERR_CRYPTO
  */
-int crypt_hash_finish(void *digest_ctx, uint8_t *output);
+int crypt_hash_finish(hash_ctx_t* ctx, uint8_t *out);
 
 /**
  * @brief Free the hashing context
  *
- * @param digest_ctx[in]        Hashing context
+ * @param[in] digest_ctx    Hashing context
+ *
  */
-void crypt_hash_free(void *digest_ctx);
+void crypt_hash_free(hash_ctx_t* ctx);
 
 /**
  * @brief Compute the EDHOC-KDF
  *
- * @param id[in]        COSE algorithm identifier
- * @param prk[in]       Pseudo-random key (of lenght COSE_DIGEST_LEN)
- * @param th[in]        transcript hash
- * @param label[in]     String label
- * @param out[out]      Output buffer
- * @param olen[in]      KDF output length
+ * @param[in] id        COSE algorithm identifier
+ * @param[in] prk       Pseudo-random key (of lenght COSE_DIGEST_LEN)
+ * @param[in] th        transcript hash
+ * @param[in] label     String label
+ * @param[in] length    KDF output length
+ * @param[out] out      Output buffer
  *
  * @return On success, EDHOC_SUCCESS
  * @return On failure, EDHOC_ERR_CRYPTO, EDHOC_ERR_CBOR_ENCODING or another negative value
  */
 int
-crypt_edhoc_kdf(cose_algo_t id, const uint8_t *prk, const uint8_t *th, const char *label, uint8_t *out, size_t olen);
+crypt_edhoc_kdf(cose_algo_t id, const uint8_t *prk, const uint8_t *th, const char *label, int length, uint8_t *out);
 
 /**
  * @brief Compute the EDHOC PRK_2e value.
@@ -99,7 +129,7 @@ int crypt_compute_prk2e(const uint8_t *shared_secret, const uint8_t *salt, size_
  * @return On failure returns EDHOC_ERR_CRYPTO
  */
 int crypt_compute_prk3e2m(edhoc_role_t role,
-                          method_t method,
+                          uint8_t method,
                           const uint8_t *prk_2e,
                           const uint8_t *shared_secret,
                           uint8_t *prk_3e2m);
@@ -117,7 +147,7 @@ int crypt_compute_prk3e2m(edhoc_role_t role,
  * @return On failure returns EDHOC_ERR_CRYPTO
  */
 int crypt_compute_prk4x3m(edhoc_role_t role,
-                          method_t method,
+                          uint8_t method,
                           const uint8_t *shared_secret,
                           const uint8_t *prk_3e2m,
                           uint8_t *prk_4x3m);
