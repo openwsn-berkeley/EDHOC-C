@@ -13,7 +13,6 @@
 #include "edhoc/edhoc.h"
 
 typedef struct cipher_suite_t cipher_suite_t;
-typedef struct method_t method_t;
 
 struct cipher_suite_t{
     uint8_t id;
@@ -26,11 +25,6 @@ struct cipher_suite_t{
     cose_curve_t sign_curve;
     cose_algo_t app_aead;
     cose_algo_t app_hash;
-};
-
-struct method_t{
-    uint8_t id;
-    const char* name;
 };
 
 /**

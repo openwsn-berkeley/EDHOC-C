@@ -34,6 +34,10 @@ void close_test(test_context_ptr ctx);
 int load_from_json_CIPHERSUITE(test_context_ptr ctx, int* value);
 int load_from_json_CORR(test_context_ptr ctx, int* value);
 int load_from_json_METHOD(test_context_ptr ctx, int* value);
+int load_from_json_INIT_CREDTYPE(test_context_ptr ctx, int* value);
+int load_from_json_RESP_CREDTYPE(test_context_ptr ctx, int* value);
+int load_from_json_INIT_CREDID_TYPE(test_context_ptr ctx, int* value);
+int load_from_json_RESP_CREDID_TYPE(test_context_ptr ctx, int* value);
 
 int load_from_json_MESSAGE1(test_context_ptr ctx, uint8_t *buf, size_t blen);
 int load_from_json_MESSAGE2(test_context_ptr ctx, uint8_t *buf, size_t blen);

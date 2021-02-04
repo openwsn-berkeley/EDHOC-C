@@ -49,6 +49,7 @@ int edhoc_handshake(int sockfd, bool epk) {
     ssize_t bread, len, written;
     uint8_t incoming[500], outgoing[500];
 
+    cbor_cert_t cert;
     edhoc_ctx_t ctx;
     edhoc_conf_t conf;
 
@@ -56,19 +57,23 @@ int edhoc_handshake(int sockfd, bool epk) {
     edhoc_conf_init(&conf);
 
     printf("[%d] Set up EDHOC configuration...\n", counter++);
-    if (edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, NULL, NULL, NULL, NULL, NULL, NULL) != 0)
+    if (edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, NULL, NULL, NULL, NULL, NULL) != 0)
+        return -1;
+
+    edhoc_cred_cbor_cert_init(&cert);
+    if (edhoc_cred_load_cbor_cert(&cert, cbor_cert, sizeof(cbor_cert)) != 0)
         return -1;
 
     printf("[%d] Load private authentication key...\n", counter++);
     edhoc_conf_load_authkey(&conf, auth_key, sizeof(auth_key));
 
     printf("[%d] Load CBOR certificate...\n", counter++);
-    edhoc_conf_load_cbor_cert(&conf, cbor_cert, sizeof(cbor_cert));
+    edhoc_conf_load_credentials(&conf, CRED_TYPE_CBOR_CERT, &cert, NULL);
 
     printf("[%d] Compute and load CBOR certificate hash:\n", counter++);
     print_bstr(cred_id, sizeof(cred_id));
 
-    if (edhoc_conf_load_cred_id(&conf, cred_id, sizeof(cred_id)) != 0)
+    if (edhoc_conf_load_cred_id(&conf, cred_id, CRED_ID_TYPE_X5T, sizeof(cred_id)) != 0)
         return -1;
 
     // loading the configuration

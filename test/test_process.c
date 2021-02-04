@@ -7,20 +7,19 @@
 #include "util.h"
 #include "json.h"
 
-#include "process.h"
 
+int test_create_msg1(cred_type_t cred_type,
+                     const uint8_t *eph_key,
+                     size_t eph_key_len,
+                     corr_t corr,
+                     uint8_t m,
+                     const uint8_t *conn_id,
+                     size_t conn_id_len,
+                     uint8_t suite,
+                     const uint8_t *expected_msg,
+                     size_t expected_len) {
 
-int test_create_msg1(
-        const uint8_t *eph_key,
-        size_t eph_key_len,
-        corr_t corr,
-        uint8_t m,
-        const uint8_t *conn_id,
-        size_t conn_id_len,
-        uint8_t suite,
-        const uint8_t *expected_msg,
-        size_t expected_len) {
-
+    (void) cred_type;
     ssize_t ret;
     uint8_t mbuf[MESSAGE_1_SIZE];
 
@@ -48,7 +47,7 @@ int test_create_msg1(
 
     EDHOC_CHECK_SUCCESS(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, mbedtls_entropy_func, &entropy, NULL));
 #elif defined(WOLFSSL)
-    CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, NULL, NULL, NULL, NULL, NULL, NULL), (long) 0);
+    CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, NULL, NULL, NULL, NULL, NULL), (long) 0);
 #endif
 
     // loading the configuration
@@ -67,27 +66,31 @@ int test_create_msg1(
     return ret;
 }
 
-int test_create_msg2(
-        const uint8_t *eph_key,
-        size_t eph_key_len,
-        const uint8_t *auth_key,
-        size_t auth_key_len,
-        const uint8_t *cid,
-        size_t cid_len,
-        const uint8_t *msg1,
-        size_t msg1_len,
-        uint8_t *cbor_certificate,
-        size_t cert_len,
-        uint8_t *cred_id,
-        size_t cred_id_len,
-        const uint8_t *expected_msg,
-        size_t expected_len) {
+int test_create_msg2(cred_type_t cred_type,
+                     const uint8_t *eph_key,
+                     size_t eph_key_len,
+                     const uint8_t *auth_key,
+                     size_t auth_key_len,
+                     const uint8_t *cid,
+                     size_t cid_len,
+                     const uint8_t *msg1,
+                     size_t msg1_len,
+                     uint8_t *credentials,
+                     size_t cred_len,
+                     uint8_t *cred_id,
+                     size_t cred_id_len,
+                     cred_id_type_t cred_id_type,
+                     const uint8_t *expected_msg,
+                     size_t expected_len) {
 
     ssize_t ret;
     uint8_t mbuf[MESSAGE_2_SIZE];
 
     edhoc_ctx_t ctx;
     edhoc_conf_t conf;
+
+    rpk_t auth_pub_key;
+    cbor_cert_t auth_cbor_cert;
 
     edhoc_ctx_init(&ctx);
     edhoc_conf_init(&conf);
@@ -110,16 +113,25 @@ int test_create_msg2(
 
     CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, mbedtls_entropy_func, &entropy, NULL), (long)0);
 #elif defined(WOLFSSL)
-    CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, NULL, NULL, NULL, NULL, NULL, NULL), (long) 0);
+    CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, NULL, NULL, NULL, NULL, NULL), (long) 0);
 #elif defined(HACL)
     CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, NULL, NULL, NULL, NULL, NULL, NULL), (long) 0);
 #else
 #error "No crypto backend selected"
 #endif
 
+    if (cred_type == CRED_TYPE_CBOR_CERT) {
+        edhoc_cred_cbor_cert_init(&auth_cbor_cert);
+        CHECK_TEST_RET_EQ(edhoc_cred_load_cbor_cert(&auth_cbor_cert, credentials, cred_len), (long) 0);
+        edhoc_conf_load_credentials(&conf, CRED_TYPE_CBOR_CERT, &auth_cbor_cert, NULL);
+    } else {
+        edhoc_cred_pub_key_init(&auth_pub_key);
+        CHECK_TEST_RET_EQ(edhoc_cred_load_pub_key(&auth_pub_key, credentials, cred_len), (long) 0);
+        edhoc_conf_load_credentials(&conf, CRED_TYPE_RPK, &auth_pub_key, NULL);
+    }
+
+    CHECK_TEST_RET_EQ(edhoc_conf_load_cred_id(&conf, cred_id, cred_id_type, cred_id_len), (long) 0);
     CHECK_TEST_RET_EQ(edhoc_conf_load_authkey(&conf, auth_key, auth_key_len), (long) 0);
-    CHECK_TEST_RET_EQ(edhoc_conf_load_cbor_cert(&conf, cbor_certificate, cert_len), (long) 0);
-    CHECK_TEST_RET_EQ(edhoc_conf_load_cred_id(&conf, cred_id, cred_id_len), (long) 0);
 
     // loading the configuration
     edhoc_ctx_setup(&ctx, &conf);
@@ -137,7 +149,8 @@ int test_create_msg2(
     return ret;
 }
 
-int test_create_msg3(const uint8_t *eph_key,
+int test_create_msg3(cred_type_t cred_type,
+                     const uint8_t *eph_key,
                      size_t eph_key_len,
                      const uint8_t *auth_key,
                      size_t auth_key_len,
@@ -146,10 +159,11 @@ int test_create_msg3(const uint8_t *eph_key,
                      const uint8_t *conn_id,
                      size_t conn_id_len,
                      uint8_t suite,
-                     uint8_t *cbor_certificate,
-                     size_t cert_len,
+                     uint8_t *credentials,
+                     size_t cred_len,
                      uint8_t *cred_id,
                      size_t cred_id_len,
+                     cred_id_type_t cred_id_type,
                      const uint8_t *incoming_msg2,
                      size_t incoming_msg2_len,
                      const uint8_t *expected_msg,
@@ -159,6 +173,9 @@ int test_create_msg3(const uint8_t *eph_key,
 
     edhoc_ctx_t ctx;
     edhoc_conf_t conf;
+
+    rpk_t auth_pub_key;
+    cbor_cert_t auth_cbor_cert;
 
     edhoc_ctx_init(&ctx);
     edhoc_conf_init(&conf);
@@ -181,16 +198,25 @@ int test_create_msg3(const uint8_t *eph_key,
 
     EDHOC_CHECK_SUCCESS(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, mbedtls_entropy_func, &entropy, NULL));
 #elif defined(WOLFSSL)
-    CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, NULL, NULL, NULL, NULL, NULL, NULL), (long) 0);
+    CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, NULL, NULL, NULL, NULL, NULL), (long) 0);
 #elif defined(HACL)
     CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, NULL, NULL, NULL, NULL, NULL, NULL), (long) 0);
 #else
 #error "No crypto backend selected"
 #endif
 
+    if (cred_type == CRED_TYPE_CBOR_CERT) {
+        edhoc_cred_cbor_cert_init(&auth_cbor_cert);
+        CHECK_TEST_RET_EQ(edhoc_cred_load_cbor_cert(&auth_cbor_cert, credentials, cred_len), (long) 0);
+        edhoc_conf_load_credentials(&conf, CRED_TYPE_CBOR_CERT, &auth_cbor_cert, NULL);
+    } else {
+        edhoc_cred_pub_key_init(&auth_pub_key);
+        CHECK_TEST_RET_EQ(edhoc_cred_load_pub_key(&auth_pub_key, credentials, cred_len), (long) 0);
+        edhoc_conf_load_credentials(&conf, CRED_TYPE_RPK, &auth_pub_key, NULL);
+    }
+
+    CHECK_TEST_RET_EQ(edhoc_conf_load_cred_id(&conf, cred_id, cred_id_type, cred_id_len), (long) 0);
     CHECK_TEST_RET_EQ(edhoc_conf_load_authkey(&conf, auth_key, auth_key_len), (long) 0);
-    CHECK_TEST_RET_EQ(edhoc_conf_load_cbor_cert(&conf, cbor_certificate, cert_len), (long) 0);
-    CHECK_TEST_RET_EQ(edhoc_conf_load_cred_id(&conf, cred_id, cred_id_len), (long) 0);
 
     // loading the configuration
     edhoc_ctx_setup(&ctx, &conf);
@@ -234,10 +260,11 @@ int main(int argc, char **argv) {
     uint8_t cid[CONN_ID_SIZE];
     ssize_t cid_len;
 
-    int corr, method, selected;
+    int corr, method, selected, cred_type;
+    cred_id_type_t cred_id_type;
 
     /* test selection */
-    ret = 0;
+    ret = -1;
 
     if (argc == 3) {
         if (strcmp(argv[1], "--create-msg1") == 0) {
@@ -248,6 +275,7 @@ int main(int argc, char **argv) {
             assert(load_from_json_CIPHERSUITE(ctx, &selected) == SUCCESS);
             assert(load_from_json_CORR(ctx, &corr) == SUCCESS);
             assert(load_from_json_METHOD(ctx, &method) == SUCCESS);
+            load_from_json_RESP_CREDTYPE(ctx, &cred_type);
 
             m1_len = load_from_json_MESSAGE1(ctx, m1, sizeof(m1));
             ephkey_len = load_from_json_INIT_EPHKEY(ctx, ephkey, sizeof(ephkey));
@@ -257,7 +285,7 @@ int main(int argc, char **argv) {
             assert(ephkey_len >= 0);
             assert(cid_len >= 0);
 
-            ret = test_create_msg1(ephkey, ephkey_len, corr, method, cid, cid_len, selected, m1, m1_len);
+            ret = test_create_msg1(cred_type, ephkey, ephkey_len, corr, method, cid, cid_len, selected, m1, m1_len);
 
             close_test(ctx);
 
@@ -273,8 +301,11 @@ int main(int argc, char **argv) {
             m2_len = load_from_json_MESSAGE2(ctx, m2, sizeof(m2));
             cred_len = load_from_json_RESP_CRED(ctx, cred, sizeof(cred));
             cred_id_len = load_from_json_RESP_CRED_ID(ctx, cred_id, sizeof(cred_id));
+            load_from_json_RESP_CREDTYPE(ctx, &cred_type);
+            load_from_json_RESP_CREDID_TYPE(ctx, (int *) &cred_id_type);
 
-            ret = test_create_msg2(ephkey,
+            ret = test_create_msg2(cred_type,
+                                   ephkey,
                                    ephkey_len,
                                    authkey,
                                    authkey_len,
@@ -286,48 +317,53 @@ int main(int argc, char **argv) {
                                    cred_len,
                                    cred_id,
                                    cred_id_len,
+                                   cred_id_type,
                                    m2,
                                    m2_len);
 
             close_test(ctx);
+
+        } else if (strcmp(argv[1], "--create-msg3") == 0) {
+            if ((ctx = load_json_test_file(argv[2])) == NULL) {
+                return EXIT_FAILURE;
+            }
+
+            load_from_json_INIT_CREDTYPE(ctx, &cred_type);
+            load_from_json_INIT_CREDID_TYPE(ctx, (int *) &cred_id_type);
+            load_from_json_CIPHERSUITE(ctx, &selected);
+            load_from_json_CORR(ctx, &corr);
+            load_from_json_METHOD(ctx, &method);
+
+            ephkey_len = load_from_json_INIT_EPHKEY(ctx, ephkey, sizeof(ephkey));
+            cid_len = load_from_json_CONN_IDI(ctx, cid, sizeof(cid));
+            m2_len = load_from_json_MESSAGE2(ctx, m2, sizeof(m2));
+            authkey_len = load_from_json_INIT_AUTHKEY(ctx, authkey, sizeof(authkey));
+            cred_len = load_from_json_INIT_CRED(ctx, cred, sizeof(cred));
+            cred_id_len = load_from_json_INIT_CRED_ID(ctx, cred_id, sizeof(cred_id));
+            m3_len = load_from_json_MESSAGE3(ctx, m3, sizeof(m3));
+
+            ret = test_create_msg3(cred_type,
+                                   ephkey,
+                                   ephkey_len,
+                                   authkey,
+                                   authkey_len,
+                                   corr,
+                                   method,
+                                   cid,
+                                   cid_len,
+                                   selected,
+                                   cred,
+                                   cred_len,
+                                   cred_id,
+                                   cred_id_len,
+                                   cred_id_type,
+                                   m2,
+                                   m2_len,
+                                   m3,
+                                   m3_len);
+
+            close_test(ctx);
         }
-
-    } else if (strcmp(argv[1], "--create-msg3") == 0) {
-        if ((ctx = load_json_test_file(argv[2])) == NULL) {
-            return EXIT_FAILURE;
-        }
-
-        assert(load_from_json_CIPHERSUITE(ctx, &selected) == SUCCESS);
-        assert(load_from_json_CORR(ctx, &corr) == SUCCESS);
-        assert(load_from_json_METHOD(ctx, &method) == SUCCESS);
-
-        ephkey_len = load_from_json_INIT_EPHKEY(ctx, ephkey, sizeof(ephkey));
-        cid_len = load_from_json_CONN_IDI(ctx, cid, sizeof(cid));
-        m2_len = load_from_json_MESSAGE2(ctx, m2, sizeof(m2));
-        authkey_len = load_from_json_INIT_AUTHKEY(ctx, authkey, sizeof(authkey));
-        cred_len = load_from_json_INIT_CRED(ctx, cred, sizeof(cred));
-        cred_id_len = load_from_json_INIT_CRED_ID(ctx, cred_id, sizeof(cred_id));
-        m3_len = load_from_json_MESSAGE3(ctx, m3, sizeof(m3));
-
-        ret = test_create_msg3(ephkey,
-                               ephkey_len,
-                               authkey,
-                               authkey_len,
-                               corr,
-                               method,
-                               cid,
-                               cid_len,
-                               selected,
-                               cred,
-                               cred_len,
-                               cred_id,
-                               cred_id_len,
-                               m2,
-                               m2_len,
-                               m3,
-                               m3_len);
-
-        close_test(ctx);
     }
 
     return ret;

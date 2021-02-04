@@ -62,6 +62,18 @@ ssize_t cbor_suites_decode(uint8_t **out, size_t *len, const uint8_t *buffer, si
 ssize_t cbor_bstr_id_decode(uint8_t **out, size_t *len, const uint8_t *buffer, size_t offset, size_t total);
 
 /**
+ * @brief Extract the number of key-value pairs in the CBOR map
+ *
+ * @param[in] buffer    CBOR encoded buffer
+ * @param[in] offset    Offset w.r.t. beginning of @p buffer
+ * @param[in] total     Total size of @buffer
+ *
+ * @return On success the number of key-value pairs in the CBOR map.
+ * @return On failure returns an EDHOC error code (< 0)
+ */
+ssize_t cbor_map_get_pairs(const uint8_t* buffer, size_t offset, size_t total);
+
+/**
  * ENCODING ROUTINES
  */
 

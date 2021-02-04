@@ -31,6 +31,23 @@ ssize_t cbor_int_decode(int *value, const uint8_t *buffer, size_t offset, size_t
     }
 }
 
+ssize_t cbor_map_get_pairs(const uint8_t* buffer, size_t offset, size_t total){
+    nanocbor_value_t decoder, map;
+
+    memset(&decoder, 0, sizeof decoder);
+
+    nanocbor_decoder_init(&decoder, buffer + offset, total);
+    if (nanocbor_get_type(&decoder) == NANOCBOR_TYPE_MAP) {
+        if (nanocbor_enter_map(&decoder, &map) >= 0){
+            return (map.remaining / 2);
+        } else {
+            return EDHOC_ERR_CBOR_DECODING;
+        }
+    } else {
+        return EDHOC_ERR_CBOR_DECODING;
+    }
+}
+
 ssize_t cbor_bytes_decode(const uint8_t **out, size_t *len, const uint8_t *buffer, size_t offset, size_t total) {
     nanocbor_value_t decoder;
     ssize_t read;

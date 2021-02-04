@@ -38,17 +38,23 @@ int test_message1_decode(const uint8_t *msg_buf,
                          size_t conn_idi_len) {
 
     ssize_t ret;
+    edhoc_msg1_t msg1;
+    uint8_t temp[MESSAGE_1_SIZE];
 
-    edhoc_ctx_t ctx;
-    edhoc_ctx_init(&ctx);
+    memset(&msg1, 0, sizeof(edhoc_msg1_t));
 
-    CHECK_TEST_RET_EQ(edhoc_msg1_decode(&ctx, msg_buf, msg_buf_len), (long) 0);
-    CHECK_TEST_RET_EQ(ctx.correlation, (long) method_corr % 4);
-    CHECK_TEST_RET_EQ(ctx.method, (long) (method_corr - ctx.correlation) / 4);
-    CHECK_TEST_RET_EQ(ctx.session.cidi_len, (long) conn_idi_len);
-    CHECK_TEST_RET_EQ(compare_arrays(ctx.session.cidi, conn_idi, conn_idi_len), (long) 0);
-    CHECK_TEST_RET_EQ(ctx.remote_eph_key.x_len, (long) g_x_len);
-    CHECK_TEST_RET_EQ(compare_arrays(ctx.remote_eph_key.x, g_x, g_x_len), (long) 0);
+    CHECK_TEST_RET_EQ(edhoc_msg1_decode(&msg1, msg_buf, msg_buf_len), (long) 0);
+    CHECK_TEST_RET_EQ(msg1.method_corr, (long) method_corr);
+
+    CHECK_TEST_RET_EQ(msg1.cidi_len, (long) conn_idi_len);
+    if(msg1.cidi != NULL){
+        memcpy(temp, msg1.cidi, msg1.cidi_len);
+        CHECK_TEST_RET_EQ(compare_arrays(temp, conn_idi, conn_idi_len), (long) 0);
+    }
+
+    CHECK_TEST_RET_EQ(msg1.g_x_len, (long) g_x_len);
+    memcpy(temp, msg1.g_x, msg1.g_x_len);
+    CHECK_TEST_RET_EQ(compare_arrays(temp, g_x, g_x_len), (long) 0);
 
     exit:
     return ret;
@@ -72,7 +78,7 @@ int test_message2_encode(const uint8_t *data2,
 
 }
 
-int test_message2_decode(edhoc_ctx_t *ctx,
+int test_message2_decode(corr_t correlation,
                          const uint8_t *msg_buf,
                          size_t msg_buf_len,
                          const uint8_t *g_y,
@@ -84,32 +90,66 @@ int test_message2_decode(edhoc_ctx_t *ctx,
                          uint8_t *ciphertext_2,
                          size_t ciphertext_2_len) {
     ssize_t ret;
+    edhoc_msg2_t msg2;
+    uint8_t temp[MESSAGE_2_SIZE];
 
-    CHECK_TEST_RET_EQ(edhoc_msg2_decode(ctx, msg_buf, msg_buf_len), (long) 0);
-    CHECK_TEST_RET_EQ(ctx->session.cidi_len, (long) conn_idi_len);
-    CHECK_TEST_RET_EQ(ctx->remote_eph_key.x_len, (long) g_y_len);
-    CHECK_TEST_RET_EQ(compare_arrays(ctx->remote_eph_key.x, g_y, g_y_len), (long) 0);
-    CHECK_TEST_RET_EQ(compare_arrays(ctx->session.cidi, conn_idi, conn_idi_len), (long) 0);
-    CHECK_TEST_RET_EQ(ctx->session.cidr_len, (long) conn_idr_len);
-    CHECK_TEST_RET_EQ(compare_arrays(ctx->session.cidr, conn_idr, conn_idr_len), (long) 0);
-    CHECK_TEST_RET_EQ(ctx->ct_or_pld_2_len, (long) ciphertext_2_len);
-    CHECK_TEST_RET_EQ(compare_arrays(ctx->ct_or_pld_2, ciphertext_2, ctx->ct_or_pld_2_len), (long) 0);
+    memset(&msg2, 0, sizeof(edhoc_msg2_t));
+
+    CHECK_TEST_RET_EQ(edhoc_msg2_decode(&msg2, correlation, msg_buf, msg_buf_len), (long) 0);
+
+    CHECK_TEST_RET_EQ(msg2.cidi_len, (long) conn_idi_len);
+
+    // passing NULL to memcpy is undefined behavior
+    if (msg2.cidi != NULL) {
+        memcpy(temp, msg2.cidi, msg2.cidi_len);
+        CHECK_TEST_RET_EQ(compare_arrays(temp, conn_idi, conn_idi_len), (long) 0);
+    }
+
+    CHECK_TEST_RET_EQ(msg2.g_y_len, (long) g_y_len);
+    memcpy(temp, msg2.g_y, msg2.g_y_len);
+    CHECK_TEST_RET_EQ(compare_arrays(temp, g_y, g_y_len), (long) 0);
+
+    CHECK_TEST_RET_EQ(msg2.cidr_len, (long) conn_idr_len);
+
+    if (msg2.cidr != NULL) {
+        memcpy(temp, msg2.cidr, msg2.cidr_len);
+        CHECK_TEST_RET_EQ(compare_arrays(temp, conn_idr, conn_idr_len), (long) 0);
+    }
+
+    CHECK_TEST_RET_EQ(msg2.ciphertext2_len, (long) ciphertext_2_len);
+    memcpy(temp, msg2.ciphertext2, msg2.ciphertext2_len);
+    CHECK_TEST_RET_EQ(compare_arrays(temp, ciphertext_2, msg2.ciphertext2_len), (long) 0);
 
     exit:
     return ret;
 }
 
-int test_message3_decode(edhoc_ctx_t *ctx,
+int test_message3_decode(corr_t correlation,
                          const uint8_t *msg_buf,
                          size_t msg_buf_len,
                          const uint8_t *conn_idr,
                          size_t conn_idr_len,
                          uint8_t *ciphertext_3,
                          size_t ciphertext_3_len) {
+
     ssize_t ret;
-    CHECK_TEST_RET_EQ(edhoc_msg2_decode(ctx, msg_buf, msg_buf_len), (long) 0);
-    CHECK_TEST_RET_EQ(ctx->ct_or_pld_3_len, (long) ciphertext_3_len);
-    CHECK_TEST_RET_EQ(compare_arrays(ctx->ct_or_pld_3, ciphertext_3, ctx->ct_or_pld_3_len), (long) 0);
+    edhoc_msg3_t msg3;
+    uint8_t temp[MESSAGE_3_SIZE];
+
+    memset(&msg3, 0, sizeof(edhoc_msg3_t));
+
+    CHECK_TEST_RET_EQ(edhoc_msg3_decode(&msg3, correlation, msg_buf, msg_buf_len), (long) 0);
+
+    CHECK_TEST_RET_EQ(msg3.cidr_len, (long) conn_idr_len);
+    if (msg3.cidr != NULL){
+        memcpy(temp, msg3.cidr, msg3.cidr_len);
+        CHECK_TEST_RET_EQ(compare_arrays(temp, conn_idr, conn_idr_len), (long) 0);
+    }
+
+    CHECK_TEST_RET_EQ(msg3.ciphertext3_len, (long) ciphertext_3_len);
+    memcpy(temp, msg3.ciphertext3, msg3.ciphertext3_len);
+    CHECK_TEST_RET_EQ(compare_arrays(temp, ciphertext_3, msg3.ciphertext3_len), (long) 0);
+
 
     exit:
     return ret;
@@ -158,7 +198,7 @@ int main(int argc, char **argv) {
     ssize_t ret;
     test_context_ptr ctx;
 
-    int corr, selected, key_length, iv_length, method;
+    int corr, selected, key_length, iv_length, method, method_corr;
     cose_algo_t id;
 
     uint8_t m1[MESSAGE_1_SIZE];
@@ -195,7 +235,7 @@ int main(int argc, char **argv) {
 
     /* test selection */
 
-    ret = 0;
+    ret = -1;
 
     if (argc == 3) {
         if (strcmp(argv[1], "--encode-msg1") == 0) {
@@ -220,6 +260,9 @@ int main(int argc, char **argv) {
         } else if (strcmp(argv[1], "--decode-msg1") == 0) {
             ctx = load_json_test_file(argv[2]);
 
+            load_from_json_METHOD(ctx, &method);
+            load_from_json_CORR(ctx, &corr);
+
             msg1_len = load_from_json_MESSAGE1(ctx, m1, sizeof(m1));
             g_x_len = load_from_json_G_X(ctx, g_x, sizeof(g_x));
             cidi_len = load_from_json_CONN_IDI(ctx, cidi, sizeof(cidi));
@@ -228,20 +271,21 @@ int main(int argc, char **argv) {
             assert(g_x_len > 0);
             assert(cidi_len >= 0);
 
-            ret = test_message1_decode(m1, msg1_len, 1, g_x, g_x_len, cidi, cidi_len);
+            method_corr = (4 * method) + corr;
+
+            ret = test_message1_decode(m1, msg1_len, method_corr, g_x, g_x_len, cidi, cidi_len);
 
             close_test(ctx);
         } else if (strcmp(argv[1], "--decode-msg3") == 0) {
             ctx = load_json_test_file(argv[2]);
 
+            load_from_json_CORR(ctx, &corr);
+
             msg3_len = load_from_json_MESSAGE3(ctx, m3, sizeof(m3));
             cidr_len = load_from_json_CONN_IDR(ctx, cidr, sizeof(cidr));
             ct3_len = load_from_json_CIPHERTEXT3(ctx, ciphertext_3, sizeof(ciphertext_3));
 
-            edhoc_ctx_t edhoc_ctx;
-            edhoc_ctx_init(&edhoc_ctx);
-
-            ret = test_message3_decode(&edhoc_ctx, m3, msg3_len, cidr, cidr_len, ciphertext_3, ct3_len);
+            ret = test_message3_decode(corr, m3, msg3_len, cidr, cidr_len, ciphertext_3, ct3_len);
 
             close_test(ctx);
 
@@ -259,7 +303,7 @@ int main(int argc, char **argv) {
         } else if (strcmp(argv[1], "--decode-msg2") == 0) {
             ctx = load_json_test_file(argv[2]);
 
-            assert(load_from_json_CIPHERSUITE(ctx, (int *) &selected) == 0);
+            assert(load_from_json_CORR(ctx, (int *) &corr) == 0);
 
             msg2_len = load_from_json_MESSAGE2(ctx, m2, sizeof(m2));
             g_y_len = load_from_json_G_Y(ctx, g_y, sizeof(g_y));
@@ -273,11 +317,7 @@ int main(int argc, char **argv) {
             assert(cidr_len >= 0);
             assert(ct2_len > 0);
 
-            edhoc_ctx_t edhoc_ctx;
-            edhoc_ctx_init(&edhoc_ctx);
-            edhoc_ctx.session.cipher_suite = edhoc_cipher_suite_from_id(selected)->id;
-
-            ret = test_message2_decode(&edhoc_ctx,
+            ret = test_message2_decode(corr,
                                        m2,
                                        msg2_len,
                                        g_y,

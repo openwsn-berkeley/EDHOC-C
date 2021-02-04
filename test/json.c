@@ -489,6 +489,70 @@ int load_from_json_METHOD(test_context_ptr ctx, int *value) {
     return SUCCESS;
 }
 
+int load_from_json_INIT_CREDTYPE(test_context_ptr ctx, int* value){
+    cJSON* cred_type;
+
+    if (!cJSON_IsObject(ctx->initiator)) {
+        return FAILURE;
+    }
+
+    if ((cred_type = cJSON_GetObjectItemCaseSensitive(ctx->initiator, "cred_type")) == NULL) {
+        return FAILURE;
+    }
+
+    *value = cred_type->valueint;
+
+    return SUCCESS;
+}
+
+int load_from_json_INIT_CREDID_TYPE(test_context_ptr ctx, int* value){
+    cJSON* cred_id_type;
+
+    if (!cJSON_IsObject(ctx->initiator)) {
+        return FAILURE;
+    }
+
+    if ((cred_id_type = cJSON_GetObjectItemCaseSensitive(ctx->initiator, "cred_id_type")) == NULL) {
+        return FAILURE;
+    }
+
+    *value = cred_id_type->valueint;
+
+    return SUCCESS;
+}
+
+int load_from_json_RESP_CREDID_TYPE(test_context_ptr ctx, int* value){
+    cJSON* cred_id_type;
+
+    if (!cJSON_IsObject(ctx->responder)) {
+        return FAILURE;
+    }
+
+    if ((cred_id_type = cJSON_GetObjectItemCaseSensitive(ctx->responder, "cred_id_type")) == NULL) {
+        return FAILURE;
+    }
+
+    *value = cred_id_type->valueint;
+
+    return SUCCESS;
+}
+
+int load_from_json_RESP_CREDTYPE(test_context_ptr ctx, int* value){
+    cJSON* cred_type;
+
+    if (!cJSON_IsObject(ctx->responder)) {
+        return FAILURE;
+    }
+
+    if ((cred_type = cJSON_GetObjectItemCaseSensitive(ctx->responder, "cred_type")) == NULL) {
+        return FAILURE;
+    }
+
+    *value = cred_type->valueint;
+
+    return SUCCESS;
+}
+
 int load_from_json_CIPHERSUITE(test_context_ptr ctx, int *value) {
     cJSON *selected;
 

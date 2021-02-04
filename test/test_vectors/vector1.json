@@ -1,5 +1,7 @@
 {
   "I": {
+    "cred_type": 0,
+    "cred_id_type": 0,
     "selected": 0,
     "correlation": 1,
     "method": 0,
@@ -12,6 +14,8 @@
     "cred_id": "a11822822e485b786988439ebcf2"
   },
   "R": {
+    "cred_type": 0,
+    "cred_id_type": 0,
     "auth_key": "a401012006235820df69274d713296e246306365372b4683ced5381bfcadcd440a24c391d2fedb940480",
     "eph_key": "a50101200421582071a3d599c21da18902a1aea810b2b6382ccd8d5f9bf0195281754c5ebcaf301e235820fd8cd877c9ea386e6af34ff7e606c4b64ca831c8ba33134fd4cd7167cabaecda0480",
     "conn_id": "2b",
