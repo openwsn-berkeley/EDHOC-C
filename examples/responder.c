@@ -57,7 +57,7 @@ int edhoc_handshake(int sockfd, bool epk) {
     edhoc_conf_init(&conf);
 
     printf("[%d] Set up EDHOC configuration...\n", counter++);
-    if (edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, NULL, NULL, NULL, NULL, NULL) != 0)
+    if (edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, NULL, NULL, NULL) != 0)
         return -1;
 
     edhoc_cred_cbor_cert_init(&cert);

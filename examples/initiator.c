@@ -67,7 +67,7 @@ int edhoc_handshake(int sockfd, bool epk) {
         return -1;
 
     printf("[%d] Set up EDHOC configuration...\n", counter++);
-    if (edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, NULL, NULL, NULL, NULL, NULL) != 0)
+    if (edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, NULL, NULL, NULL) != 0)
         return -1;
 
     printf("[%d] Load private authentication key...\n", counter++);

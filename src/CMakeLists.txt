@@ -35,7 +35,7 @@ set(edhoc_sources
         ${PROJECT_SOURCE_DIR}/src/crypto/hacl.c
         ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
         ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/mbedtls.c)
+        )
 
 target_sources(${PROJECT_NAME} PRIVATE ${edhoc_sources})
 
@@ -55,9 +55,7 @@ elseif ("${EDHOC_CBOR_BACKEND}" STREQUAL "NANOCBOR")
     target_link_libraries(${PROJECT_NAME} PRIVATE nanocbor)
 endif ()
 
-if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "MBEDTLS")
-    target_link_libraries(${PROJECT_NAME} PRIVATE mbedcrypto)
-elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
+if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
     target_link_libraries(${PROJECT_NAME} PRIVATE wolfssl)
 elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
     if (DEFINED ENV{HACL_HOME})

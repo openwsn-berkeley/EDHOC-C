@@ -14,29 +14,30 @@
 #include <wolfssl/wolfcrypt/aes.h>
 #include <wolfssl/wolfcrypt/ed25519.h>
 
-int crypt_gen_keypair(cose_curve_t crv, rng_cb_t f_rng, void *p_rng, cose_key_t *key) {
+int crypt_gen_keypair(cose_curve_t crv, cose_key_t *key) {
+    int ret;
     (void) crv;
-    (void) f_rng;
 
+    WC_RNG rng;
     curve25519_key _key;
 
+    wc_InitRng(&rng); // initialize random number generator
     wc_curve25519_init(&_key);
 
     // if true, key already initialized
-    if (key->kty != COSE_KTY_NONE)
-        return EDHOC_SUCCESS;
+    if (key->kty != COSE_KTY_NONE){
+        EDHOC_FAIL(EDHOC_SUCCESS);
+    }
 
-    if (p_rng == NULL)
-        return EDHOC_ERR_RNG;
-
-    if (wc_curve25519_make_key((WC_RNG *) p_rng, CURVE25519_KEYSIZE, &_key) != EDHOC_SUCCESS)
-        return EDHOC_ERR_KEYGEN;
+    EDHOC_CHECK_SUCCESS(wc_curve25519_make_key(&rng, CURVE25519_KEYSIZE, &_key));
 
     key->d_len = EDHOC_ECC_KEY_MAX_SIZE;
     key->x_len = EDHOC_ECC_KEY_MAX_SIZE;
     wc_curve25519_export_key_raw(&_key, key->d, (word32 *) &key->d_len, key->x, (word32 *) &key->x_len);
 
-    return EDHOC_SUCCESS;
+    exit:
+    wc_FreeRng(&rng);
+    return ret;
 }
 
 int crypt_hash_init(hash_ctx_t *ctx) {
@@ -136,18 +137,14 @@ static int load_public_key_from_cose_key(const cose_key_t *public_key, curve2551
  *
  * @param[in] sk        COSE key where the private part must be set
  * @param[in] pk        COSE key where the public part must be set
- * @param[in] f_rng     Function pointer to an RNG
- * @param[in] p_rng     Context for the RNG
  * @param[out] out      Output buffer, must be at least 32 bytes long
  *
  * @return On success returns EDHOC_SUCCESS
  * @return On failure returns a negative value (i.e., EDHOC_ERR_CRYPTO, ...)
  */
-static int crypt_ecdh(const cose_key_t *sk, const cose_key_t *pk, rng_cb_t f_rng, void *p_rng, uint8_t *out) {
+static int crypt_ecdh(const cose_key_t *sk, const cose_key_t *pk, uint8_t *out) {
 
     int ret;
-    (void) f_rng;
-    (void) p_rng;
 
     word32 key_size = EDHOC_ECC_KEY_MAX_SIZE;
 
@@ -189,8 +186,6 @@ int crypt_derive_prk(const cose_key_t *sk,
                      const cose_key_t *pk,
                      const uint8_t *salt,
                      size_t salt_len,
-                     rng_cb_t f_rng,
-                     void *p_rng,
                      uint8_t *prk) {
     int ret;
     Hmac hmac;
@@ -200,7 +195,7 @@ int crypt_derive_prk(const cose_key_t *sk,
     ret = EDHOC_ERR_CRYPTO;
     memset(&hmac, 0, sizeof(hmac));
 
-    EDHOC_CHECK_SUCCESS(crypt_ecdh(sk, pk, f_rng, p_rng, secret));
+    EDHOC_CHECK_SUCCESS(crypt_ecdh(sk, pk, secret));
 
     if (wc_HmacSetKey(&hmac, SHA256, salt, salt_len) != EDHOC_SUCCESS)
         goto exit;
@@ -313,14 +308,7 @@ int crypt_encrypt(
     return ret;
 }
 
-int crypt_sign(cose_key_t *authkey,
-               const uint8_t *msg,
-               size_t msg_len,
-               rng_cb_t f_rng,
-               void *p_rng,
-               uint8_t *signature) {
-    (void) f_rng;
-    (void) p_rng;
+int crypt_sign(const cose_key_t *authkey, const uint8_t *msg, size_t msg_len, uint8_t *signature) {
 
     int ret;
     ed25519_key sk;

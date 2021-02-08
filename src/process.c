@@ -29,7 +29,7 @@ ssize_t edhoc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suit
 
     // if not already initialized, generate and load ephemeral key
     if (ctx->local_eph_key.kty == COSE_KTY_NONE) {
-        EDHOC_CHECK_SUCCESS(crypt_gen_keypair(crv, ctx->conf->f_rng, ctx->conf->p_rng, &ctx->local_eph_key));
+        EDHOC_CHECK_SUCCESS(crypt_gen_keypair(crv, &ctx->local_eph_key));
     }
 
     if ((msg1_len = edhoc_msg1_encode(ctx->correlation,
@@ -44,7 +44,7 @@ ssize_t edhoc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suit
         if (msg1_len < 0) {
             EDHOC_FAIL(msg1_len);
         } else {
-            EDHOC_FAIL(EDHOC_ERR_MSG_SIZE);
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
     }
 
@@ -54,7 +54,7 @@ ssize_t edhoc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suit
 }
 
 ssize_t edhoc_compute_mac23(cose_algo_t aead,
-                            cred_container_t* local_cred,
+                            cred_container_t *local_cred,
                             const uint8_t *k_23m,
                             const uint8_t *iv_23m,
                             const uint8_t *th23,
@@ -65,7 +65,7 @@ ssize_t edhoc_compute_mac23(cose_algo_t aead,
 
     const aead_info_t *aead_info;
 
-    const uint8_t* cred;
+    const uint8_t *cred;
 
     uint8_t a23m_buf[EDHOC_A23M_MAX_SIZE];
 
@@ -91,7 +91,7 @@ ssize_t edhoc_compute_mac23(cose_algo_t aead,
         if (a23m_len < 0) {
             EDHOC_FAIL(a23m_len);
         } else {
-            EDHOC_FAIL(EDHOC_ERR_MSG_SIZE);
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
     }
 
@@ -110,24 +110,20 @@ ssize_t edhoc_compute_mac23(cose_algo_t aead,
 }
 
 ssize_t edhoc_compute_sig23(edhoc_role_t role,
-                                   method_t method,
-                                   cred_container_t* local_cred,
-                                   const uint8_t *tag,
-                                   size_t tag_len,
-                                   const uint8_t *th23,
-                                   ad_cb_t ad23,
-                                   rng_cb_t f_rng,
-                                   void* p_rng,
-                                   uint8_t *out) {
+                            method_t method,
+                            cred_container_t *local_cred,
+                            const uint8_t *tag,
+                            size_t tag_len,
+                            const uint8_t *th23,
+                            ad_cb_t ad23,
+                            uint8_t *out) {
     ssize_t ret;
 
     ssize_t cred_len;
     ssize_t m23_len;
     ssize_t sig_len;
 
-    const uint8_t* cred;
-
-    const cipher_suite_t *suite_info = NULL;
+    const uint8_t *cred;
 
     uint8_t m23_buf[EDHOC_M23_MAX_SIZE];
 
@@ -158,13 +154,13 @@ ssize_t edhoc_compute_sig23(edhoc_role_t role,
             }
 
             // compute signature
-            if ((sig_len = crypt_sign(&local_cred->auth_key,
-                                      m23_buf,
-                                      m23_len,
-                                      f_rng,
-                                      p_rng,
-                                      out)) <= 0) {
-                EDHOC_FAIL(sig_len);
+            if ((sig_len = crypt_sign(&local_cred->auth_key, m23_buf, m23_len, out)) <= 0) {
+                if (sig_len < 0) {
+                    EDHOC_FAIL(sig_len);
+                } else {
+                    EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
+                }
+
             }
 
             ret = sig_len;
@@ -189,13 +185,12 @@ ssize_t edhoc_compute_sig23(edhoc_role_t role,
             }
 
             // compute signature
-            if ((sig_len = crypt_sign(&local_cred->auth_key,
-                                      m23_buf,
-                                      m23_len,
-                                      f_rng,
-                                      p_rng,
-                                      out)) <= 0) {
-                EDHOC_FAIL(sig_len);
+            if ((sig_len = crypt_sign(&local_cred->auth_key, m23_buf, m23_len, out)) <= 0) {
+                if (sig_len < 0) {
+                    EDHOC_FAIL(sig_len);
+                } else {
+                    EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
+                }
             }
 
             ret = sig_len;
@@ -210,11 +205,10 @@ ssize_t edhoc_compute_sig23(edhoc_role_t role,
 
 ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2_buf, size_t msg2_len, uint8_t *out, size_t olen) {
     ssize_t ret;
-    ssize_t data3_len, msg1_len, msg3_len, cred_len;
+    ssize_t data3_len, msg1_len, msg3_len;
 
     edhoc_msg2_t msg2;
 
-    const uint8_t *cred;
     const cipher_suite_t *suite_info;
     const aead_info_t *aead_info;
 
@@ -327,22 +321,18 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2_buf, size_t msg2
         if (msg1_len < 0) {
             EDHOC_FAIL(msg1_len);
         } else {
-            EDHOC_FAIL(EDHOC_ERR_MSG_SIZE);
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
     }
 
     EDHOC_CHECK_SUCCESS(edhoc_compute_th2(out, msg1_len, msg2.data2, msg2.data2_len, ctx->th_2));
-    EDHOC_CHECK_SUCCESS(edhoc_compute_prk2e(&ctx->local_eph_key,
-                                            &ctx->remote_eph_key,
-                                            ctx->conf->f_rng,
-                                            ctx->conf->p_rng,
-                                            ctx->prk_2e));
+    EDHOC_CHECK_SUCCESS(edhoc_compute_prk2e(&ctx->local_eph_key, &ctx->remote_eph_key, ctx->prk_2e));
 
     if ((data3_len = edhoc_data3_encode(ctx->correlation, ctx->session.cidr, ctx->session.cidr_len, out, olen)) <= 0) {
         if (data3_len < 0) {
             EDHOC_FAIL(data3_len);
         } else {
-            EDHOC_FAIL(EDHOC_ERR_MSG_SIZE);
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
     }
 
@@ -362,16 +352,12 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2_buf, size_t msg2
                                               ctx->prk_2e,
                                               &ctx->local_eph_key,
                                               &ctx->remote_auth_key,
-                                              ctx->conf->f_rng,
-                                              ctx->conf->p_rng,
                                               ctx->prk_3e2m));
 
     EDHOC_CHECK_SUCCESS(edhoc_compute_prk4x3m(ctx->method,
                                               ctx->prk_3e2m,
                                               &ctx->conf->local_cred.auth_key,
                                               &ctx->remote_eph_key,
-                                              ctx->conf->f_rng,
-                                              ctx->conf->p_rng,
                                               ctx->session.prk_4x3m));
 
     EDHOC_CHECK_SUCCESS(crypt_kdf(aead, ctx->session.prk_4x3m, ctx->th_3, "K_3m", k3m_len, k3m_or_k3ae_buf));
@@ -386,7 +372,7 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2_buf, size_t msg2
         if (sig_or_mac3_len < 0) {
             EDHOC_FAIL(sig_or_mac3_len);
         } else {
-            EDHOC_FAIL(EDHOC_ERR_MSG_SIZE);
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
     }
 
@@ -398,13 +384,11 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2_buf, size_t msg2
                                                sig_or_mac3_len,
                                                ctx->th_3,
                                                ctx->conf->ad3,
-                                               ctx->conf->f_rng,
-                                               ctx->conf->p_rng,
                                                sig_or_mac3_buf)) <= 0) {
         if (sig_or_mac3_len < 0) {
             EDHOC_FAIL(sig_or_mac3_len);
         } else {
-            EDHOC_FAIL(EDHOC_ERR_MSG_SIZE);
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
     }
 #endif
@@ -427,7 +411,7 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2_buf, size_t msg2
         if (p3ae_or_ct3_len < 0) {
             EDHOC_FAIL(p3ae_or_ct3_len);
         } else {
-            EDHOC_FAIL(EDHOC_ERR_MSG_SIZE);
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
     }
 
@@ -435,7 +419,7 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2_buf, size_t msg2
         if (a3ae_len < 0) {
             EDHOC_FAIL(a3ae_len);
         } else {
-            EDHOC_FAIL(EDHOC_ERR_MSG_SIZE);
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
     }
 
@@ -466,7 +450,7 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2_buf, size_t msg2
         if (a3ae_len < 0) {
             EDHOC_FAIL(a3ae_len);
         } else {
-            EDHOC_FAIL(EDHOC_ERR_MSG_SIZE);
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
     }
 
@@ -575,7 +559,7 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1_buf, size_t msg1
     }
 
     // if not already initialized, generate and load ephemeral key
-    EDHOC_CHECK_SUCCESS(crypt_gen_keypair(crv, ctx->conf->f_rng, ctx->conf->p_rng, &ctx->local_eph_key));
+    EDHOC_CHECK_SUCCESS(crypt_gen_keypair(crv, &ctx->local_eph_key));
 
     // generate data_2, must be greater than 0
     if ((data2_len = edhoc_data2_encode(ctx->correlation,
@@ -590,7 +574,7 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1_buf, size_t msg1
         if (data2_len < 0) {
             EDHOC_FAIL(data2_len);
         } else {
-            EDHOC_FAIL(EDHOC_ERR_MSG_SIZE);
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
     }
 
@@ -598,18 +582,12 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1_buf, size_t msg1
     EDHOC_CHECK_SUCCESS(edhoc_compute_th2(msg1_buf, msg1_len, out, data2_len, ctx->th_2));
 
 
-    EDHOC_CHECK_SUCCESS(edhoc_compute_prk2e(&ctx->local_eph_key,
-                                            &ctx->remote_eph_key,
-                                            ctx->conf->f_rng,
-                                            ctx->conf->p_rng,
-                                            ctx->prk_2e));
+    EDHOC_CHECK_SUCCESS(edhoc_compute_prk2e(&ctx->local_eph_key, &ctx->remote_eph_key, ctx->prk_2e));
 
     EDHOC_CHECK_SUCCESS(edhoc_compute_prk3e2m(ctx->method,
                                               ctx->prk_2e,
                                               &ctx->conf->local_cred.auth_key,
                                               &ctx->remote_eph_key,
-                                              ctx->conf->f_rng,
-                                              ctx->conf->p_rng,
                                               ctx->prk_3e2m));
 
     EDHOC_CHECK_SUCCESS(crypt_kdf(aead, ctx->prk_3e2m, ctx->th_2, "K_2m", k2m_len, k2m_buf));
@@ -632,7 +610,7 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1_buf, size_t msg1
         if (sig_or_mac2_len < 0) {
             EDHOC_FAIL(sig_or_mac2_len);
         } else {
-            EDHOC_FAIL(EDHOC_ERR_MSG_SIZE);
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
     }
 
@@ -644,13 +622,11 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1_buf, size_t msg1
                                                sig_or_mac2_len,
                                                ctx->th_2,
                                                ctx->conf->ad2,
-                                               ctx->conf->f_rng,
-                                               ctx->conf->p_rng,
                                                sig_or_mac2_buf)) <= 0) {
         if (sig_or_mac2_len < 0) {
             EDHOC_FAIL(sig_or_mac2_len);
         } else {
-            EDHOC_FAIL(EDHOC_ERR_MSG_SIZE);
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
     }
 #endif
@@ -659,7 +635,7 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1_buf, size_t msg1
         if (cred_id_len < 0) {
             EDHOC_FAIL(cred_id_len);
         } else {
-            EDHOC_FAIL(EDHOC_ERR_MSG_SIZE);
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
     }
 
@@ -673,7 +649,7 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1_buf, size_t msg1
         if (p2e_or_ct2_len < 0) {
             EDHOC_FAIL(p2e_or_ct2_len);
         } else {
-            EDHOC_FAIL(EDHOC_ERR_MSG_SIZE);
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
     }
 
@@ -692,7 +668,7 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1_buf, size_t msg1
         if (msg2_len < 0) {
             EDHOC_FAIL(msg2_len);
         } else {
-            EDHOC_FAIL(EDHOC_ERR_MSG_SIZE);
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
     }
 
@@ -759,8 +735,6 @@ int edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3_buf, size_t msg3_l
                                               ctx->prk_3e2m,
                                               &ctx->local_eph_key,
                                               &ctx->remote_auth_key,
-                                              ctx->conf->f_rng,
-                                              ctx->conf->p_rng,
                                               ctx->session.prk_4x3m));
 
 
@@ -896,16 +870,14 @@ int edhoc_compute_th4(const uint8_t *th3, const uint8_t *ciphertext_3, size_t ct
     return ret;
 }
 
-int edhoc_compute_prk2e(const cose_key_t *sk, const cose_key_t *pk, rng_cb_t f_rng, void *p_rng, uint8_t *prk_2e) {
-    return crypt_derive_prk(sk, pk, NULL, 0, f_rng, p_rng, prk_2e);
+int edhoc_compute_prk2e(const cose_key_t *sk, const cose_key_t *pk, uint8_t *prk_2e) {
+    return crypt_derive_prk(sk, pk, NULL, 0, prk_2e);
 }
 
 int edhoc_compute_prk3e2m(method_t m,
                           const uint8_t *prk_2e,
                           const cose_key_t *sk,
                           const cose_key_t *pk,
-                          rng_cb_t f_rng,
-                          void *p_rng,
                           uint8_t *prk_3e2m) {
     int ret;
 
@@ -916,7 +888,7 @@ int edhoc_compute_prk3e2m(method_t m,
             break;
         case EDHOC_AUTH_STATIC_STATIC:
         case EDHOC_AUTH_SIGN_STATIC:
-            crypt_derive_prk(sk, pk, prk_2e, EDHOC_HASH_MAX_SIZE, f_rng, p_rng, prk_3e2m);
+            crypt_derive_prk(sk, pk, prk_2e, EDHOC_HASH_MAX_SIZE, prk_3e2m);
             break;
         default:
             ret = EDHOC_ERR_CRYPTO;
@@ -932,8 +904,6 @@ int edhoc_compute_prk4x3m(method_t m,
                           const uint8_t *prk_3e2m,
                           const cose_key_t *sk,
                           const cose_key_t *pk,
-                          rng_cb_t f_rng,
-                          void *p_rng,
                           uint8_t *prk_4x3m) {
     int ret;
 
@@ -944,7 +914,7 @@ int edhoc_compute_prk4x3m(method_t m,
             break;
         case EDHOC_AUTH_STATIC_STATIC:
         case EDHOC_AUTH_STATIC_SIGN:
-            crypt_derive_prk(sk, pk, prk_3e2m, EDHOC_HASH_MAX_SIZE, f_rng, p_rng, prk_4x3m);
+            crypt_derive_prk(sk, pk, prk_3e2m, EDHOC_HASH_MAX_SIZE, prk_4x3m);
             break;
         default:
             ret = EDHOC_ERR_CRYPTO;

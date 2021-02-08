@@ -29,26 +29,7 @@ int test_create_msg1(cred_type_t cred_type,
     edhoc_ctx_init(&ctx);
     edhoc_conf_init(&conf);
 
-#if defined(MBEDTLS)
-    // create a strong randomness source
-    char *pers = "edhoc_initiator";
-    mbedtls_entropy_context entropy;
-    mbedtls_ctr_drbg_context ctr_drbg;
-
-    mbedtls_entropy_init(&entropy);
-    mbedtls_ctr_drbg_init(&ctr_drbg);
-
-    EDHOC_CHECK_SUCCESS(mbedtls_ctr_drbg_seed(&ctr_drbg,
-                                          mbedtls_entropy_func,
-                                          &entropy,
-                                          (const unsigned char *) pers,
-                                          strlen(pers)));
-
-
-    EDHOC_CHECK_SUCCESS(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, mbedtls_entropy_func, &entropy, NULL));
-#elif defined(WOLFSSL)
-    CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, NULL, NULL, NULL, NULL, NULL), (long) 0);
-#endif
+    CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, NULL, NULL, NULL), (long) 0);
 
     // loading the configuration
     edhoc_ctx_setup(&ctx, &conf);
@@ -95,30 +76,7 @@ int test_create_msg2(cred_type_t cred_type,
     edhoc_ctx_init(&ctx);
     edhoc_conf_init(&conf);
 
-#if defined(MBEDTLS)
-    char *pers = "edhoc_responder";
-    mbedtls_entropy_context entropy;
-    mbedtls_ctr_drbg_context ctr_drbg;
-
-    // create a strong randomness source
-    mbedtls_entropy_init(&entropy);
-    mbedtls_ctr_drbg_init(&ctr_drbg);
-
-    CHECK_TEST_RET_EQ(mbedtls_ctr_drbg_seed(&ctr_drbg,
-                                            mbedtls_entropy_func,
-                                            &entropy,
-                                            (const unsigned char *) pers,
-                                            strlen(pers)), (long)0);
-
-
-    CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, mbedtls_entropy_func, &entropy, NULL), (long)0);
-#elif defined(WOLFSSL)
-    CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, NULL, NULL, NULL, NULL, NULL), (long) 0);
-#elif defined(HACL)
-    CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, NULL, NULL, NULL, NULL, NULL, NULL), (long) 0);
-#else
-#error "No crypto backend selected"
-#endif
+    CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_RESPONDER, NULL, NULL, NULL), (long) 0);
 
     if (cred_type == CRED_TYPE_CBOR_CERT) {
         edhoc_cred_cbor_cert_init(&auth_cbor_cert);
@@ -180,30 +138,7 @@ int test_create_msg3(cred_type_t cred_type,
     edhoc_ctx_init(&ctx);
     edhoc_conf_init(&conf);
 
-#if defined(MBEDTLS)
-    // create a strong randomness source
-    char *pers = "edhoc_initiator";
-    mbedtls_entropy_context entropy;
-    mbedtls_ctr_drbg_context ctr_drbg;
-
-    mbedtls_entropy_init(&entropy);
-    mbedtls_ctr_drbg_init(&ctr_drbg);
-
-    EDHOC_CHECK_SUCCESS(mbedtls_ctr_drbg_seed(&ctr_drbg,
-                                          mbedtls_entropy_func,
-                                          &entropy,
-                                          (const unsigned char *) pers,
-                                          strlen(pers)));
-
-
-    EDHOC_CHECK_SUCCESS(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, mbedtls_entropy_func, &entropy, NULL));
-#elif defined(WOLFSSL)
-    CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, NULL, NULL, NULL, NULL, NULL), (long) 0);
-#elif defined(HACL)
-    CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, NULL, NULL, NULL, NULL, NULL, NULL), (long) 0);
-#else
-#error "No crypto backend selected"
-#endif
+    CHECK_TEST_RET_EQ(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, NULL, NULL, NULL), (long) 0);
 
     if (cred_type == CRED_TYPE_CBOR_CERT) {
         edhoc_cred_cbor_cert_init(&auth_cbor_cert);

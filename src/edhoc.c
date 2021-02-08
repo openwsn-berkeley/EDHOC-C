@@ -41,8 +41,6 @@ int edhoc_conf_load_credentials(edhoc_conf_t *conf, cred_type_t t, void *local_c
 
 int edhoc_conf_setup(edhoc_conf_t *conf,
                      edhoc_role_t role,
-                     rng_cb_t f_rng,
-                     void *p_rng,
                      ad_cb_t ad1_cb,
                      ad_cb_t ad2_cb,
                      ad_cb_t ad3_cb) {
@@ -52,14 +50,6 @@ int edhoc_conf_setup(edhoc_conf_t *conf,
     }
 
     conf->role = role;
-
-#if defined(MBEDTLS)
-    if (f_rng == NULL)
-        return EDHOC_ERR_RNG;
-#endif
-
-    conf->f_rng = f_rng;
-    conf->p_rng = p_rng;
 
     // callback functions to fetch additional data that needs to be piggybacked on the key exchange
     conf->ad1 = ad1_cb;

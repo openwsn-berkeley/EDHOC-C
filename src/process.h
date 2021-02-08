@@ -163,12 +163,10 @@ int edhoc_compute_th4(const uint8_t *th3, const uint8_t *ciphertext_3, size_t ct
  *
  * @param sk
  * @param pk
- * @param f_rng
- * @param p_rng
  * @param prk_2e
  * @return
  */
-int edhoc_compute_prk2e(const cose_key_t *sk, const cose_key_t *pk, rng_cb_t f_rng, void *p_rng, uint8_t *prk_2e);
+int edhoc_compute_prk2e(const cose_key_t *sk, const cose_key_t *pk, uint8_t *prk_2e);
 
 /**
  *
@@ -176,8 +174,6 @@ int edhoc_compute_prk2e(const cose_key_t *sk, const cose_key_t *pk, rng_cb_t f_r
  * @param prk_2e
  * @param sk
  * @param pk
- * @param f_rng
- * @param p_rng
  * @param prk_3e2m
  * @return
  */
@@ -185,8 +181,6 @@ int edhoc_compute_prk3e2m(method_t m,
                           const uint8_t *prk_2e,
                           const cose_key_t *sk,
                           const cose_key_t *pk,
-                          rng_cb_t f_rng,
-                          void *p_rng,
                           uint8_t *prk_3e2m);
 
 /**
@@ -195,8 +189,6 @@ int edhoc_compute_prk3e2m(method_t m,
  * @param prk_3e2m
  * @param sk
  * @param pk
- * @param f_rng
- * @param p_rng
  * @param prk_4x3m
  * @return
  */
@@ -204,17 +196,11 @@ int edhoc_compute_prk4x3m(method_t m,
                           const uint8_t *prk_3e2m,
                           const cose_key_t *sk,
                           const cose_key_t *pk,
-                          rng_cb_t f_rng,
-                          void *p_rng,
                           uint8_t *prk_4x3m);
 
 /**
  *
  * @param aead
- * @param cred
- * @param cred_len
- * @param cred_id
- * @param cred_id_len
  * @param k_23m
  * @param iv_23m
  * @param th23
@@ -231,27 +217,23 @@ ssize_t edhoc_compute_mac23(cose_algo_t aead,
 /**
  *
  * @param role
- * @param method
+ * @param m
  * @param sign_crv
  * @param local_cred
  * @param tag
  * @param tag_len
  * @param th23
  * @param ad23
- * @param f_rng
- * @param p_rng
  * @param out
  * @return
  */
 ssize_t edhoc_compute_sig23(edhoc_role_t role,
-                            method_t method,
+                            method_t m,
                             cred_container_t *local_cred,
                             const uint8_t *tag,
                             size_t tag_len,
                             const uint8_t *th23,
                             ad_cb_t ad23,
-                            rng_cb_t f_rng,
-                            void *p_rng,
                             uint8_t *out);
 
 #endif /* EDHOC_PROCESSING_H */

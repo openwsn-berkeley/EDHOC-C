@@ -39,14 +39,12 @@ struct hash_ctx {
  * @brief Generate a random key pair over a COSE curve
  *
  * @param[in] crv       COSE Curve over which the key will be generated
- * @param[in] f_rng     A function providing strong randomness
- * @param[in] p_rng     Optional RNG context info (can be NULL)
  * @param[in] key       Pointer to COSE key structure to store the generated key
  *
  * @return On success returns EDHOC_SUCCESS
  * @return On failure returns a negative value (EDHOC_ERR_KEY_GENERATION, EDHOC_ERR_CURVE_UNAVAILABLE, ..)
  */
-int crypt_gen_keypair(cose_curve_t crv, rng_cb_t f_rng, void *p_rng, cose_key_t *key);
+int crypt_gen_keypair(cose_curve_t crv, cose_key_t *key);
 
 /**
  * @brief Initialize and start a hashing context
@@ -110,20 +108,12 @@ crypt_kdf(cose_algo_t id, const uint8_t *prk, const uint8_t *th, const char *lab
  *
  * @param[in] sk        Public key
  * @param[in] pk        Private key
- * @param[in] f_rng     RNG function, can be NULL
- * @param[in] p_rng     Context for @p f_rng, can be NULL
  * @param[out] prk_2e   Output buffer, must be at least COSE_DIGEST_LEN in size
  *
  * @return On success, EDHOC_SUCCESS
  * @return On failure, EDHOC_ERR_CRYPTO
  **/
-int crypt_derive_prk(const cose_key_t *sk,
-                     const cose_key_t *pk,
-                     const uint8_t *salt,
-                     size_t salt_len,
-                     rng_cb_t f_rng,
-                     void *p_rng,
-                     uint8_t *prk);
+int crypt_derive_prk(const cose_key_t *sk, const cose_key_t *pk, const uint8_t *salt, size_t salt_len, uint8_t *prk);
 
 /**
  * @brief Encrypts and authenticates the payload using a COSE AEAD cipher
@@ -184,17 +174,10 @@ int crypt_decrypt(cose_algo_t alg,
  * @param[in] authkey       Private key
  * @param[in] msg           Message to sign
  * @param[in] msg_len       Length of @p msg
- * @param[in] f_rng         Function providing randomness
- * @param[in] p_rng         Optional randomness context structure
  *
  * @return On success returns the size of the signature
  * @return On failure returns an EDHOC error code (< 0, i.e., EDHOC_ERR_CRYPTO, EDHOC_ERR_CURVE_UNAVAILABLE, ..)
  */
-int crypt_sign(cose_key_t *authkey,
-               const uint8_t *msg,
-               size_t msg_len,
-               rng_cb_t f_rng,
-               void *p_rng,
-               uint8_t *signature);
+int crypt_sign(const cose_key_t *authkey, const uint8_t *msg, size_t msg_len, uint8_t *signature);
 
 #endif /* EDHOC_CRYPTO_INTERNAL_H */

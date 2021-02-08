@@ -45,29 +45,10 @@ int test_key_generation(void) {
     edhoc_ctx_init(&ctx);
     edhoc_conf_init(&conf);
 
-#if defined(WOLFSSL)
-
-#elif defined(MBEDTLS)
-    char *pers = "edhoc_responder";
-    mbedtls_entropy_context entropy;
-    mbedtls_ctr_drbg_context ctr_drbg;
-
-    mbedtls_entropy_init(&entropy);
-    mbedtls_ctr_drbg_init(&ctr_drbg);
-
-    EDHOC_CHECK_SUCCESS(mbedtls_ctr_drbg_seed(&ctr_drbg,
-                                          mbedtls_entropy_func,
-                                          &entropy,
-                                          (const unsigned char *) pers,
-                                          strlen(pers)));
-
-    EDHOC_CHECK_SUCCESS(edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, mbedtls_entropy_func, &entropy, NULL));
-#endif
-
     // loading the configuration
     edhoc_ctx_setup(&ctx, &conf);
 
-    if ((ret = crypt_gen_keypair(COSE_EC_CURVE_X25519, ctx.conf->f_rng, ctx.conf->p_rng, &key)) != EDHOC_SUCCESS) {
+    if ((ret = crypt_gen_keypair(COSE_EC_CURVE_X25519, &key)) != EDHOC_SUCCESS) {
         goto exit;
     }
 
@@ -103,7 +84,7 @@ int test_compute_ed25519_signature(uint8_t *sk,
 
     cose_key_from_cbor(&authkey, sk, sk_len);
 
-    CHECK_TEST_RET_EQ(crypt_sign(&authkey, m_2, m_2_len, NULL, NULL, signature),(long) expected_len);
+    CHECK_TEST_RET_EQ(crypt_sign(&authkey, m_2, m_2_len, signature),(long) expected_len);
     CHECK_TEST_RET_EQ(compare_arrays(signature, expected, EDHOC_SIG23_MAX_SIZE), (long) 0);
 
     exit:

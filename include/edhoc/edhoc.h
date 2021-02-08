@@ -108,12 +108,11 @@
 #define EDHOC_SUCCESS                               (0)
 
 // crypto errors
-#define EDHOC_ERR_RNG                               (-1)
 #define EDHOC_ERR_CRYPTO                            (-2)
 #define EDHOC_ERR_KEYGEN                            (-3)
 
 // generic errors
-#define EDHOC_ERR_MSG_SIZE                          (-4)
+#define EDHOC_ERR_INVALID_SIZE                      (-4)
 #define EDHOC_ERR_BUFFER_OVERFLOW                   (-5)
 #define EDHOC_ERR_INVALID_PARAM                     (-6)
 
@@ -326,8 +325,6 @@ struct edhoc_conf_t {
     ad_cb_t ad3;
     cred_container_t local_cred;
     cred_cb_t f_remote_cred;
-    rng_cb_t f_rng;
-    void *p_rng;
 };
 
 /**
@@ -400,8 +397,6 @@ int edhoc_conf_load_credentials(edhoc_conf_t *conf, cred_type_t t, void *local_c
  *
  * @param[out] conf             The EDHOC configuration struct to populate
  * @param[in] role              An EDHOC role; either EDHOC_IS_INITIATOR or EDHOC_IS_RESPONDER
- * @param[in] f_rng             A function that provides strong random bytes
- * @param[in] p_rng             Optional RNG context object
  * @param[in] ad1_cb            Callback to fetch additional data
  * @param[in] ad2_cb            Callback to fetch additional data
  * @param[in] ad3_cb            Callback to fetch additional data
@@ -410,13 +405,7 @@ int edhoc_conf_load_credentials(edhoc_conf_t *conf, cred_type_t t, void *local_c
  * @returns On failure returns a negative value
  *
  */
-int edhoc_conf_setup(edhoc_conf_t *conf,
-                     edhoc_role_t role,
-                     rng_cb_t f_rng,
-                     void *p_rng,
-                     ad_cb_t ad1_cb,
-                     ad_cb_t ad2_cb,
-                     ad_cb_t ad3_cb);
+int edhoc_conf_setup(edhoc_conf_t *conf, edhoc_role_t role, ad_cb_t ad1_cb, ad_cb_t ad2_cb, ad_cb_t ad3_cb);
 
 /**
  * @brief Load the private COSE key for authenticating the exchange.

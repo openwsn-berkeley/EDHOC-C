@@ -5,7 +5,6 @@
 #include "format.h"
 #include "cipher_suites.h"
 #include "cbor.h"
-#include "credentials.h"
 
 #define SUPPORTED_SUITES_BUFFER_SIZE     (8)
 #define CBOR_ARRAY_INFO_LEN              (4)
@@ -410,7 +409,7 @@ ssize_t edhoc_a23m_encode(const uint8_t *auth_bytes,
         if (eaad_len < 0) {
             EDHOC_FAIL(eaad_len);
         } else {
-            EDHOC_FAIL(EDHOC_ERR_MSG_SIZE);
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
     }
 
@@ -422,7 +421,7 @@ ssize_t edhoc_a23m_encode(const uint8_t *auth_bytes,
         if (enc_len < 0) {
             EDHOC_FAIL(enc_len);
         } else {
-            EDHOC_FAIL(EDHOC_ERR_MSG_SIZE);
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
     }
 
@@ -451,7 +450,7 @@ ssize_t edhoc_m23_encode(const uint8_t *th23,
         if (eaad_len < 0) {
             EDHOC_FAIL(eaad_len);
         } else {
-            EDHOC_FAIL(EDHOC_ERR_MSG_SIZE);
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
     }
 
