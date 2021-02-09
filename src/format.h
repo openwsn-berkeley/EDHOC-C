@@ -26,48 +26,48 @@ typedef struct edhoc_msg1_t {
 } edhoc_msg1_t;
 
 typedef struct edhoc_msg2_t {
-    const uint8_t *data2;
-    size_t data2_len;
+    const uint8_t *data;
+    size_t data_len;
     const uint8_t *cidi;
     size_t cidi_len;
     const uint8_t *g_y;
     size_t g_y_len;
     const uint8_t *cidr;
     size_t cidr_len;
-    uint8_t *ciphertext2;
-    size_t ciphertext2_len;
-    const uint8_t* cred_idr;
+    uint8_t *ciphertext;
+    size_t ciphertext_len;
+    const uint8_t *cred_idr;
     size_t cred_idr_len;
-    const uint8_t* sig_or_mac2;
+    const uint8_t *sig_or_mac;
     size_t sig_or_mac_len;
-    const uint8_t* ad2;
-    size_t ad2_len;
+    const uint8_t *ad;
+    size_t ad_len;
 } edhoc_msg2_t;
 
 /**
  * EDHOC message 3 deserializing structure
  */
 typedef struct edhoc_msg3_t {
-    const uint8_t *data3;           ///< Pointer to the start of data_3
-    size_t data3_len;               ///< Length of data_3
-    const uint8_t *cidr;            ///< Pointer to the Responder's connection identifier
-    size_t cidr_len;                ///< Length of the Responder's connection identifier
-    const uint8_t *ciphertext3;     ///< Pointer to the start of the ciphertext_3
-    size_t ciphertext3_len;         ///< Length of the ciphertext_3
+    const uint8_t *data;           ///< Pointer to the start of data_3
+    size_t data_len;               ///< Length of data_3
+    const uint8_t *cidr;           ///< Pointer to the Responder's connection identifier
+    size_t cidr_len;               ///< Length of the Responder's connection identifier
+    const uint8_t *ciphertext;     ///< Pointer to the start of the ciphertext_3
+    size_t ciphertext_len;         ///< Length of the ciphertext_3
     const uint8_t *cred_idi;
     size_t cred_idi_len;
-    const uint8_t* sig_or_mac3;
-    size_t sig_or_mac3_len;
-    const uint8_t* ad3;
-    size_t ad3_len;
+    const uint8_t *sig_or_mac;
+    size_t sig_or_mac_len;
+    const uint8_t *ad;
+    size_t ad_len;
 } edhoc_msg3_t;
 
 /**
  * @brief Message encoding routine for EDHOC message_1
  *
  * @param[in] corr          EDHOC correlation value
- * @param[in] m        EDHOC authentication method
- * @param[in] id  EDHOC selected cipher suite identifier
+ * @param[in] m             EDHOC authentication method
+ * @param[in] id            EDHOC selected cipher suite identifier
  * @param[in] key           Pointer to ephemeral COSE key (message includes only the public part)
  * @param[in] cidi          Pointer to connection identifier (Initiator)
  * @param[in] cidi_len      Length of @p cidi
@@ -269,7 +269,7 @@ ssize_t edhoc_cose_enc_struct_encode(const uint8_t *cred_id,
  * @return On success returns EDHOC_SUCCESS
  * @return On failure a negative value (i.e., EDHOC_ERR_CRYPTO, EDHOC_ERR_CBOR_DECODING, ...)
  */
-int edhoc_p2e_decode(edhoc_msg2_t* msg2, const uint8_t *p2e, size_t p2e_len);
+int edhoc_p2e_decode(edhoc_msg2_t *msg2, const uint8_t *p2e, size_t p2e_len);
 
 /**
  * @brief Decodes P_3ae and verifies the included signature
@@ -354,12 +354,12 @@ ssize_t edhoc_p2e_or_p3ae_encode(uint8_t *cred_id,
  * @param olen
  * @return
  */
-ssize_t edhoc_a23m_encode(const uint8_t* auth_bytes,
+ssize_t edhoc_a23m_encode(const uint8_t *auth_bytes,
                           size_t auth_len,
                           const uint8_t *cred_id,
                           size_t cred_id_len,
                           const uint8_t *th23,
-                          uint8_t* out,
+                          uint8_t *out,
                           size_t olen);
 
 

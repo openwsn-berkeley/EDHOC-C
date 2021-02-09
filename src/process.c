@@ -12,7 +12,6 @@ ssize_t edhoc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suit
     ssize_t ret;
 
     ssize_t msg1_len;
-    cose_curve_t crv;
 
     const cipher_suite_t *suite_info;
 
@@ -25,11 +24,9 @@ ssize_t edhoc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suit
     ctx->correlation = corr;
     ctx->method = m;
 
-    crv = suite_info->dh_curve;
-
     // if not already initialized, generate and load ephemeral key
     if (ctx->local_eph_key.kty == COSE_KTY_NONE) {
-        EDHOC_CHECK_SUCCESS(crypt_gen_keypair(crv, &ctx->local_eph_key));
+        EDHOC_CHECK_SUCCESS(crypt_gen_keypair(suite_info->dh_curve, &ctx->local_eph_key));
     }
 
     if ((msg1_len = edhoc_msg1_encode(ctx->correlation,
@@ -54,7 +51,7 @@ ssize_t edhoc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suit
 }
 
 ssize_t edhoc_compute_mac23(cose_algo_t aead,
-                            cred_container_t *local_cred,
+                            const cred_container_t *local_cred,
                             const uint8_t *k_23m,
                             const uint8_t *iv_23m,
                             const uint8_t *th23,
@@ -111,7 +108,7 @@ ssize_t edhoc_compute_mac23(cose_algo_t aead,
 
 ssize_t edhoc_compute_sig23(edhoc_role_t role,
                             method_t method,
-                            cred_container_t *local_cred,
+                            const cred_container_t *local_cred,
                             const uint8_t *tag,
                             size_t tag_len,
                             const uint8_t *th23,
@@ -203,6 +200,228 @@ ssize_t edhoc_compute_sig23(edhoc_role_t role,
     return ret;
 }
 
+ssize_t edhoc_create_ciphertext3(cose_algo_t id,
+                                 method_t m,
+                                 const uint8_t *prk4x3m,
+                                 const uint8_t *th3,
+                                 const cred_container_t *local_cred,
+                                 ad_cb_t ad3,
+                                 uint8_t *out,
+                                 size_t olen) {
+    ssize_t ret;
+    ssize_t size;
+
+    const aead_info_t *aead_info = NULL;
+
+    uint8_t k3m_or_k3ae[EDHOC_K23M_MAX_SIZE];
+    size_t k3m_len, k3ae_len;
+
+    uint8_t cred_id_buf[EDHOC_CREDENTIAL_ID_MAX_SIZE];
+    ssize_t cred_id_len;
+
+    uint8_t iv3m_or_iv3ae[EDHOC_IV23M_MAX_SIZE];
+    size_t iv3m_len, iv3ae_len;
+
+    uint8_t a_3ae[EDHOC_MAX_A3AE_LEN];
+    ssize_t a3ae_len;
+
+    uint8_t sig_or_mac3[EDHOC_SIG23_MAX_SIZE];
+    ssize_t sig_or_mac3_len;
+
+    uint8_t tag[EDHOC_AUTH_TAG_MAX_SIZE];
+    ssize_t tag_len;
+
+    if ((aead_info = cose_aead_info_from_id(id)) == NULL) {
+        EDHOC_FAIL(EDHOC_ERR_AEAD_CIPHER_UNAVAILABLE);
+    }
+
+    k3m_len = k3ae_len = aead_info->key_length;
+    iv3m_len = iv3ae_len = aead_info->iv_length;
+    tag_len = aead_info->tag_length;
+
+    EDHOC_CHECK_SUCCESS(crypt_kdf(id, prk4x3m, th3, "K_3m", k3m_len, k3m_or_k3ae));
+    EDHOC_CHECK_SUCCESS(crypt_kdf(id, prk4x3m, th3, "IV_3m", iv3m_len, iv3m_or_iv3ae));
+
+    if ((sig_or_mac3_len = edhoc_compute_mac23(id, local_cred, k3m_or_k3ae, iv3m_or_iv3ae, th3, sig_or_mac3)) <= 0) {
+        if (sig_or_mac3_len < 0) {
+            EDHOC_FAIL(sig_or_mac3_len);
+        } else {
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
+        }
+    }
+
+#if defined(EDHOC_AUTH_METHOD_0_ENABLED) || defined(EDHOC_AUTH_METHOD_1_ENABLED)
+    if ((sig_or_mac3_len = edhoc_compute_sig23(EDHOC_IS_INITIATOR,
+                                               m,
+                                               local_cred,
+                                               sig_or_mac3,
+                                               sig_or_mac3_len,
+                                               th3,
+                                               ad3,
+                                               sig_or_mac3)) <= 0) {
+        if (sig_or_mac3_len < 0) {
+            EDHOC_FAIL(sig_or_mac3_len);
+        } else {
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
+        }
+    }
+#endif
+
+    if ((cred_id_len = cred_get_cred_id_bytes(local_cred, cred_id_buf, sizeof(cred_id_buf))) <= 0) {
+        if (cred_id_len < 0) {
+            EDHOC_FAIL(cred_id_len);
+        } else {
+            EDHOC_FAIL(EDHOC_ERR_INVALID_CRED_ID);
+        }
+    }
+
+    // compute P_3ae and write it to the output buffer
+    if ((size = edhoc_p2e_or_p3ae_encode(cred_id_buf, cred_id_len, sig_or_mac3, sig_or_mac3_len, out, olen)) <= 0) {
+        if (size < 0) {
+            EDHOC_FAIL(size);
+        } else {
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
+        }
+    }
+
+    if ((a3ae_len = edhoc_a3ae_encode(th3, a_3ae, EDHOC_MAX_A3AE_LEN)) <= 0) {
+        if (a3ae_len < 0) {
+            EDHOC_FAIL(a3ae_len);
+        } else {
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
+        }
+    }
+
+    EDHOC_CHECK_SUCCESS(crypt_kdf(id, prk4x3m, th3, "K_3ae", k3ae_len, k3m_or_k3ae));
+    EDHOC_CHECK_SUCCESS(crypt_kdf(id, prk4x3m, th3, "IV_3ae", iv3ae_len, iv3m_or_iv3ae));
+
+    EDHOC_CHECK_SUCCESS(crypt_encrypt(id,
+                                      k3m_or_k3ae,
+                                      iv3m_or_iv3ae,
+                                      a_3ae,
+                                      a3ae_len,
+                                      out,
+                                      out,
+                                      size,
+                                      tag));
+
+    // copy the tag
+    if (tag_len + size > olen) {
+        EDHOC_FAIL(EDHOC_ERR_BUFFER_OVERFLOW);
+    } else {
+        memcpy(out + size, tag, tag_len);
+        size += tag_len;
+    }
+
+    ret = size;
+    exit:
+    return ret;
+}
+
+
+ssize_t edhoc_create_ciphertext2(cose_algo_t id,
+                                 method_t m,
+                                 const uint8_t *prk2e,
+                                 const uint8_t *prk3e2m,
+                                 const uint8_t *th2,
+                                 const cred_container_t *local_cred,
+                                 ad_cb_t ad2,
+                                 uint8_t *out,
+                                 size_t olen) {
+    ssize_t ret;
+    const aead_info_t *aead_info = NULL;
+
+    const uint8_t *cred;
+    ssize_t cred_len;
+    ssize_t size;
+
+    // temporary buffers
+    uint8_t cred_id[EDHOC_CREDENTIAL_ID_MAX_SIZE];
+    ssize_t cred_id_len;
+
+    uint8_t sig_or_mac2[EDHOC_SIG23_MAX_SIZE];
+    ssize_t sig_or_mac2_len;
+
+    uint8_t k2e[EDHOC_PAYLOAD_MAX_SIZE];
+
+    uint8_t k2m[EDHOC_K23M_MAX_SIZE];
+    ssize_t k2m_len;
+
+    uint8_t iv2m[EDHOC_IV23M_MAX_SIZE];
+    ssize_t iv2m_len;
+
+    if ((aead_info = cose_aead_info_from_id(id)) != NULL) {
+        k2m_len = aead_info->key_length;
+        iv2m_len = aead_info->iv_length;
+    } else {
+        EDHOC_FAIL(EDHOC_ERR_AEAD_CIPHER_UNAVAILABLE);
+    }
+
+    EDHOC_CHECK_SUCCESS(crypt_kdf(id, prk3e2m, th2, "K_2m", k2m_len, k2m));
+    EDHOC_CHECK_SUCCESS(crypt_kdf(id, prk3e2m, th2, "IV_2m", iv2m_len, iv2m));
+
+    if ((cred_len = cred_get_cred_bytes(local_cred, &cred)) <= 0) {
+        if (cred_len < 0) {
+            EDHOC_FAIL(cred_len);
+        } else {
+            EDHOC_FAIL(EDHOC_ERR_INVALID_CRED);
+        }
+    }
+
+    if ((sig_or_mac2_len = edhoc_compute_mac23(id, local_cred, k2m, iv2m, th2, sig_or_mac2)) <= 0) {
+        if (sig_or_mac2_len < 0) {
+            EDHOC_FAIL(sig_or_mac2_len);
+        } else {
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
+        }
+    }
+
+#if defined(EDHOC_AUTH_METHOD_0_ENABLED) || defined(EDHOC_AUTH_METHOD_2_ENABLED)
+    if ((sig_or_mac2_len = edhoc_compute_sig23(EDHOC_IS_RESPONDER,
+                                               m,
+                                               local_cred,
+                                               sig_or_mac2,
+                                               sig_or_mac2_len,
+                                               th2,
+                                               ad2,
+                                               sig_or_mac2)) <= 0) {
+        if (sig_or_mac2_len < 0) {
+            EDHOC_FAIL(sig_or_mac2_len);
+        } else {
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
+        }
+    }
+#endif
+
+    if ((cred_id_len = cred_get_cred_id_bytes(local_cred, cred_id, sizeof(cred_id))) <= 0) {
+        if (cred_id_len < 0) {
+            EDHOC_FAIL(cred_id_len);
+        } else {
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
+        }
+    }
+
+    // compute P_2e and write it to the output buffer
+    if ((size = edhoc_p2e_or_p3ae_encode(cred_id, cred_id_len, sig_or_mac2, sig_or_mac2_len, out, olen)) <= 0) {
+        if (size < 0) {
+            EDHOC_FAIL(size);
+        } else {
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
+        }
+    }
+
+    EDHOC_CHECK_SUCCESS(crypt_kdf(id, prk2e, th2, "K_2e", size, k2e));
+
+    // XOR encryption P_2e XOR K_2e
+    for (ssize_t i = 0; i < size; i++) {
+        out[i] = out[i] ^ k2e[i];
+    }
+
+    ret = size;
+    exit:
+    return ret;
+}
+
 ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2_buf, size_t msg2_len, uint8_t *out, size_t olen) {
     ssize_t ret;
     ssize_t data3_len, msg1_len, msg3_len;
@@ -210,48 +429,17 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2_buf, size_t msg2
     edhoc_msg2_t msg2;
 
     const cipher_suite_t *suite_info;
-    const aead_info_t *aead_info;
 
-    cose_algo_t aead;
-
-    uint8_t cred_id_buf[EDHOC_CREDENTIAL_ID_MAX_SIZE];
-    ssize_t cred_id_len;
-
-    uint8_t k3m_or_k3ae_buf[EDHOC_K23M_MAX_SIZE];
-    size_t k3m_len, k3ae_len;
-
-    uint8_t iv3m_or_iv3ae_buf[EDHOC_IV23M_MAX_SIZE];
-    size_t iv3m_len, iv3ae_len;
-
-    uint8_t p3ae_or_ct3_buf[EDHOC_PAYLOAD_MAX_SIZE];
-    ssize_t p3ae_or_ct3_len;
+    uint8_t ciphertext_3[EDHOC_PAYLOAD_MAX_SIZE];
+    ssize_t ct3_len;
 
     uint8_t k2e_buf[EDHOC_PAYLOAD_MAX_SIZE];
-
-    uint8_t a_3ae[EDHOC_MAX_A3AE_LEN];
-    ssize_t a3ae_len;
-
-    uint8_t tag[EDHOC_AUTH_TAG_MAX_SIZE];
-    ssize_t tag_len;
-
-    uint8_t sig_or_mac3_buf[EDHOC_SIG23_MAX_SIZE];
-    ssize_t sig_or_mac3_len;
 
     memset(&msg2, 0, sizeof(edhoc_msg2_t));
 
     if ((suite_info = edhoc_cipher_suite_from_id(ctx->session.cipher_suite)) == NULL) {
         EDHOC_FAIL(EDHOC_ERR_CIPHERSUITE_UNAVAILABLE);
     }
-
-    aead = suite_info->aead_algo;
-
-    if ((aead_info = cose_aead_info_from_id(aead)) == NULL) {
-        EDHOC_FAIL(EDHOC_ERR_AEAD_CIPHER_UNAVAILABLE);
-    }
-
-    k3m_len = k3ae_len = aead_info->key_length;
-    iv3m_len = iv3ae_len = aead_info->iv_length;
-    tag_len = aead_info->tag_length;
 
     EDHOC_CHECK_SUCCESS(edhoc_msg2_decode(&msg2, ctx->correlation, msg2_buf, msg2_len));
 
@@ -299,11 +487,11 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2_buf, size_t msg2
     ctx->session.cidr_len = msg2.cidr_len;
 
     // do some checks on the ciphertext_2
-    if (msg2.ciphertext2_len > 0 && msg2.ciphertext2_len <= EDHOC_PAYLOAD_MAX_SIZE) {
-        if (msg2.ciphertext2 == NULL) {
+    if (msg2.ciphertext_len > 0 && msg2.ciphertext_len <= EDHOC_PAYLOAD_MAX_SIZE) {
+        if (msg2.ciphertext == NULL) {
             EDHOC_FAIL(EDHOC_ERR_INVALID_PARAM);
         }
-    } else if (msg2.ciphertext2_len == 0) {
+    } else if (msg2.ciphertext_len == 0) {
         EDHOC_FAIL(EDHOC_ERR_INVALID_PARAM);
     } else {
         EDHOC_FAIL(EDHOC_ERR_BUFFER_OVERFLOW);
@@ -325,7 +513,7 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2_buf, size_t msg2
         }
     }
 
-    EDHOC_CHECK_SUCCESS(edhoc_compute_th2(out, msg1_len, msg2.data2, msg2.data2_len, ctx->th_2));
+    EDHOC_CHECK_SUCCESS(edhoc_compute_th2(out, msg1_len, msg2.data, msg2.data_len, ctx->th_2));
     EDHOC_CHECK_SUCCESS(edhoc_compute_prk2e(&ctx->local_eph_key, &ctx->remote_eph_key, ctx->prk_2e));
 
     if ((data3_len = edhoc_data3_encode(ctx->correlation, ctx->session.cidr, ctx->session.cidr_len, out, olen)) <= 0) {
@@ -337,16 +525,17 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2_buf, size_t msg2
     }
 
     EDHOC_CHECK_SUCCESS(
-            edhoc_compute_th3(ctx->th_2, msg2.ciphertext2, msg2.ciphertext2_len, out, data3_len, ctx->th_3));
+            edhoc_compute_th3(ctx->th_2, msg2.ciphertext, msg2.ciphertext_len, out, data3_len, ctx->th_3));
 
-    EDHOC_CHECK_SUCCESS(crypt_kdf(aead, ctx->prk_2e, ctx->th_2, "K_2e", msg2.ciphertext2_len, k2e_buf));
+    EDHOC_CHECK_SUCCESS(
+            crypt_kdf(suite_info->aead_algo, ctx->prk_2e, ctx->th_2, "K_2e", msg2.ciphertext_len, k2e_buf));
 
     // XOR decryption P_2e XOR K_2e
-    for (size_t i = 0; i < msg2.ciphertext2_len; i++) {
-        msg2.ciphertext2[i] = msg2.ciphertext2[i] ^ k2e_buf[i];
+    for (size_t i = 0; i < msg2.ciphertext_len; i++) {
+        msg2.ciphertext[i] = msg2.ciphertext[i] ^ k2e_buf[i];
     }
 
-    EDHOC_CHECK_SUCCESS(edhoc_p2e_decode(&msg2, msg2.ciphertext2, msg2.ciphertext2_len));
+    EDHOC_CHECK_SUCCESS(edhoc_p2e_decode(&msg2, msg2.ciphertext, msg2.ciphertext_len));
 
     EDHOC_CHECK_SUCCESS(edhoc_compute_prk3e2m(ctx->method,
                                               ctx->prk_2e,
@@ -360,99 +549,30 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2_buf, size_t msg2
                                               &ctx->remote_eph_key,
                                               ctx->session.prk_4x3m));
 
-    EDHOC_CHECK_SUCCESS(crypt_kdf(aead, ctx->session.prk_4x3m, ctx->th_3, "K_3m", k3m_len, k3m_or_k3ae_buf));
-    EDHOC_CHECK_SUCCESS(crypt_kdf(aead, ctx->session.prk_4x3m, ctx->th_3, "IV_3m", iv3m_len, iv3m_or_iv3ae_buf));
-
-    if ((sig_or_mac3_len = edhoc_compute_mac23(aead,
-                                               &ctx->conf->local_cred,
-                                               k3m_or_k3ae_buf,
-                                               iv3m_or_iv3ae_buf,
-                                               ctx->th_3,
-                                               sig_or_mac3_buf)) <= 0) {
-        if (sig_or_mac3_len < 0) {
-            EDHOC_FAIL(sig_or_mac3_len);
+    if ((ct3_len = edhoc_create_ciphertext3(suite_info->aead_algo,
+                                            ctx->method,
+                                            ctx->session.prk_4x3m,
+                                            ctx->th_3,
+                                            &ctx->conf->local_cred,
+                                            ctx->conf->ad3,
+                                            ciphertext_3,
+                                            EDHOC_PAYLOAD_MAX_SIZE)) <= 0) {
+        if (ct3_len < 0) {
+            EDHOC_FAIL(ct3_len);
         } else {
             EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
     }
 
-#if defined(EDHOC_AUTH_METHOD_0_ENABLED) || defined(EDHOC_AUTH_METHOD_1_ENABLED)
-    if ((sig_or_mac3_len = edhoc_compute_sig23(ctx->conf->role,
-                                               ctx->method,
-                                               &ctx->conf->local_cred,
-                                               sig_or_mac3_buf,
-                                               sig_or_mac3_len,
-                                               ctx->th_3,
-                                               ctx->conf->ad3,
-                                               sig_or_mac3_buf)) <= 0) {
-        if (sig_or_mac3_len < 0) {
-            EDHOC_FAIL(sig_or_mac3_len);
-        } else {
-            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
-        }
-    }
-#endif
-
-    if ((cred_id_len = cred_get_cred_id_bytes(&ctx->conf->local_cred, cred_id_buf, sizeof(cred_id_buf))) <= 0) {
-        if (cred_id_len < 0) {
-            EDHOC_FAIL(cred_id_len);
-        } else {
-            EDHOC_FAIL(EDHOC_ERR_INVALID_CRED_ID);
-        }
-    }
-
-    // compute P_3ae and write it to the output buffer
-    if ((p3ae_or_ct3_len = edhoc_p2e_or_p3ae_encode(cred_id_buf,
-                                                    cred_id_len,
-                                                    sig_or_mac3_buf,
-                                                    sig_or_mac3_len,
-                                                    p3ae_or_ct3_buf,
-                                                    EDHOC_PAYLOAD_MAX_SIZE)) <= 0) {
-        if (p3ae_or_ct3_len < 0) {
-            EDHOC_FAIL(p3ae_or_ct3_len);
+    if ((msg3_len = edhoc_msg3_encode(out, data3_len, ciphertext_3, ct3_len, out, olen)) <= 0) {
+        if (msg3_len < 0) {
+            EDHOC_FAIL(msg3_len);
         } else {
             EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
     }
 
-    if ((a3ae_len = edhoc_a3ae_encode(ctx->th_3, a_3ae, EDHOC_MAX_A3AE_LEN)) <= 0) {
-        if (a3ae_len < 0) {
-            EDHOC_FAIL(a3ae_len);
-        } else {
-            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
-        }
-    }
-
-    EDHOC_CHECK_SUCCESS(crypt_kdf(aead, ctx->session.prk_4x3m, ctx->th_3, "K_3ae", k3ae_len, k3m_or_k3ae_buf));
-    EDHOC_CHECK_SUCCESS(crypt_kdf(aead, ctx->session.prk_4x3m, ctx->th_3, "IV_3ae", iv3ae_len, iv3m_or_iv3ae_buf));
-
-    EDHOC_CHECK_SUCCESS(crypt_encrypt(aead,
-                                      k3m_or_k3ae_buf,
-                                      iv3m_or_iv3ae_buf,
-                                      a_3ae,
-                                      a3ae_len,
-                                      p3ae_or_ct3_buf,
-                                      p3ae_or_ct3_buf,
-                                      p3ae_or_ct3_len,
-                                      tag));
-
-    // copy the tag
-    if (tag_len + p3ae_or_ct3_len > EDHOC_PAYLOAD_MAX_SIZE) {
-        EDHOC_FAIL(EDHOC_ERR_BUFFER_OVERFLOW);
-    } else {
-        memcpy(p3ae_or_ct3_buf + p3ae_or_ct3_len, tag, tag_len);
-        p3ae_or_ct3_len += tag_len;
-    }
-
-    EDHOC_CHECK_SUCCESS(edhoc_compute_th4(ctx->th_3, p3ae_or_ct3_buf, p3ae_or_ct3_len, ctx->session.th_4));
-
-    if ((msg3_len = edhoc_msg3_encode(out, data3_len, p3ae_or_ct3_buf, p3ae_or_ct3_len, out, olen)) <= 0) {
-        if (a3ae_len < 0) {
-            EDHOC_FAIL(a3ae_len);
-        } else {
-            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
-        }
-    }
+    EDHOC_CHECK_SUCCESS(edhoc_compute_th4(ctx->th_3, ciphertext_3, ct3_len, ctx->session.th_4));
 
     ret = msg3_len;
     exit:
@@ -462,34 +582,15 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2_buf, size_t msg2
 ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1_buf, size_t msg1_len, uint8_t *out, size_t olen) {
     ssize_t ret;
 
-    cose_curve_t crv;
-    cose_algo_t aead;
     edhoc_msg1_t msg1;
 
-    ssize_t data2_len, msg2_len, cred_len;
-
-    const uint8_t *cred;
+    ssize_t data2_len;
+    ssize_t msg2_len;
 
     const cipher_suite_t *suite_info = NULL;
-    const aead_info_t *aead_info = NULL;
 
-    // temporary buffers
-    uint8_t cred_id_buf[EDHOC_CREDENTIAL_ID_MAX_SIZE];
-    ssize_t cred_id_len;
-
-    uint8_t sig_or_mac2_buf[EDHOC_SIG23_MAX_SIZE];
-    ssize_t sig_or_mac2_len;
-
-    uint8_t p2e_or_ct2_buf[EDHOC_PAYLOAD_MAX_SIZE];
-    ssize_t p2e_or_ct2_len;
-
-    uint8_t k2e_buf[EDHOC_PAYLOAD_MAX_SIZE];
-
-    uint8_t k2m_buf[EDHOC_K23M_MAX_SIZE];
-    ssize_t k2m_len;
-
-    uint8_t iv2m_buf[EDHOC_IV23M_MAX_SIZE];
-    ssize_t iv2m_len;
+    uint8_t ciphertext_2[EDHOC_PAYLOAD_MAX_SIZE];
+    ssize_t ct2_len;
 
     memset(&msg1, 0, sizeof(edhoc_msg1_t));
 
@@ -511,16 +612,6 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1_buf, size_t msg1
     if ((suite_info = edhoc_cipher_suite_from_id(ctx->session.cipher_suite)) == NULL) {
         EDHOC_FAIL(EDHOC_ERR_CIPHERSUITE_UNAVAILABLE);
     }
-
-    aead = suite_info->aead_algo;
-    crv = suite_info->dh_curve;
-
-    if ((aead_info = cose_aead_info_from_id(aead)) == NULL) {
-        EDHOC_FAIL(EDHOC_ERR_AEAD_CIPHER_UNAVAILABLE);
-    }
-
-    k2m_len = aead_info->key_length;
-    iv2m_len = aead_info->iv_length;
 
     // setup Initiator ephemeral public key
     if (msg1.g_x_len <= EDHOC_ECC_KEY_MAX_SIZE && msg1.g_x_len > 0) {
@@ -559,7 +650,7 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1_buf, size_t msg1
     }
 
     // if not already initialized, generate and load ephemeral key
-    EDHOC_CHECK_SUCCESS(crypt_gen_keypair(crv, &ctx->local_eph_key));
+    EDHOC_CHECK_SUCCESS(crypt_gen_keypair(suite_info->dh_curve, &ctx->local_eph_key));
 
     // generate data_2, must be greater than 0
     if ((data2_len = edhoc_data2_encode(ctx->correlation,
@@ -580,8 +671,7 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1_buf, size_t msg1
 
     // compute transcript hash 2: TH_2 = H ( msg1, data_2 )
     EDHOC_CHECK_SUCCESS(edhoc_compute_th2(msg1_buf, msg1_len, out, data2_len, ctx->th_2));
-
-
+    
     EDHOC_CHECK_SUCCESS(edhoc_compute_prk2e(&ctx->local_eph_key, &ctx->remote_eph_key, ctx->prk_2e));
 
     EDHOC_CHECK_SUCCESS(edhoc_compute_prk3e2m(ctx->method,
@@ -590,81 +680,23 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1_buf, size_t msg1
                                               &ctx->remote_eph_key,
                                               ctx->prk_3e2m));
 
-    EDHOC_CHECK_SUCCESS(crypt_kdf(aead, ctx->prk_3e2m, ctx->th_2, "K_2m", k2m_len, k2m_buf));
-    EDHOC_CHECK_SUCCESS(crypt_kdf(aead, ctx->prk_3e2m, ctx->th_2, "IV_2m", iv2m_len, iv2m_buf));
-
-    if ((cred_len = cred_get_cred_bytes(&ctx->conf->local_cred, &cred)) <= 0) {
-        if (cred_len < 0) {
-            EDHOC_FAIL(cred_len);
-        } else {
-            EDHOC_FAIL(EDHOC_ERR_INVALID_CRED);
-        }
-    }
-
-    if ((sig_or_mac2_len = edhoc_compute_mac23(aead,
-                                               &ctx->conf->local_cred,
-                                               k2m_buf,
-                                               iv2m_buf,
-                                               ctx->th_2,
-                                               sig_or_mac2_buf)) <= 0) {
-        if (sig_or_mac2_len < 0) {
-            EDHOC_FAIL(sig_or_mac2_len);
+    if ((ct2_len = edhoc_create_ciphertext2(suite_info->aead_algo,
+                                            ctx->method,
+                                            ctx->prk_2e,
+                                            ctx->prk_3e2m,
+                                            ctx->th_2,
+                                            &ctx->conf->local_cred,
+                                            ctx->conf->ad2,
+                                            ciphertext_2,
+                                            EDHOC_PAYLOAD_MAX_SIZE)) <= 0) {
+        if (ct2_len < 0) {
+            EDHOC_FAIL(ct2_len);
         } else {
             EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
     }
 
-#if defined(EDHOC_AUTH_METHOD_0_ENABLED) || defined(EDHOC_AUTH_METHOD_2_ENABLED)
-    if ((sig_or_mac2_len = edhoc_compute_sig23(ctx->conf->role,
-                                               ctx->method,
-                                               &ctx->conf->local_cred,
-                                               sig_or_mac2_buf,
-                                               sig_or_mac2_len,
-                                               ctx->th_2,
-                                               ctx->conf->ad2,
-                                               sig_or_mac2_buf)) <= 0) {
-        if (sig_or_mac2_len < 0) {
-            EDHOC_FAIL(sig_or_mac2_len);
-        } else {
-            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
-        }
-    }
-#endif
-
-    if ((cred_id_len = cred_get_cred_id_bytes(&ctx->conf->local_cred, cred_id_buf, sizeof(cred_id_buf))) <= 0) {
-        if (cred_id_len < 0) {
-            EDHOC_FAIL(cred_id_len);
-        } else {
-            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
-        }
-    }
-
-    // compute P_2e and write it to the output buffer
-    if ((p2e_or_ct2_len = edhoc_p2e_or_p3ae_encode(cred_id_buf,
-                                                   cred_id_len,
-                                                   sig_or_mac2_buf,
-                                                   sig_or_mac2_len,
-                                                   p2e_or_ct2_buf,
-                                                   EDHOC_PAYLOAD_MAX_SIZE)) <= 0) {
-        if (p2e_or_ct2_len < 0) {
-            EDHOC_FAIL(p2e_or_ct2_len);
-        } else {
-            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
-        }
-    }
-
-    if (p2e_or_ct2_len > EDHOC_PAYLOAD_MAX_SIZE) {
-        EDHOC_FAIL(EDHOC_ERR_BUFFER_OVERFLOW);
-    }
-
-    EDHOC_CHECK_SUCCESS(crypt_kdf(aead, ctx->prk_2e, ctx->th_2, "K_2e", p2e_or_ct2_len, k2e_buf));
-
-    // XOR encryption P_2e XOR K_2e
-    for (size_t i = 0; i < (size_t) p2e_or_ct2_len; i++) {
-        p2e_or_ct2_buf[i] = p2e_or_ct2_buf[i] ^ k2e_buf[i];
-    }
-
-    if ((msg2_len = edhoc_msg2_encode(out, data2_len, p2e_or_ct2_buf, p2e_or_ct2_len, out, olen)) <= 0) {
+    if ((msg2_len = edhoc_msg2_encode(out, data2_len, ciphertext_2, ct2_len, out, olen)) <= 0) {
         if (msg2_len < 0) {
             EDHOC_FAIL(msg2_len);
         } else {
@@ -723,9 +755,9 @@ int edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3_buf, size_t msg3_l
     EDHOC_CHECK_SUCCESS(edhoc_msg3_decode(&msg3, ctx->correlation, msg3_buf, msg3_len));
     // TODO: copy connection identifier into temporary buffer and verify that it is known.
 
-    if (msg3.ciphertext3_len <= sizeof(p3ae_or_ct3_buf)) {
-        memcpy(p3ae_or_ct3_buf, msg3.ciphertext3, msg3.ciphertext3_len);
-        p3ae_or_ct3_len = msg3.ciphertext3_len;
+    if (msg3.ciphertext_len <= sizeof(p3ae_or_ct3_buf)) {
+        memcpy(p3ae_or_ct3_buf, msg3.ciphertext, msg3.ciphertext_len);
+        p3ae_or_ct3_len = msg3.ciphertext_len;
     } else {
         return EDHOC_ERR_BUFFER_OVERFLOW;
     }
@@ -739,7 +771,7 @@ int edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3_buf, size_t msg3_l
 
 
     EDHOC_CHECK_SUCCESS(
-            edhoc_compute_th3(ctx->th_2, p3ae_or_ct3_buf, p3ae_or_ct3_len, msg3.data3, msg3.data3_len, ctx->th_3));
+            edhoc_compute_th3(ctx->th_2, p3ae_or_ct3_buf, p3ae_or_ct3_len, msg3.data, msg3.data_len, ctx->th_3));
 
     if ((a3ae_len = edhoc_a3ae_encode(ctx->th_3, a_3ae, EDHOC_MAX_A3AE_LEN)) < EDHOC_SUCCESS) {
         ret = a3ae_len;

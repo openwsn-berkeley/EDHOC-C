@@ -116,9 +116,9 @@ int test_message2_decode(corr_t correlation,
         CHECK_TEST_RET_EQ(compare_arrays(temp, conn_idr, conn_idr_len), (long) 0);
     }
 
-    CHECK_TEST_RET_EQ(msg2.ciphertext2_len, (long) ciphertext_2_len);
-    memcpy(temp, msg2.ciphertext2, msg2.ciphertext2_len);
-    CHECK_TEST_RET_EQ(compare_arrays(temp, ciphertext_2, msg2.ciphertext2_len), (long) 0);
+    CHECK_TEST_RET_EQ(msg2.ciphertext_len, (long) ciphertext_2_len);
+    memcpy(temp, msg2.ciphertext, msg2.ciphertext_len);
+    CHECK_TEST_RET_EQ(compare_arrays(temp, ciphertext_2, msg2.ciphertext_len), (long) 0);
 
     exit:
     return ret;
@@ -146,9 +146,9 @@ int test_message3_decode(corr_t correlation,
         CHECK_TEST_RET_EQ(compare_arrays(temp, conn_idr, conn_idr_len), (long) 0);
     }
 
-    CHECK_TEST_RET_EQ(msg3.ciphertext3_len, (long) ciphertext_3_len);
-    memcpy(temp, msg3.ciphertext3, msg3.ciphertext3_len);
-    CHECK_TEST_RET_EQ(compare_arrays(temp, ciphertext_3, msg3.ciphertext3_len), (long) 0);
+    CHECK_TEST_RET_EQ(msg3.ciphertext_len, (long) ciphertext_3_len);
+    memcpy(temp, msg3.ciphertext, msg3.ciphertext_len);
+    CHECK_TEST_RET_EQ(compare_arrays(temp, ciphertext_3, msg3.ciphertext_len), (long) 0);
 
 
     exit:

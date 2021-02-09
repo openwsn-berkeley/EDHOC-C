@@ -34,7 +34,7 @@ int cred_rpk_load_from_cbor(rpk_t *ctx, const uint8_t *rpk_buffer, size_t buflen
  *
  * @return On success returns the size of the CBOR encoded authentication material.
  */
-ssize_t cred_get_cred_bytes(cred_container_t* cred, const uint8_t **ptr);
+ssize_t cred_get_cred_bytes(const cred_container_t* cred, const uint8_t **ptr);
 
 /**
  * @brief Getter for the credential identifier. T
@@ -47,6 +47,6 @@ ssize_t cred_get_cred_bytes(cred_container_t* cred, const uint8_t **ptr);
  *
  * @return On success returns the size of the CBOR encoded authentication material.
  */
-ssize_t cred_get_cred_id_bytes(cred_container_t* cred, uint8_t *out, size_t olen);
+ssize_t cred_get_cred_id_bytes(const cred_container_t* cred, uint8_t *out, size_t olen);
 
 #endif /* EDHOC_CREDENTIALS_H */

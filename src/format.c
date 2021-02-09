@@ -129,10 +129,10 @@ int edhoc_msg3_decode(edhoc_msg3_t *msg3, corr_t correlation, const uint8_t *msg
         msg3->cidr = pt;
     }
 
-    CBOR_CHECK_RET(cbor_bytes_decode(&msg3->ciphertext3, &msg3->ciphertext3_len, msg3_buf, size, msg3_len));
+    CBOR_CHECK_RET(cbor_bytes_decode(&msg3->ciphertext, &msg3->ciphertext_len, msg3_buf, size, msg3_len));
 
-    msg3->data3 = msg3_buf;
-    msg3->data3_len = msg3->cidr_len;
+    msg3->data = msg3_buf;
+    msg3->data_len = msg3->cidr_len;
 
     ret = EDHOC_SUCCESS;
     exit:
@@ -159,11 +159,11 @@ int edhoc_msg2_decode(edhoc_msg2_t *msg2, corr_t corr, const uint8_t *msg2_buf, 
     CBOR_CHECK_RET(cbor_bstr_id_decode((uint8_t **) &pt, &msg2->cidr_len, msg2_buf, size, msg2_len));
     msg2->cidr = pt;
 
-    msg2->data2 = msg2_buf;
-    msg2->data2_len = size;
+    msg2->data = msg2_buf;
+    msg2->data_len = size;
 
-    CBOR_CHECK_RET(cbor_bytes_decode((const uint8_t **) &msg2->ciphertext2,
-                                     &msg2->ciphertext2_len,
+    CBOR_CHECK_RET(cbor_bytes_decode((const uint8_t **) &msg2->ciphertext,
+                                     &msg2->ciphertext_len,
                                      msg2_buf,
                                      size,
                                      msg2_len));
