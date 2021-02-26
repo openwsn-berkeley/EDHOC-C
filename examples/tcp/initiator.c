@@ -5,7 +5,6 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <edhoc/edhoc.h>
-#include "../src/cipher_suites.h"
 
 #define PORT 9830
 
