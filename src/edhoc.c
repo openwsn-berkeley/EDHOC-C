@@ -9,7 +9,9 @@
 
 void edhoc_ctx_init(edhoc_ctx_t *ctx) {
     memset(ctx, 0, sizeof(edhoc_ctx_t));
+
     ctx->correlation = CORR_UNSET;
+    ctx->state = EDHOC_WAITING;
 
     cose_key_init(&ctx->local_eph_key);
     cose_key_init(&ctx->remote_eph_key);

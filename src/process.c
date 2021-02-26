@@ -15,6 +15,11 @@ ssize_t edhoc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suit
 
     const cipher_suite_t *suite_info;
 
+    if (ctx->state != EDHOC_WAITING) {
+        ctx->state = EDHOC_FAILED;
+        EDHOC_FAIL(EDHOC_ERR_ILLEGAL_STATE);
+    }
+
     if ((suite_info = edhoc_cipher_suite_from_id(id)) != NULL) {
         ctx->session.cipher_suite = suite_info->id;
     } else {
@@ -43,6 +48,13 @@ ssize_t edhoc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suit
         } else {
             EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
         }
+    }
+
+    if (ctx->state == EDHOC_WAITING) {
+        ctx->state = EDHOC_SENT_MESSAGE_1;
+    } else {
+        ctx->state = EDHOC_FAILED;
+        EDHOC_FAIL(EDHOC_ERR_ILLEGAL_STATE);
     }
 
     ret = msg1_len;
@@ -92,15 +104,15 @@ ssize_t edhoc_compute_mac23(cose_algo_t aead,
         }
     }
 
-    EDHOC_CHECK_SUCCESS(crypt_encrypt(aead_info->id,    // COSE algorithm ID
-                                      k_23m,               // encryption key
-                                      iv_23m,              // nonce
-                                      a23m_buf,            // aad
+    EDHOC_CHECK_SUCCESS(crypt_encrypt(aead_info->id,        // COSE algorithm ID
+                                      k_23m,                // encryption key
+                                      iv_23m,               // nonce
+                                      a23m_buf,             // aad
                                       a23m_len,             // aad len
-                                      out,                 // plaintext
-                                      out,                 // ciphertext
-                                      0,                   // length of plaintext and ciphertext
-                                      out));               // pointer to tag (size depends on selected algorithm)
+                                      out,                  // plaintext
+                                      out,                  // ciphertext
+                                      0,                    // length of plaintext and ciphertext
+                                      out));                // pointer to tag (size depends on selected algorithm)
     ret = aead_info->tag_length;
     exit:
     return ret;
@@ -306,7 +318,7 @@ ssize_t edhoc_create_ciphertext3(cose_algo_t id,
                                       tag));
 
     // copy the tag
-    if (tag_len + size > olen) {
+    if (tag_len + size > (ssize_t) olen) {
         EDHOC_FAIL(EDHOC_ERR_BUFFER_OVERFLOW);
     } else {
         memcpy(out + size, tag, tag_len);
@@ -436,6 +448,13 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2_buf, size_t msg2
     uint8_t k2e_buf[EDHOC_PAYLOAD_MAX_SIZE];
 
     memset(&msg2, 0, sizeof(edhoc_msg2_t));
+
+    if (ctx->state == EDHOC_SENT_MESSAGE_1) {
+        ctx->state = EDHOC_RECEIVED_MESSAGE_2;
+    } else {
+        ctx->state = EDHOC_FAILED;
+        EDHOC_FAIL(EDHOC_ERR_ILLEGAL_STATE);
+    }
 
     if ((suite_info = edhoc_cipher_suite_from_id(ctx->session.cipher_suite)) == NULL) {
         EDHOC_FAIL(EDHOC_ERR_CIPHERSUITE_UNAVAILABLE);
@@ -574,6 +593,13 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2_buf, size_t msg2
 
     EDHOC_CHECK_SUCCESS(edhoc_compute_th4(ctx->th_3, ciphertext_3, ct3_len, ctx->session.th_4));
 
+    if (ctx->state == EDHOC_RECEIVED_MESSAGE_2) {
+        ctx->state = EDHOC_SENT_MESSAGE_3;
+    } else {
+        ctx->state = EDHOC_FAILED;
+        EDHOC_FAIL(EDHOC_ERR_ILLEGAL_STATE);
+    }
+
     ret = msg3_len;
     exit:
     return ret;
@@ -593,6 +619,13 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1_buf, size_t msg1
     ssize_t ct2_len;
 
     memset(&msg1, 0, sizeof(edhoc_msg1_t));
+
+    if (ctx->state == EDHOC_WAITING) {
+        ctx->state = EDHOC_RECEIVED_MESSAGE_1;
+    } else {
+        ctx->state = EDHOC_FAILED;
+        EDHOC_FAIL(EDHOC_ERR_ILLEGAL_STATE);
+    }
 
     // decode message 1
     EDHOC_CHECK_SUCCESS(edhoc_msg1_decode(&msg1, msg1_buf, msg1_len));
@@ -671,7 +704,7 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1_buf, size_t msg1
 
     // compute transcript hash 2: TH_2 = H ( msg1, data_2 )
     EDHOC_CHECK_SUCCESS(edhoc_compute_th2(msg1_buf, msg1_len, out, data2_len, ctx->th_2));
-    
+
     EDHOC_CHECK_SUCCESS(edhoc_compute_prk2e(&ctx->local_eph_key, &ctx->remote_eph_key, ctx->prk_2e));
 
     EDHOC_CHECK_SUCCESS(edhoc_compute_prk3e2m(ctx->method,
@@ -704,15 +737,31 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1_buf, size_t msg1
         }
     }
 
+    if (ctx->state == EDHOC_RECEIVED_MESSAGE_1) {
+        ctx->state = EDHOC_SENT_MESSAGE_2;
+    } else {
+        ctx->state = EDHOC_FAILED;
+        EDHOC_FAIL(EDHOC_ERR_ILLEGAL_STATE);
+    }
+
     ret = msg2_len;
     exit:
     return ret;
 }
 
 int edhoc_init_finalize(edhoc_ctx_t *ctx) {
-    (void) ctx;
+    int ret;
 
-    return EDHOC_SUCCESS;
+    if (ctx->state == EDHOC_SENT_MESSAGE_3) {
+        ctx->state = EDHOC_FINALIZED;
+    } else {
+        ctx->state = EDHOC_FAILED;
+        EDHOC_FAIL(EDHOC_ERR_ILLEGAL_STATE);
+    }
+
+    ret = EDHOC_SUCCESS;
+    exit:
+    return ret;
 }
 
 int edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3_buf, size_t msg3_len) {
@@ -737,6 +786,13 @@ int edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3_buf, size_t msg3_l
     uint8_t a_3ae[EDHOC_MAX_A3AE_LEN];
 
     memset(&msg3, 0, sizeof(edhoc_msg3_t));
+
+    if (ctx->state == EDHOC_SENT_MESSAGE_2) {
+        ctx->state = EDHOC_RECEIVED_MESSAGE_3;
+    } else {
+        ctx->state = EDHOC_FAILED;
+        EDHOC_FAIL(EDHOC_ERR_ILLEGAL_STATE);
+    }
 
     if ((suite_info = edhoc_cipher_suite_from_id(ctx->session.cipher_suite)) == NULL)
         return EDHOC_ERR_CIPHERSUITE_UNAVAILABLE;
@@ -796,6 +852,13 @@ int edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3_buf, size_t msg3_l
                                       &p3ae_or_ct3_buf[p3ae_or_ct3_len - tag_len]));
 
     EDHOC_CHECK_SUCCESS(edhoc_p3ae_decode(ctx, p3ae_or_ct3_buf, p3ae_or_ct3_len - tag_len));
+
+    if (ctx->state == EDHOC_RECEIVED_MESSAGE_3) {
+        ctx->state = EDHOC_FINALIZED;
+    } else {
+        ctx->state = EDHOC_FAILED;
+        EDHOC_FAIL(EDHOC_ERR_ILLEGAL_STATE);
+    }
 
     exit:
     return ret;

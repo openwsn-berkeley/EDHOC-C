@@ -115,24 +115,25 @@
 #define EDHOC_ERR_INVALID_SIZE                      (-4)
 #define EDHOC_ERR_BUFFER_OVERFLOW                   (-5)
 #define EDHOC_ERR_INVALID_PARAM                     (-6)
+#define EDHOC_ERR_ILLEGAL_STATE                     (-7)
 
 // edhoc protocol config errors
-#define EDHOC_ERR_INVALID_ROLE                      (-7)
-#define EDHOC_ERR_INVALID_CORR                      (-8)
+#define EDHOC_ERR_INVALID_ROLE                      (-8)
+#define EDHOC_ERR_INVALID_CORR                      (-9)
 
 // edhoc cipher suite errors
-#define EDHOC_ERR_CIPHERSUITE_UNAVAILABLE           (-9)
-#define EDHOC_ERR_AEAD_CIPHER_UNAVAILABLE           (-10)
-#define EDHOC_ERR_CURVE_UNAVAILABLE                 (-11)
+#define EDHOC_ERR_CIPHERSUITE_UNAVAILABLE           (-10)
+#define EDHOC_ERR_AEAD_CIPHER_UNAVAILABLE           (-11)
+#define EDHOC_ERR_CURVE_UNAVAILABLE                 (-12)
 
 // edhoc credential and key errors
-#define EDHOC_ERR_INVALID_CRED                      (-12)
-#define EDHOC_ERR_INVALID_CRED_ID                   (-13)
-#define EDHOC_ERR_INVALID_CBOR_KEY                  (-14)
+#define EDHOC_ERR_INVALID_CRED                      (-13)
+#define EDHOC_ERR_INVALID_CRED_ID                   (-14)
+#define EDHOC_ERR_INVALID_CBOR_KEY                  (-15)
 
 // cbor encoding/decoding errors
-#define EDHOC_ERR_CBOR_ENCODING                     (-15)
-#define EDHOC_ERR_CBOR_DECODING                     (-16)
+#define EDHOC_ERR_CBOR_ENCODING                     (-16)
+#define EDHOC_ERR_CBOR_DECODING                     (-17)
 
 /**
  * Macros to check return codes
@@ -270,7 +271,8 @@ typedef enum {
     EDHOC_RECEIVED_MESSAGE_2,
     EDHOC_SENT_MESSAGE_3,
     EDHOC_RECEIVED_MESSAGE_3,
-    EDHOC_FINALIZED
+    EDHOC_FINALIZED,
+    EDHOC_FAILED
 } edhoc_state_t;
 
 /**
@@ -343,6 +345,7 @@ struct edhoc_session_t {
 
 struct edhoc_ctx_t {
     edhoc_conf_t *conf;
+    edhoc_state_t state;
     edhoc_session_t session;
     corr_t correlation;
     uint8_t method;

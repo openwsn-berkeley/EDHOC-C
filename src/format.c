@@ -520,7 +520,24 @@ int edhoc_p3ae_decode(edhoc_ctx_t *ctx, uint8_t *p3ae, size_t p3ae_len) {
 }
 
 int edhoc_p2e_decode(edhoc_msg2_t *msg2, const uint8_t *p2e, size_t p2e_len) {
+    ssize_t ret;
 
-    // TODO: verify signature
-    return EDHOC_SUCCESS;
+    uint8_t tmp;
+    const uint8_t *pt;
+    ssize_t size, written;
+
+    size = 0;
+    tmp = 0;
+
+    ret = EDHOC_ERR_CBOR_ENCODING;
+
+    pt = &tmp;
+    CBOR_CHECK_RET(cbor_bstr_id_decode((uint8_t **) &pt, &msg2->cred_idr_len, p2e, size, p2e_len));
+    msg2->cred_idr = pt;
+
+    CBOR_CHECK_RET(cbor_bytes_decode(&msg2->sig_or_mac, &msg2->sig_or_mac_len, p2e, size, p2e_len));
+
+    ret = EDHOC_SUCCESS;
+    exit:
+    return ret;
 }
