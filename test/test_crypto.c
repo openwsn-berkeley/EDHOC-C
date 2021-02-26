@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
 
     /* buffers */
     int ret;
-    test_context_ptr ctx;
+    test_edhoc_ctx ctx;
 
     cose_algo_t id;
 

@@ -196,7 +196,7 @@ int main(int argc, char **argv) {
 
     /* temporary buffers */
     ssize_t ret;
-    test_context_ptr ctx;
+    test_edhoc_ctx ctx;
 
     int corr, selected, key_length, iv_length, method, method_corr;
     cose_algo_t id;

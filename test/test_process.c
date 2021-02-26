@@ -175,7 +175,7 @@ int main(int argc, char **argv) {
 
     /* buffers */
     int ret;
-    test_context_ptr ctx;
+    test_edhoc_ctx ctx;
 
     uint8_t m1[MESSAGE_1_SIZE];
     ssize_t m1_len;
