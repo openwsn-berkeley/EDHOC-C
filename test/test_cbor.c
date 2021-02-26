@@ -15,7 +15,6 @@ int test_cbor_encoding(int value, size_t expected, uint8_t* out, size_t olen){
     return 0;
 }
 
-int main(void){
-    uint8_t expected[2] = {0x18, 0x23};
-    test_cbor_encoding(35, 2, expected, sizeof(expected));
+int main(int argc, char **argv){
+
 }
