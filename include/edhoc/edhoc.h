@@ -295,12 +295,12 @@ struct cose_key_t {
 };
 
 struct cred_container_t {
-    cose_key_t auth_key;
-    cred_type_t cred_type;
-    cred_t cred_pt;
-    cred_id_type_t cred_id_type;
-    const uint8_t *cred_id;
-    size_t cred_id_len;
+    cose_key_t auth_key;                /**< Private authentication key */
+    cred_type_t cred_type;              /**< credential type (RPK or CBOR certificate) */
+    cred_t cred_pt;                     /**< Pointer to the raw credential information */
+    cred_id_type_t cred_id_type;        /**< Credential indentifier type */
+    const uint8_t *cred_id;             /**< Pointer to the raw credential identifier bytes */
+    size_t cred_id_len;                 /**< Length of the credential identifier */
 };
 
 struct rpk_t {
@@ -355,6 +355,8 @@ struct edhoc_ctx_t {
     uint8_t secret[EDHOC_SHARED_SECRET_MAX_SIZE];
     uint8_t prk_2e[EDHOC_HASH_MAX_SIZE];
     uint8_t prk_3e2m[EDHOC_HASH_MAX_SIZE];
+    uint8_t ciphertext2[EDHOC_PAYLOAD_MAX_SIZE];
+    ssize_t ct2_len;
     uint8_t th_2[EDHOC_HASH_MAX_SIZE];
     uint8_t th_3[EDHOC_HASH_MAX_SIZE];
 };
@@ -542,7 +544,6 @@ ssize_t edhoc_create_msg1(edhoc_ctx_t *ctx,
  * @param[in] ctx           EDHOC context
  * @param[in] msg1_buf      Buffer containing EDHOC message 1
  * @param[in] msg1_len      Length of EDHOC message 1
- * @param[in] ad2           Callback to fetch additional data (can be NULL)
  * @param[out] out          Output buffer to hold EDHOC message 1
  * @param[in] olen          Length of @p out
  *
@@ -557,7 +558,6 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1_buf, size_t msg1
  * @param[in] ctx           EDHOC context
  * @param[in] msg2_buf      Buffer containing EDHOC message 2
  * @param[in] msg2_len      Length of @p msg2_buf
- * @param[in] ad2           Callback to fetch additional data (can be NULL)
  * @param[out] out          Output buffer to hold EDHOC message 3
  * @param[in] olen          Capacity of @p out
  *

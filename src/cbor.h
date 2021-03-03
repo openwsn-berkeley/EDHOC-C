@@ -87,7 +87,7 @@ ssize_t cbor_bytes_decode(const uint8_t **out, size_t *len, const uint8_t *buffe
  * @param[in] buffer    Buffer holding the CBOR encoded byte map
  * @param[in] total     Total length of @p buffer
  */
-void cbor_map_get_int_int(int key, int* value, const uint8_t *buffer, size_t offset, size_t total);
+void cbor_map_get_int_int(int8_t key, int8_t* value, const uint8_t *buffer, size_t offset, size_t total);
 
 /**
  * @brief Extract from a CBOR map a bytes value mapped to an int key
@@ -98,7 +98,7 @@ void cbor_map_get_int_int(int key, int* value, const uint8_t *buffer, size_t off
  * @param[in] buffer    CBOR encoded buffer
  * @param[in] total     Total size of the CBOR encoded buffer
  */
-void cbor_map_get_int_bytes(int key, const uint8_t** out, size_t *len, const uint8_t *buffer, size_t offset, size_t total);
+void cbor_map_get_int_bytes(int8_t key, const uint8_t** out, size_t *len, const uint8_t *buffer, size_t offset, size_t total);
 
 /**
  *

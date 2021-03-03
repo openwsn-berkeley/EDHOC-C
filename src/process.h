@@ -236,23 +236,29 @@ ssize_t edhoc_compute_sig23(edhoc_role_t role,
                             ad_cb_t ad23,
                             uint8_t *out);
 
+ssize_t edhoc_create_plaintext2(cose_algo_t id,
+                                method_t m,
+                                const uint8_t *prk3e2m,
+                                const uint8_t *th2,
+                                const cred_container_t *local_cred,
+                                ad_cb_t ad2,
+                                uint8_t *out,
+                                size_t olen);
+
 ssize_t edhoc_create_ciphertext2(cose_algo_t id,
-                                 method_t m,
-                                 const uint8_t* prk2e,
-                                 const uint8_t* prk3e2m,
-                                 const uint8_t* th2,
-                                 const cred_container_t* cred,
-                                 ad_cb_t ad2,
-                                 uint8_t* out,
-                                 size_t olen);
+                                 const uint8_t *prk2e,
+                                 const uint8_t *th2,
+                                 const uint8_t* plaintext,
+                                 size_t pt2_size,
+                                 uint8_t *out);
 
 ssize_t edhoc_create_ciphertext3(cose_algo_t id,
                                  method_t m,
-                                 const uint8_t* prk4x3m,
-                                 const uint8_t* th3,
-                                 const cred_container_t* cred,
+                                 const uint8_t *prk4x3m,
+                                 const uint8_t *th3,
+                                 const cred_container_t *cred,
                                  ad_cb_t ad3,
-                                 uint8_t* out,
+                                 uint8_t *out,
                                  size_t olen);
 
 #endif /* EDHOC_PROCESSING_H */

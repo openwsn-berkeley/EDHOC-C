@@ -126,10 +126,10 @@ int edhoc_msg3_decode(edhoc_msg3_t *msg3, corr_t correlation, const uint8_t *msg
         CBOR_CHECK_RET(cbor_bstr_id_decode(msg3->cidr, &msg3->cidr_len, msg3_buf, size, msg3_len))
     }
 
-    CBOR_CHECK_RET(cbor_bytes_decode(&msg3->ciphertext, &msg3->ciphertext_len, msg3_buf, size, msg3_len));
-
     msg3->data = msg3_buf;
     msg3->data_len = msg3->cidr_len;
+
+    CBOR_CHECK_RET(cbor_bytes_decode(&msg3->ciphertext, &msg3->ciphertext_len, msg3_buf, size, msg3_len));
 
     ret = EDHOC_SUCCESS;
     exit:
@@ -507,9 +507,6 @@ int edhoc_p2e_decode(edhoc_msg2_t *msg2, const uint8_t *p2e, size_t p2e_len) {
     size = 0;
 
     ret = EDHOC_ERR_CBOR_ENCODING;
-
-    // CBOR_CHECK_RET(cbor_bstr_id_decode(&msg2->cred_idr, &msg2->cred_idr_len, p2e, size, p2e_len));
-    // CBOR_CHECK_RET(cbor_bytes_decode(&msg2->sig_or_mac, &msg2->sig_or_mac_len, p2e, size, p2e_len));
 
     ret = EDHOC_SUCCESS;
     exit:

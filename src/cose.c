@@ -55,12 +55,12 @@ int cose_key_from_cbor(cose_key_t *key, const uint8_t *key_bytes, size_t key_len
         goto exit;
     }
 
-    cbor_map_get_int_int(COSE_KEY_COMMON_PARAM_KTY, (int *) &key->kty, key_bytes, 0, key_len);
-    cbor_map_get_int_int(COSE_KEY_COMMON_PARAM_ALGO, (int *) &key->algo, key_bytes, 0, key_len);
+    cbor_map_get_int_int(COSE_KEY_COMMON_PARAM_KTY, (int8_t *)&key->kty, key_bytes, 0, key_len);
+    cbor_map_get_int_int(COSE_KEY_COMMON_PARAM_ALGO, (int8_t *)&key->algo, key_bytes, 0, key_len);
 
     switch (key->kty) {
         case COSE_KTY_OCTET:
-            cbor_map_get_int_int(COSE_KEY_OKP_PARAM_CRV, (int *) &key->crv, key_bytes, 0, key_len);
+            cbor_map_get_int_int(COSE_KEY_OKP_PARAM_CRV, (int8_t *)&key->crv, key_bytes, 0, key_len);
 
             cbor_map_get_int_bytes(COSE_KEY_OKP_PARAM_X, &pt, &key->x_len, key_bytes, 0, key_len);
             if (pt != NULL && key->x_len > 0)

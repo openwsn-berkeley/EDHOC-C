@@ -56,6 +56,16 @@ const coap_resource_t coap_resources[] = {
 
 const unsigned coap_resources_numof = (sizeof(coap_resources) / sizeof(*coap_resources));
 
+void print_bstr(const uint8_t *bstr, size_t bstr_len) {
+    for (int i = 0; i < bstr_len; i++) {
+        if ((i + 1) % 10 == 0)
+            printf("0x%02x \n", bstr[i]);
+        else
+            printf("0x%02x ", bstr[i]);
+    }
+    printf("\n");
+}
+
 _Noreturn int nanocoap_server(void) {
 
     int sockfd, n;
@@ -78,12 +88,19 @@ _Noreturn int nanocoap_server(void) {
     servaddr.sin_addr.s_addr = INADDR_ANY;
     servaddr.sin_port = htons(COAP_PORT);
 
+    int enable = 1;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0){
+        perror("setsockopt():");
+        exit(EXIT_FAILURE);
+    }
+
     // Bind the socket with the server address
     if (bind(sockfd, (const struct sockaddr *) &servaddr, sizeof(servaddr)) < 0) {
         perror("bind failed");
         exit(EXIT_FAILURE);
     }
 
+    len = sizeof(cliaddr);
     while (1) {
         n = recvfrom(sockfd, (char *) buffer, MAX_BUF_SIZE, MSG_WAITALL, (struct sockaddr *) &cliaddr, &len);
         if (n < 0) {
@@ -109,12 +126,38 @@ _Noreturn int nanocoap_server(void) {
 
 ssize_t edhoc_handler(coap_pkt_t *pkt, uint8_t *buf, size_t len, void *context) {
     edhoc_ctx_t *ctx_ptr;
+    ssize_t msg_len;
 
+    uint8_t msg_buf[200];
+    uint8_t master_secret[16];
+    uint8_t master_salt[8];
+
+    DEBUG("received an EDHOC message (len %d)\n", pkt->payload_len);
+
+    msg_len = 0;
     ctx_ptr = (edhoc_ctx_t *) context;
 
+    if (ctx_ptr->state == EDHOC_WAITING){
+        msg_len = edhoc_create_msg2(ctx_ptr, pkt->payload, pkt->payload_len, msg_buf, sizeof(msg_buf));
+        msg_len = coap_reply_simple(pkt, COAP_CODE_204, buf, len, 0, msg_buf, msg_len);
+    } else if (ctx_ptr->state == EDHOC_SENT_MESSAGE_2){
+        edhoc_resp_finalize(ctx_ptr, pkt->payload, pkt->payload_len);
+        msg_len = coap_reply_simple(pkt, COAP_CODE_204, buf, len, 0, NULL, 0);
+    }
+
+    if (ctx_ptr->state == EDHOC_FINALIZED){
+        edhoc_exporter(ctx_ptr, "OSCORE Master Secret", 16, master_secret, sizeof(master_secret));
+        edhoc_exporter(ctx_ptr, "OSCORE Master Salt", 8, master_salt, sizeof(master_salt));
+
+        printf("OSCORE MASTER SECRET:\n");
+        print_bstr(master_secret, sizeof(master_secret));
+
+        printf("\nOSCORE MASTER SALT:\n");
+        print_bstr(master_salt, sizeof(master_salt));
+    }
 
 
-    return 0;
+    return msg_len;
 }
 
 int main(void) {
@@ -148,7 +191,7 @@ int main(void) {
 
     // following edhoc configuration methods are purely for debugging purposes
     // >>>>>>>>>>>>>>>>>>>>>>
-    if (!epk) {
+    if (epk) {
         if (edhoc_load_ephkey(&ctx, eph_key, sizeof(eph_key)) != 0)
             return -1;
     }

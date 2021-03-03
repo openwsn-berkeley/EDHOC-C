@@ -145,7 +145,7 @@ ssize_t cbor_bytes_decode(const uint8_t **out, size_t *len, const uint8_t *buffe
     }
 }
 
-void cbor_map_get_int_int(int key, int *value, const uint8_t *buffer, size_t offset, size_t total) {
+void cbor_map_get_int_int(int8_t key, int8_t* value, const uint8_t *buffer, size_t offset, size_t total){
     nanocbor_value_t decoder;
     nanocbor_value_t map, _map;
     int _key = 0;
@@ -167,7 +167,7 @@ void cbor_map_get_int_int(int key, int *value, const uint8_t *buffer, size_t off
                     _map = map;
                     if (nanocbor_get_type(&_map) == NANOCBOR_TYPE_UINT ||
                         nanocbor_get_type(&_map) == NANOCBOR_TYPE_NINT) {
-                        nanocbor_get_int32(&_map, value);
+                        nanocbor_get_int8(&_map, value);
                     }
                 }
             }
@@ -179,7 +179,7 @@ void cbor_map_get_int_int(int key, int *value, const uint8_t *buffer, size_t off
 }
 
 void
-cbor_map_get_int_bytes(int key, const uint8_t **out, size_t *len, const uint8_t *buffer, size_t offset, size_t total) {
+cbor_map_get_int_bytes(int8_t key, const uint8_t **out, size_t *len, const uint8_t *buffer, size_t offset, size_t total) {
     nanocbor_value_t decoder;
     nanocbor_value_t map, _map;
     int _key = 0;

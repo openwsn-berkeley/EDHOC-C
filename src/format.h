@@ -37,12 +37,6 @@ typedef struct edhoc_msg2_t {
     size_t cidr_len;
     uint8_t *ciphertext;
     size_t ciphertext_len;
-    uint8_t *cred_idr;
-    size_t cred_idr_len;
-    const uint8_t *sig_or_mac;
-    size_t sig_or_mac_len;
-    const uint8_t *ad;
-    size_t ad_len;
 } edhoc_msg2_t;
 
 /**
@@ -55,12 +49,6 @@ typedef struct edhoc_msg3_t {
     size_t cidr_len;
     const uint8_t *ciphertext;         ///< Pointer to the start of the ciphertext_3
     size_t ciphertext_len;             ///< Length of the ciphertext_3
-    uint8_t *cred_idi;
-    size_t cred_idi_len;
-    const uint8_t *sig_or_mac;
-    size_t sig_or_mac_len;
-    const uint8_t *ad;
-    size_t ad_len;
 } edhoc_msg3_t;
 
 
