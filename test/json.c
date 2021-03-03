@@ -2,11 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <assert.h>
 
 #include <cjson/cJSON.h>
 
 #include "json.h"
+
+struct test_cbor_ctx {
+    char *filename;
+    unsigned long json_size;
+    char *json_buffer;
+    const cJSON *root;
+};
 
 struct test_edhoc_ctx {
     char *filename;
@@ -18,7 +24,69 @@ struct test_edhoc_ctx {
     const cJSON *shared;
 };
 
-test_edhoc_ctx load_json_test_file(const char *filename) {
+test_cbor_ctx load_json_cbor_test_file(const char *filename) {
+    unsigned long read_size;
+    unsigned long name_len;
+    test_cbor_ctx ctx;
+    FILE *fp;
+
+    if ((ctx = malloc(sizeof(struct test_cbor_ctx))) == NULL) {
+        return NULL;
+    }
+
+    // clear test_context
+    memset(ctx, 0, sizeof(struct test_cbor_ctx));
+
+    if ((name_len = strnlen(filename, MAX_FILENAME_SIZE)) == MAX_FILENAME_SIZE) {
+        // file name size too big
+        return NULL;
+    } else {
+        ctx->filename = malloc(sizeof(char) * (name_len + 1));
+        memcpy(ctx->filename, filename, name_len);
+        ctx->filename[name_len] = '\0';
+    }
+
+    if ((fp = fopen(filename, "r")) == NULL) {
+        free(ctx->filename);
+        ctx->filename = NULL;
+
+        free(ctx);
+
+        return NULL;
+    }
+
+    fseek(fp, 0, SEEK_END);
+    ctx->json_size = ftell(fp);
+    rewind(fp);
+
+    ctx->json_buffer = (char *) malloc(sizeof(char) * (ctx->json_size + 1));
+    read_size = fread(ctx->json_buffer, sizeof(char), ctx->json_size, fp);
+
+    ctx->json_buffer[ctx->json_size] = '\0';
+
+    // close file
+    fclose(fp);
+
+    if (ctx->json_size != read_size) {
+
+        close_cbor_test(ctx);
+
+        return NULL;
+    }
+
+    // start JSON parsing
+    ctx->root = cJSON_Parse(ctx->json_buffer);
+
+    if (!cJSON_IsObject(ctx->root)) {
+        close_cbor_test(ctx);
+
+        return NULL;
+    }
+
+    return ctx;
+}
+
+test_edhoc_ctx load_json_edhoc_test_file(const char *filename) {
     unsigned long read_size;
     unsigned long name_len;
     test_edhoc_ctx ctx;
@@ -63,7 +131,7 @@ test_edhoc_ctx load_json_test_file(const char *filename) {
 
     if (ctx->json_size != read_size) {
 
-        close_test(ctx);
+        close_edhoc_test(ctx);
 
         return NULL;
     }
@@ -72,30 +140,46 @@ test_edhoc_ctx load_json_test_file(const char *filename) {
     ctx->root = cJSON_Parse(ctx->json_buffer);
 
     if (!cJSON_IsObject(ctx->root)) {
-        close_test(ctx);
+        close_edhoc_test(ctx);
 
         return NULL;
     }
 
     if ((ctx->initiator = cJSON_GetObjectItemCaseSensitive(ctx->root, "I")) == NULL) {
-        close_test(ctx);
+        close_edhoc_test(ctx);
         return NULL;
     }
 
     if ((ctx->responder = cJSON_GetObjectItemCaseSensitive(ctx->root, "R")) == NULL) {
-        close_test(ctx);
+        close_edhoc_test(ctx);
         return NULL;
     }
 
     if ((ctx->shared = cJSON_GetObjectItemCaseSensitive(ctx->root, "S")) == NULL) {
-        close_test(ctx);
+        close_edhoc_test(ctx);
         return NULL;
     }
 
     return ctx;
 }
 
-void close_test(test_edhoc_ctx ctx) {
+void close_edhoc_test(test_edhoc_ctx ctx) {
+
+    cJSON_Delete((cJSON *) ctx->root);
+
+    // free filename
+    free(ctx->filename);
+    ctx->filename = NULL;
+
+    // free json buffer
+    free(ctx->json_buffer);
+    ctx->json_buffer = NULL;
+
+    // free context itself
+    free(ctx);
+}
+
+void close_cbor_test(test_cbor_ctx ctx) {
 
     cJSON_Delete((cJSON *) ctx->root);
 
@@ -566,4 +650,54 @@ int load_from_json_CIPHERSUITE(test_edhoc_ctx ctx, int *value) {
     *value = selected->valueint;
 
     return SUCCESS;
+}
+
+int load_from_json_CBOR_TEST_NUM(test_cbor_ctx ctx, int *num) {
+    cJSON *number_of_tests;
+
+    if (!cJSON_IsObject(ctx->root)) {
+        return FAILURE;
+    }
+
+    if ((number_of_tests = cJSON_GetObjectItemCaseSensitive(ctx->root, "tests")) == NULL) {
+        return FAILURE;
+    }
+
+    *num = number_of_tests->valueint;
+
+    return SUCCESS;
+}
+
+int load_from_json_CBOR_IN(test_cbor_ctx ctx, int num, uint8_t *buf, size_t blen) {
+    cJSON *in;
+
+    char in_key[5];
+
+    memset(in_key, 0, sizeof(in_key));
+    snprintf(in_key, sizeof(in_key), "in%d", num);
+
+    if (!cJSON_IsObject(ctx->root)) {
+        return FAILURE;
+    }
+
+    if ((in = cJSON_GetObjectItemCaseSensitive(ctx->root, in_key)) == NULL) {
+        return FAILURE;
+    }
+
+    return load_json_hexString(in, buf, blen);
+}
+
+int load_from_json_CBOR_OUT(test_cbor_ctx ctx, int num, uint8_t *buf, size_t blen) {
+    cJSON *out;
+
+    char out_key[5];
+
+    memset(out_key, 0, sizeof(out_key));
+    snprintf(out_key, sizeof(out_key), "out%d", num);
+
+    if ((out = cJSON_GetObjectItemCaseSensitive(ctx->root, out_key)) == NULL) {
+        return FAILURE;
+    }
+
+    return load_json_hexString(out, buf, blen);
 }

@@ -118,15 +118,12 @@ static int verify_cipher_suite(uint8_t preferred_suite, const uint8_t *remote_su
 int edhoc_msg3_decode(edhoc_msg3_t *msg3, corr_t correlation, const uint8_t *msg3_buf, size_t msg3_len) {
     int ret;
     ssize_t size, written;
-    uint8_t *pt, tmp;
 
     size = 0;
     ret = EDHOC_ERR_CBOR_DECODING;
 
     if (correlation == NO_CORR || correlation == CORR_1_2) {
-        pt = &tmp;
-        CBOR_CHECK_RET(cbor_bstr_id_decode((uint8_t **) &pt, &msg3->cidr_len, msg3_buf, size, msg3_len));
-        msg3->cidr = pt;
+        CBOR_CHECK_RET(cbor_bstr_id_decode(msg3->cidr, &msg3->cidr_len, msg3_buf, size, msg3_len))
     }
 
     CBOR_CHECK_RET(cbor_bytes_decode(&msg3->ciphertext, &msg3->ciphertext_len, msg3_buf, size, msg3_len));
@@ -142,22 +139,17 @@ int edhoc_msg3_decode(edhoc_msg3_t *msg3, corr_t correlation, const uint8_t *msg
 int edhoc_msg2_decode(edhoc_msg2_t *msg2, corr_t corr, const uint8_t *msg2_buf, size_t msg2_len) {
     int ret;
     ssize_t size, written;
-    uint8_t *pt, tmp;
 
     size = 0;
     ret = EDHOC_ERR_CBOR_DECODING;
 
     if (corr == NO_CORR || corr == CORR_2_3) {
-        pt = &tmp;
-        CBOR_CHECK_RET(cbor_bstr_id_decode((uint8_t **) &pt, &msg2->cidi_len, msg2_buf, size, msg2_len));
-        msg2->cidi = pt;
+        CBOR_CHECK_RET(cbor_bstr_id_decode(msg2->cidi, &msg2->cidi_len, msg2_buf, size, msg2_len))
     }
 
     CBOR_CHECK_RET(cbor_bytes_decode(&msg2->g_y, &msg2->g_y_len, msg2_buf, size, msg2_len));
 
-    pt = &tmp;
-    CBOR_CHECK_RET(cbor_bstr_id_decode((uint8_t **) &pt, &msg2->cidr_len, msg2_buf, size, msg2_len));
-    msg2->cidr = pt;
+    CBOR_CHECK_RET(cbor_bstr_id_decode(msg2->cidr, &msg2->cidr_len, msg2_buf, size, msg2_len))
 
     msg2->data = msg2_buf;
     msg2->data_len = size;
@@ -174,29 +166,21 @@ int edhoc_msg2_decode(edhoc_msg2_t *msg2, corr_t corr, const uint8_t *msg2_buf, 
 }
 
 int edhoc_msg1_decode(edhoc_msg1_t *msg1, const uint8_t *msg1_buf, size_t msg1_len) {
+    int ret;
+
     size_t len;
     ssize_t size, written;
-    int ret;
     const cipher_suite_t *suite_info;
-    uint8_t tmp;
-    const uint8_t *pt;
     uint8_t suites[SUPPORTED_SUITES_BUFFER_SIZE];
 
-    tmp = 0;
-    len = 0;
     size = 0;
 
     ret = EDHOC_ERR_CBOR_DECODING;
 
-    CBOR_CHECK_RET(cbor_int_decode((int *) &msg1->method_corr, msg1_buf, size, msg1_len));
+    CBOR_CHECK_RET(cbor_uint_decode(&msg1->method_corr, msg1_buf, size, msg1_len));
 
-    pt = &tmp;
-    CBOR_CHECK_RET(cbor_suites_decode((uint8_t **) &pt, &len, msg1_buf, size, msg1_len));
-
-    if (len < SUPPORTED_SUITES_BUFFER_SIZE && len > 0)
-        memcpy(suites, pt, len);
-    else
-        return EDHOC_ERR_BUFFER_OVERFLOW;
+    len = SUPPORTED_SUITES_BUFFER_SIZE;
+    CBOR_CHECK_RET(cbor_suites_decode(suites, &len, msg1_buf, size, msg1_len));
 
     EDHOC_CHECK_SUCCESS(verify_cipher_suite(suites[0], &suites[0], len));
 
@@ -206,11 +190,7 @@ int edhoc_msg1_decode(edhoc_msg1_t *msg1, const uint8_t *msg1_buf, size_t msg1_l
         msg1->cipher_suite = suite_info->id;
 
     CBOR_CHECK_RET(cbor_bytes_decode(&msg1->g_x, &msg1->g_x_len, msg1_buf, size, msg1_len));
-
-    pt = &tmp;
-    CBOR_CHECK_RET(cbor_bstr_id_decode((uint8_t **) &pt, &msg1->cidi_len, msg1_buf, size, msg1_len));
-    msg1->cidi = pt;
-
+    CBOR_CHECK_RET(cbor_bstr_id_decode(msg1->cidi, &msg1->cidi_len, msg1_buf, size, msg1_len))
     CBOR_CHECK_RET(cbor_bytes_decode(&msg1->ad1, &msg1->ad1_len, msg1_buf, size, msg1_len));
 
     ret = EDHOC_SUCCESS;
@@ -522,20 +502,14 @@ int edhoc_p3ae_decode(edhoc_ctx_t *ctx, uint8_t *p3ae, size_t p3ae_len) {
 int edhoc_p2e_decode(edhoc_msg2_t *msg2, const uint8_t *p2e, size_t p2e_len) {
     ssize_t ret;
 
-    uint8_t tmp;
-    const uint8_t *pt;
     ssize_t size, written;
 
     size = 0;
-    tmp = 0;
 
     ret = EDHOC_ERR_CBOR_ENCODING;
 
-    pt = &tmp;
-    CBOR_CHECK_RET(cbor_bstr_id_decode((uint8_t **) &pt, &msg2->cred_idr_len, p2e, size, p2e_len));
-    msg2->cred_idr = pt;
-
-    CBOR_CHECK_RET(cbor_bytes_decode(&msg2->sig_or_mac, &msg2->sig_or_mac_len, p2e, size, p2e_len));
+    // CBOR_CHECK_RET(cbor_bstr_id_decode(&msg2->cred_idr, &msg2->cred_idr_len, p2e, size, p2e_len));
+    // CBOR_CHECK_RET(cbor_bytes_decode(&msg2->sig_or_mac, &msg2->sig_or_mac_len, p2e, size, p2e_len));
 
     ret = EDHOC_SUCCESS;
     exit:

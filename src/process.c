@@ -464,11 +464,7 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2_buf, size_t msg2
 
     // Check the Initiator's connection identifier
     if (msg2.cidi_len > 0 && msg2.cidi_len <= EDHOC_CID_MAX_LEN) {
-        if (msg2.cidi == NULL) {
-            EDHOC_FAIL(EDHOC_ERR_INVALID_PARAM);
-        } else {
-            // TODO: copy Initiator connection identifier into temporary buffer and verify that it is known.
-        }
+        // TODO: copy Initiator connection identifier into temporary buffer and verify that it is known.
     } else if (msg2.cidi_len > EDHOC_CID_MAX_LEN) {
         EDHOC_FAIL(EDHOC_ERR_BUFFER_OVERFLOW);
     }
@@ -494,12 +490,8 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2_buf, size_t msg2
     // Check the Responder's connection identifier
     if (msg2.cidr_len > 0 && msg2.cidr_len <= EDHOC_CID_MAX_LEN) {
         // do not pass NULL to memcpy -> undefined behavior
-        if (msg2.cidr != NULL) {
-            memcpy(ctx->session.cidr, msg2.cidr, msg2.cidr_len);
-        } else {
-            EDHOC_FAIL(EDHOC_ERR_INVALID_PARAM);
-        }
-    } else if (msg2.cidr_len > EDHOC_CID_MAX_LEN) {
+        memcpy(ctx->session.cidr, &msg2.cidr, msg2.cidr_len);
+    } else {
         EDHOC_FAIL(EDHOC_ERR_BUFFER_OVERFLOW);
     }
 
@@ -544,10 +536,10 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2_buf, size_t msg2
     }
 
     EDHOC_CHECK_SUCCESS(
-            edhoc_compute_th3(ctx->th_2, msg2.ciphertext, msg2.ciphertext_len, out, data3_len, ctx->th_3));
+            crypt_kdf(suite_info->aead_algo, ctx->prk_2e, ctx->th_2, "K_2e", msg2.ciphertext_len, k2e_buf));
 
     EDHOC_CHECK_SUCCESS(
-            crypt_kdf(suite_info->aead_algo, ctx->prk_2e, ctx->th_2, "K_2e", msg2.ciphertext_len, k2e_buf));
+            edhoc_compute_th3(ctx->th_2, msg2.ciphertext, msg2.ciphertext_len, out, data3_len, ctx->th_3));
 
     // XOR decryption P_2e XOR K_2e
     for (size_t i = 0; i < msg2.ciphertext_len; i++) {
@@ -667,11 +659,7 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1_buf, size_t msg1
 
     // setup Initiator connection identifier
     if (msg1.cidi_len <= EDHOC_CID_MAX_LEN && msg1.cidi_len > 0) {
-        if (msg1.cidi != NULL) {
-            memcpy(ctx->session.cidi, msg1.cidi, msg1.cidi_len);
-        } else {
-            EDHOC_FAIL(EDHOC_ERR_INVALID_PARAM);
-        }
+        // fetching security context
     } else if (msg1.cidi_len > EDHOC_CID_MAX_LEN) {
         EDHOC_FAIL(EDHOC_ERR_BUFFER_OVERFLOW);
     }

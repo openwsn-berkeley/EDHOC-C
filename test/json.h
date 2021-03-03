@@ -6,25 +6,42 @@
 #define SUCCESS             (0)
 
 /*
- * Structure holding test context information
+ * Structures holding test context information
  */
 typedef struct test_edhoc_ctx* test_edhoc_ctx;
+typedef struct test_cbor_ctx* test_cbor_ctx;
 
 /*
- * @brief Load a test vector from a JSON file
+ * @brief Load an EDHOC test vector from a JSON file
  *
- * @param filename[in]  Filename of the JSON test vector
+ * @param filename[in]  Filename of the JSON EDHOC test vector
  *
  * @returns Pointer to an initialized test context or NULL
  */
-test_edhoc_ctx load_json_test_file(const char * filename);
+test_edhoc_ctx load_json_edhoc_test_file(const char * filename);
 
 /*
- * @brief Close a test context (frees all the allocated memory)
+ * @brief Load an CBOR test vector from a JSON file
+ *
+ * @param filename[in]  Filename of the JSON EDHOC test vector
+ *
+ * @returns Pointer to an initialized test context or NULL
+ */
+test_cbor_ctx load_json_cbor_test_file(const char * filename);
+
+/*
+ * @brief Close an EDHOC test context (frees all the allocated memory)
  *
  * @param Test context
  */
-void close_test(test_edhoc_ctx ctx);
+void close_edhoc_test(test_edhoc_ctx ctx);
+
+/*
+ * @brief Close a CBOR test context (frees all the allocated memory)
+ *
+ * @param Test context
+ */
+void close_cbor_test(test_cbor_ctx ctx);
 
 /*
  * @brief Load EDHOC data structures from the test vector file
@@ -87,6 +104,8 @@ int load_from_json_SIGNATURE(test_edhoc_ctx ctx, uint8_t *buf, size_t blen);
 int load_from_json_CIPHERTEXT2(test_edhoc_ctx ctx, uint8_t *buf, size_t blen);
 int load_from_json_CIPHERTEXT3(test_edhoc_ctx ctx, uint8_t *buf, size_t blen);
 
-
+int load_from_json_CBOR_TEST_NUM(test_cbor_ctx ctx, int *num);
+int load_from_json_CBOR_IN(test_cbor_ctx ctx, int num, uint8_t *buf, size_t blen);
+int load_from_json_CBOR_OUT(test_cbor_ctx ctx, int num, uint8_t *buf, size_t blen);
 
 #endif /* EDHOC_JSON_H */

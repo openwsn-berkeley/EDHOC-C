@@ -23,6 +23,23 @@ target_link_libraries(test_cbor PRIVATE edhoc-c::edhoc-c)
 target_link_libraries(test_cbor PRIVATE cjson)
 target_include_directories(test_cbor PRIVATE ../src)
 
+add_test(
+        NAME TEST_CBOR_BYTES_DECODING
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_cbor --decoding-bytes test_vectors/cbor_bytes_decoding.json
+)
+
+add_test(
+        NAME TEST_CBOR_BYTES_ENCODING
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_cbor --encoding-bytes test_vectors/cbor_bytes_encoding.json
+)
+
+add_test(
+        NAME TEST_CBOR_SUITES_DECODING
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test_cbor --decoding-suites test_vectors/cbor_suites_decoding.json
+)
 
 add_test(
         NAME TEST_FORMAT_MESSAGE_1_ENCODE_V1

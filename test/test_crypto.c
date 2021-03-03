@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
 
     if (argc == 3) {
         if (strcmp(argv[1], "--hashing") == 0) {
-            ctx = load_json_test_file(argv[2]);
+            ctx = load_json_edhoc_test_file(argv[2]);
             assert(ctx != NULL);
 
             msg1_len = load_from_json_MESSAGE1(ctx, m1, sizeof(m1));
@@ -154,10 +154,10 @@ int main(int argc, char **argv) {
 
             ret = test_hashing(m1, msg1_len, data_2, data2_len, th_2);
 
-            close_test(ctx);
+            close_edhoc_test(ctx);
 
         } else if (strcmp(argv[1], "--hmac") == 0) {
-            ctx = load_json_test_file(argv[2]);
+            ctx = load_json_edhoc_test_file(argv[2]);
             assert(ctx != NULL);
 
             secret_len = load_from_json_DH_SECRET(ctx, secret, sizeof(secret));
@@ -170,10 +170,10 @@ int main(int argc, char **argv) {
 
             ret = test_compute_prk(secret, salt, salt_len, prk2e);
 
-            close_test(ctx);
+            close_edhoc_test(ctx);
         } else if (strcmp(argv[1], "--edhoc-kdf-k2m") == 0) {
             const char *label = "K_2m";
-            ctx = load_json_test_file(argv[2]);
+            ctx = load_json_edhoc_test_file(argv[2]);
             assert(ctx != NULL);
 
             assert(load_from_json_CIPHERSUITE(ctx, (int *) &selected) == 0);
@@ -190,10 +190,10 @@ int main(int argc, char **argv) {
 
             ret = test_edhoc_kdf(id, prk3e2m, th_2, label, k2m, k2m_len);
 
-            close_test(ctx);
+            close_edhoc_test(ctx);
         } else if (strcmp(argv[1], "--edhoc-kdf-iv2m") == 0) {
             const char *label = "IV_2m";
-            ctx = load_json_test_file(argv[2]);
+            ctx = load_json_edhoc_test_file(argv[2]);
             assert(ctx != NULL);
 
             load_from_json_CIPHERSUITE(ctx, (int *) &selected);
@@ -209,10 +209,10 @@ int main(int argc, char **argv) {
 
             ret = test_edhoc_kdf(id, prk3e2m, th_2, label, iv2m, iv2m_len);
 
-            close_test(ctx);
+            close_edhoc_test(ctx);
         } else if (strcmp(argv[1], "--edhoc-kdf-k2e") == 0) {
             const char *label = "K_2e";
-            ctx = load_json_test_file(argv[2]);
+            ctx = load_json_edhoc_test_file(argv[2]);
             assert(ctx != NULL);
 
             assert(load_from_json_CIPHERSUITE(ctx, (int *) &selected) == 0);
@@ -229,9 +229,9 @@ int main(int argc, char **argv) {
 
             ret = test_edhoc_kdf(id, prk2e, th_2, label, k2e, k2e_len);
 
-            close_test(ctx);
+            close_edhoc_test(ctx);
         } else if (strcmp(argv[1], "--ed25519") == 0) {
-            ctx = load_json_test_file(argv[2]);
+            ctx = load_json_edhoc_test_file(argv[2]);
             assert(ctx != NULL);
 
             resp_authkey_len = load_from_json_RESP_AUTHKEY(ctx, resp_authkey, sizeof(resp_authkey));
@@ -244,7 +244,7 @@ int main(int argc, char **argv) {
 
             ret = test_compute_ed25519_signature(resp_authkey, resp_authkey_len, m2, m2_len, sig, sig_len);
 
-            close_test(ctx);
+            close_edhoc_test(ctx);
         }
     }
 

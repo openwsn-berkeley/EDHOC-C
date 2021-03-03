@@ -6,6 +6,3 @@ target_link_libraries(tcp_initiator PRIVATE edhoc-c::edhoc-c)
 
 add_executable(coap_responder coap/responder.c coap/nanocoap.c)
 target_link_libraries(coap_responder PRIVATE edhoc-c::edhoc-c)
-
-add_executable(coap_initiator coap/initiator.c coap/nanocoap.c)
-target_link_libraries(coap_initiator PRIVATE edhoc-c::edhoc-c)

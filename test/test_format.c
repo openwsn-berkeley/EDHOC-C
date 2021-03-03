@@ -47,10 +47,8 @@ int test_message1_decode(const uint8_t *msg_buf,
     CHECK_TEST_RET_EQ(msg1.method_corr, (long) method_corr);
 
     CHECK_TEST_RET_EQ(msg1.cidi_len, (long) conn_idi_len);
-    if(msg1.cidi != NULL){
-        memcpy(temp, msg1.cidi, msg1.cidi_len);
-        CHECK_TEST_RET_EQ(compare_arrays(temp, conn_idi, conn_idi_len), (long) 0);
-    }
+    memcpy(temp, msg1.cidi, msg1.cidi_len);
+    CHECK_TEST_RET_EQ(compare_arrays(temp, conn_idi, conn_idi_len), (long) 0);
 
     CHECK_TEST_RET_EQ(msg1.g_x_len, (long) g_x_len);
     memcpy(temp, msg1.g_x, msg1.g_x_len);
@@ -100,10 +98,8 @@ int test_message2_decode(corr_t correlation,
     CHECK_TEST_RET_EQ(msg2.cidi_len, (long) conn_idi_len);
 
     // passing NULL to memcpy is undefined behavior
-    if (msg2.cidi != NULL) {
-        memcpy(temp, msg2.cidi, msg2.cidi_len);
-        CHECK_TEST_RET_EQ(compare_arrays(temp, conn_idi, conn_idi_len), (long) 0);
-    }
+    memcpy(temp, msg2.cidi, msg2.cidi_len);
+    CHECK_TEST_RET_EQ(compare_arrays(temp, conn_idi, conn_idi_len), (long) 0);
 
     CHECK_TEST_RET_EQ(msg2.g_y_len, (long) g_y_len);
     memcpy(temp, msg2.g_y, msg2.g_y_len);
@@ -111,10 +107,8 @@ int test_message2_decode(corr_t correlation,
 
     CHECK_TEST_RET_EQ(msg2.cidr_len, (long) conn_idr_len);
 
-    if (msg2.cidr != NULL) {
-        memcpy(temp, msg2.cidr, msg2.cidr_len);
-        CHECK_TEST_RET_EQ(compare_arrays(temp, conn_idr, conn_idr_len), (long) 0);
-    }
+    memcpy(temp, msg2.cidr, msg2.cidr_len);
+    CHECK_TEST_RET_EQ(compare_arrays(temp, conn_idr, conn_idr_len), (long) 0);
 
     CHECK_TEST_RET_EQ(msg2.ciphertext_len, (long) ciphertext_2_len);
     memcpy(temp, msg2.ciphertext, msg2.ciphertext_len);
@@ -141,10 +135,8 @@ int test_message3_decode(corr_t correlation,
     CHECK_TEST_RET_EQ(edhoc_msg3_decode(&msg3, correlation, msg_buf, msg_buf_len), (long) 0);
 
     CHECK_TEST_RET_EQ(msg3.cidr_len, (long) conn_idr_len);
-    if (msg3.cidr != NULL){
-        memcpy(temp, msg3.cidr, msg3.cidr_len);
-        CHECK_TEST_RET_EQ(compare_arrays(temp, conn_idr, conn_idr_len), (long) 0);
-    }
+    memcpy(temp, msg3.cidr, msg3.cidr_len);
+    CHECK_TEST_RET_EQ(compare_arrays(temp, conn_idr, conn_idr_len), (long) 0);
 
     CHECK_TEST_RET_EQ(msg3.ciphertext_len, (long) ciphertext_3_len);
     memcpy(temp, msg3.ciphertext, msg3.ciphertext_len);
@@ -239,7 +231,7 @@ int main(int argc, char **argv) {
 
     if (argc == 3) {
         if (strcmp(argv[1], "--encode-msg1") == 0) {
-            ctx = load_json_test_file(argv[2]);
+            ctx = load_json_edhoc_test_file(argv[2]);
 
             load_from_json_CORR(ctx, &corr);
             load_from_json_METHOD(ctx, &method);
@@ -256,9 +248,9 @@ int main(int argc, char **argv) {
 
             ret = test_message1_encode(corr, method, selected, &init_ephkey, cidi, cidi_len, NULL, m1, msg1_len);
 
-            close_test(ctx);
+            close_edhoc_test(ctx);
         } else if (strcmp(argv[1], "--decode-msg1") == 0) {
-            ctx = load_json_test_file(argv[2]);
+            ctx = load_json_edhoc_test_file(argv[2]);
 
             load_from_json_METHOD(ctx, &method);
             load_from_json_CORR(ctx, &corr);
@@ -275,9 +267,9 @@ int main(int argc, char **argv) {
 
             ret = test_message1_decode(m1, msg1_len, method_corr, g_x, g_x_len, cidi, cidi_len);
 
-            close_test(ctx);
+            close_edhoc_test(ctx);
         } else if (strcmp(argv[1], "--decode-msg3") == 0) {
-            ctx = load_json_test_file(argv[2]);
+            ctx = load_json_edhoc_test_file(argv[2]);
 
             load_from_json_CORR(ctx, &corr);
 
@@ -287,10 +279,10 @@ int main(int argc, char **argv) {
 
             ret = test_message3_decode(corr, m3, msg3_len, cidr, cidr_len, ciphertext_3, ct3_len);
 
-            close_test(ctx);
+            close_edhoc_test(ctx);
 
         } else if (strcmp(argv[1], "--encode-msg2") == 0) {
-            ctx = load_json_test_file(argv[2]);
+            ctx = load_json_edhoc_test_file(argv[2]);
 
             data2_len = load_from_json_DATA2(ctx, data2, DATA_2_SIZE);
             ct2_len = load_from_json_CIPHERTEXT2(ctx, ciphertext_2, PAYLOAD_SIZE);
@@ -298,10 +290,10 @@ int main(int argc, char **argv) {
 
             ret = test_message2_encode(data2, data2_len, ciphertext_2, ct2_len, m2, msg2_len);
 
-            close_test(ctx);
+            close_edhoc_test(ctx);
 
         } else if (strcmp(argv[1], "--decode-msg2") == 0) {
-            ctx = load_json_test_file(argv[2]);
+            ctx = load_json_edhoc_test_file(argv[2]);
 
             assert(load_from_json_CORR(ctx, (int *) &corr) == 0);
 
@@ -329,9 +321,9 @@ int main(int argc, char **argv) {
                                        ciphertext_2,
                                        ct2_len);
 
-            close_test(ctx);
+            close_edhoc_test(ctx);
         } else if (strcmp(argv[1], "--encode-data2") == 0) {
-            ctx = load_json_test_file(argv[2]);
+            ctx = load_json_edhoc_test_file(argv[2]);
 
             assert(load_from_json_CORR(ctx, (int *) &corr) == 0);
 
@@ -351,10 +343,10 @@ int main(int argc, char **argv) {
 
             ret = test_data2_encode(corr, cidi, cidi_len, cidr, cidr_len, resp_ephkey, data2, data2_len);
 
-            close_test(ctx);
+            close_edhoc_test(ctx);
         } else if (strcmp(argv[1], "--encode-info-k2m") == 0) {
             const char *label = "K_2m";
-            ctx = load_json_test_file(argv[2]);
+            ctx = load_json_edhoc_test_file(argv[2]);
 
             assert(load_from_json_CIPHERSUITE(ctx, (int *) &selected) == 0);
 
@@ -369,10 +361,10 @@ int main(int argc, char **argv) {
 
             ret = test_info_encode(id, th2, label, key_length, info_k2m, info_k2m_len);
 
-            close_test(ctx);
+            close_edhoc_test(ctx);
         } else if (strcmp(argv[1], "--encode-info-iv2m") == 0) {
             const char *label = "IV_2m";
-            ctx = load_json_test_file(argv[2]);
+            ctx = load_json_edhoc_test_file(argv[2]);
 
             assert(load_from_json_CIPHERSUITE(ctx, (int *) &selected) == 0);
 
@@ -387,7 +379,7 @@ int main(int argc, char **argv) {
 
             ret = test_info_encode(id, th2, label, iv_length, info_iv2m, info_iv2m_len);
 
-            close_test(ctx);
+            close_edhoc_test(ctx);
 
         }
     }

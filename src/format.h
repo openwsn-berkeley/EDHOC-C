@@ -14,12 +14,13 @@
 
 #include "edhoc/edhoc.h"
 
+
 typedef struct edhoc_msg1_t {
     uint8_t method_corr;
     uint8_t cipher_suite;
     const uint8_t *g_x;
     size_t g_x_len;
-    const uint8_t *cidi;
+    uint8_t cidi[EDHOC_CID_MAX_LEN];
     size_t cidi_len;
     const uint8_t *ad1;
     size_t ad1_len;
@@ -28,15 +29,15 @@ typedef struct edhoc_msg1_t {
 typedef struct edhoc_msg2_t {
     const uint8_t *data;
     size_t data_len;
-    const uint8_t *cidi;
+    uint8_t cidi[EDHOC_CID_MAX_LEN];
     size_t cidi_len;
     const uint8_t *g_y;
     size_t g_y_len;
-    const uint8_t *cidr;
+    uint8_t cidr[EDHOC_CID_MAX_LEN];
     size_t cidr_len;
     uint8_t *ciphertext;
     size_t ciphertext_len;
-    const uint8_t *cred_idr;
+    uint8_t *cred_idr;
     size_t cred_idr_len;
     const uint8_t *sig_or_mac;
     size_t sig_or_mac_len;
@@ -48,19 +49,20 @@ typedef struct edhoc_msg2_t {
  * EDHOC message 3 deserializing structure
  */
 typedef struct edhoc_msg3_t {
-    const uint8_t *data;           ///< Pointer to the start of data_3
-    size_t data_len;               ///< Length of data_3
-    const uint8_t *cidr;           ///< Pointer to the Responder's connection identifier
-    size_t cidr_len;               ///< Length of the Responder's connection identifier
-    const uint8_t *ciphertext;     ///< Pointer to the start of the ciphertext_3
-    size_t ciphertext_len;         ///< Length of the ciphertext_3
-    const uint8_t *cred_idi;
+    const uint8_t *data;               ///< Pointer to the start of data_3
+    size_t data_len;                   ///< Length of data_3
+    uint8_t cidr[EDHOC_CID_MAX_LEN];
+    size_t cidr_len;
+    const uint8_t *ciphertext;         ///< Pointer to the start of the ciphertext_3
+    size_t ciphertext_len;             ///< Length of the ciphertext_3
+    uint8_t *cred_idi;
     size_t cred_idi_len;
     const uint8_t *sig_or_mac;
     size_t sig_or_mac_len;
     const uint8_t *ad;
     size_t ad_len;
 } edhoc_msg3_t;
+
 
 /**
  * @brief Message encoding routine for EDHOC message_1

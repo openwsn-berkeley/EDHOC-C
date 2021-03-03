@@ -203,7 +203,7 @@ int main(int argc, char **argv) {
 
     if (argc == 3) {
         if (strcmp(argv[1], "--create-msg1") == 0) {
-            if ((ctx = load_json_test_file(argv[2])) == NULL) {
+            if ((ctx = load_json_edhoc_test_file(argv[2])) == NULL) {
                 return EXIT_FAILURE;
             }
 
@@ -222,10 +222,10 @@ int main(int argc, char **argv) {
 
             ret = test_create_msg1(cred_type, ephkey, ephkey_len, corr, method, cid, cid_len, selected, m1, m1_len);
 
-            close_test(ctx);
+            close_edhoc_test(ctx);
 
         } else if (strcmp(argv[1], "--create-msg2") == 0) {
-            if ((ctx = load_json_test_file(argv[2])) == NULL) {
+            if ((ctx = load_json_edhoc_test_file(argv[2])) == NULL) {
                 return EXIT_FAILURE;
             }
 
@@ -256,10 +256,10 @@ int main(int argc, char **argv) {
                                    m2,
                                    m2_len);
 
-            close_test(ctx);
+            close_edhoc_test(ctx);
 
         } else if (strcmp(argv[1], "--create-msg3") == 0) {
-            if ((ctx = load_json_test_file(argv[2])) == NULL) {
+            if ((ctx = load_json_edhoc_test_file(argv[2])) == NULL) {
                 return EXIT_FAILURE;
             }
 
@@ -297,7 +297,7 @@ int main(int argc, char **argv) {
                                    m3,
                                    m3_len);
 
-            close_test(ctx);
+            close_edhoc_test(ctx);
         }
     }
 
