@@ -295,7 +295,7 @@ int main(int argc, char **argv) {
         } else if (strcmp(argv[1], "--decode-msg2") == 0) {
             ctx = load_json_edhoc_test_file(argv[2]);
 
-            assert(load_from_json_CORR(ctx, (int *) &corr) == 0);
+            load_from_json_CORR(ctx, (int *) &corr);
 
             msg2_len = load_from_json_MESSAGE2(ctx, m2, sizeof(m2));
             g_y_len = load_from_json_G_Y(ctx, g_y, sizeof(g_y));
@@ -325,7 +325,7 @@ int main(int argc, char **argv) {
         } else if (strcmp(argv[1], "--encode-data2") == 0) {
             ctx = load_json_edhoc_test_file(argv[2]);
 
-            assert(load_from_json_CORR(ctx, (int *) &corr) == 0);
+            load_from_json_CORR(ctx, (int *) &corr);
 
             cidi_len = load_from_json_CONN_IDI(ctx, cidi, sizeof(cidi));
             cidr_len = load_from_json_CONN_IDR(ctx, cidr, sizeof(cidr));

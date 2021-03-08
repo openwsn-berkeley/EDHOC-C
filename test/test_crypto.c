@@ -176,7 +176,7 @@ int main(int argc, char **argv) {
             ctx = load_json_edhoc_test_file(argv[2]);
             assert(ctx != NULL);
 
-            assert(load_from_json_CIPHERSUITE(ctx, (int *) &selected) == 0);
+            load_from_json_CIPHERSUITE(ctx, (int *) &selected);
 
             prk3e2m_len = load_from_json_PRK3E2M(ctx, prk3e2m, sizeof(prk3e2m));
             th2_len = load_from_json_TH2(ctx, th_2, sizeof(th_2));
@@ -215,7 +215,7 @@ int main(int argc, char **argv) {
             ctx = load_json_edhoc_test_file(argv[2]);
             assert(ctx != NULL);
 
-            assert(load_from_json_CIPHERSUITE(ctx, (int *) &selected) == 0);
+            load_from_json_CIPHERSUITE(ctx, (int *) &selected);
 
             prk2e_len = load_from_json_PRK2E(ctx, prk2e, sizeof(prk2e));
             th2_len = load_from_json_TH2(ctx, th_2, sizeof(th_2));
