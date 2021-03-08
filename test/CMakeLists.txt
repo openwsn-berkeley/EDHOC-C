@@ -16,6 +16,11 @@ target_include_directories(test_process PRIVATE ../src)
 add_executable(test_crypto test_crypto.c util.c util.h json.h json.c)
 target_link_libraries(test_crypto PRIVATE edhoc-c::edhoc-c)
 target_link_libraries(test_crypto PRIVATE cjson)
+
+if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
+    include_directories(${CMAKE_BINARY_DIR}/3rdparty/wolfssl-build/include)
+endif ()
+
 target_include_directories(test_crypto PRIVATE ../src)
 
 add_executable(test_cbor test_cbor.c util.c util.h json.h json.c)

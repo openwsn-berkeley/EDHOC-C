@@ -26,7 +26,7 @@ int crypt_gen_keypair(cose_curve_t crv, cose_key_t *key) {
 
     // if true, key already initialized
     if (key->kty != COSE_KTY_NONE){
-        EDHOC_FAIL(EDHOC_SUCCESS);
+        return EDHOC_SUCCESS;
     }
 
     EDHOC_CHECK_SUCCESS(wc_curve25519_make_key(&rng, CURVE25519_KEYSIZE, &_key));
