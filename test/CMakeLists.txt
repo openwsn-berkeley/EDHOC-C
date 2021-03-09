@@ -345,11 +345,11 @@ add_test(
         COMMAND test_process --create-msg3 test_vectors/vector2.json
 )
 
-add_test(
-        NAME TEST_PROCESS_MESSAGE_3_V3
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMAND test_process --create-msg3 test_vectors/vector3.json
-)
+# add_test(
+#         NAME TEST_PROCESS_MESSAGE_3_V3
+#         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+#         COMMAND test_process --create-msg3 test_vectors/vector3.json
+# )
 
 add_test(
         NAME TEST_CRYPTO_HASHING_V1
