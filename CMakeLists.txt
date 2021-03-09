@@ -9,16 +9,13 @@ message(STATUS "Compiling with: ${CMAKE_C_COMPILER}")
 
 project("edhoc-c" LANGUAGES C VERSION "${EDHOC_VERSION}")
 
+include(ExternalProject)
+
 set(CMAKE_C_STANDARD 11)
 
 # Set the output of the libraries and executables.
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
-
-set(prefix ${CMAKE_INSTALL_PREFIX})
-set(exec_prefix ${CMAKE_INSTALL_PREFIX}/bin)
-set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
-set(includedir ${CMAKE_INSTALL_PREFIX}/include)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -29,7 +26,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 option(EDHOC_FATAL_WARNINGS "fail build when there are compile warnings" OFF)
 option(EDHOC_BUILD_TESTS "build tests" ON)
 option(EDHOC_BUILD_EXAMPLES "build examples" ON)
-option(BUILD_SHARED_LIBS "Build Shared Libraries" OFF)
+option(BUILD_SHARED_LIBS "Build Shared Libraries" ON)
 option(EDHOC_USE_ASAN "Use address sanitizers" ON)
 option(EDHOC_USE_LSAN "Use leak sanitizers" ON)
 option(EDHOC_USE_USAN "Use undefined sanitizers" ON)
@@ -57,7 +54,7 @@ if (NOT EDHOC_CBOR_BACKEND)
     set(EDHOC_CBOR_BACKEND "NANOCBOR" CACHE STRING "Backend for CBOR encoding/decoding" FORCE)
 endif ()
 
-set_property(CACHE EDHOC_CBOR_BACKEND PROPERTY STRINGS "CN_CBOR" "NANOCBOR")
+set_property(CACHE EDHOC_CBOR_BACKEND PROPERTY STRINGS "NANOCBOR")
 
 include(sanitizers)
 

@@ -207,9 +207,9 @@ int main(int argc, char **argv) {
                 return EXIT_FAILURE;
             }
 
-            assert(load_from_json_CIPHERSUITE(ctx, &selected) == SUCCESS);
-            assert(load_from_json_CORR(ctx, &corr) == SUCCESS);
-            assert(load_from_json_METHOD(ctx, &method) == SUCCESS);
+            load_from_json_CIPHERSUITE(ctx, &selected);
+            load_from_json_CORR(ctx, &corr);
+            load_from_json_METHOD(ctx, &method);
             load_from_json_RESP_CREDTYPE(ctx, &cred_type);
 
             m1_len = load_from_json_MESSAGE1(ctx, m1, sizeof(m1));

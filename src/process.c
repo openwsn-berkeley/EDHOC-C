@@ -1,3 +1,4 @@
+#include <string.h>
 #include "edhoc/edhoc.h"
 
 #include "cipher_suites.h"
