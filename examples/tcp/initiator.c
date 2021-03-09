@@ -5,7 +5,6 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <edhoc/edhoc.h>
-#include "../src/cipher_suites.h"
 
 #define PORT 9830
 
@@ -51,37 +50,44 @@ void print_bstr(const uint8_t *bstr, size_t bstr_len) {
     printf("\n");
 }
 
-int edhoc_handshake(int sockfd) {
+int edhoc_handshake(int sockfd, bool epk) {
     ssize_t bread, len, written;
-    uint8_t incoming[500] = {0}, outgoing[500] = {0};
+    uint8_t incoming[500], outgoing[500];
 
+    cbor_cert_t cert;
     edhoc_ctx_t ctx;
     edhoc_conf_t conf;
 
     edhoc_ctx_init(&ctx);
     edhoc_conf_init(&conf);
 
+    edhoc_cred_cbor_cert_init(&cert);
+    if (edhoc_cred_load_cbor_cert(&cert, cbor_cert, sizeof(cbor_cert)) != 0)
+        return -1;
+
     printf("[%d] Set up EDHOC configuration...\n", counter++);
-    if (edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, NULL, NULL, NULL, NULL, NULL, NULL) != 0)
+    if (edhoc_conf_setup(&conf, EDHOC_IS_INITIATOR, NULL, NULL, NULL) != 0)
         return -1;
 
     printf("[%d] Load private authentication key...\n", counter++);
     edhoc_conf_load_authkey(&conf, auth_key, sizeof(auth_key));
 
     printf("[%d] Load CBOR certificate...\n", counter++);
-    edhoc_conf_load_cbor_cert(&conf, cbor_cert, sizeof(cbor_cert));
+    edhoc_conf_load_credentials(&conf, CRED_TYPE_CBOR_CERT, &cert, NULL);
 
     printf("[%d] Compute and load CBOR certificate hash:\n", counter++);
     print_bstr(cred_id, sizeof(cred_id));
 
-    if (edhoc_conf_load_cred_id(&conf, cred_id, sizeof(cred_id)) != 0)
+    if (edhoc_conf_load_cred_id(&conf, cred_id, CRED_ID_TYPE_X5T, sizeof(cred_id)) != 0)
         return -1;
 
     // loading the configuration
     edhoc_ctx_setup(&ctx, &conf);
 
-    if (edhoc_load_ephkey(&ctx, eph_key, sizeof(eph_key)) != 0)
-        return -1;
+    if (!epk){
+        if (edhoc_load_ephkey(&ctx, eph_key, sizeof(eph_key)) != 0)
+            return -1;
+    }
 
     if (edhoc_session_preset_cidr(&ctx, cid, sizeof(cid)) != 0)
         return -1;
@@ -140,13 +146,22 @@ int edhoc_handshake(int sockfd) {
     return 0;
 }
 
-int main(void) {
+int main(int argc, char** argv) {
     int sockfd;
+    bool epk = false;
 #if defined(IPV6)
     struct sockaddr_in6 servaddr;
 #else
     struct sockaddr_in servaddr;
 #endif
+
+    if (argc == 2){
+        if (strcmp(argv[1], "--epk") == 0){
+            epk = true;
+        } else {
+            epk = false;
+        }
+    }
 
 #if defined(IPV6)
     // socket create and verification
@@ -187,7 +202,7 @@ int main(void) {
 
     printf("[%d] Connecting to server...\n", counter++);
 
-    edhoc_handshake(sockfd);
+    edhoc_handshake(sockfd, epk);
 
     printf("[%d] Closing socket...\n", counter++);
     close(sockfd);

@@ -1,11 +1,7 @@
 #ifndef EDHOC_CHECK_CONFIG_H
 #define EDHOC_CHECK_CONFIG_H
 
-#if defined(EDHOC_AUTH_CBOR_CERT_ENABLED) && \
-    defined(EDHOC_AUTH_RAW_PUBKEY_ENABLED)
-#error "EDHOC_AUTH_CBOR_CERT_ENABLED and EDHOC_AUTH_RAW_PUBKEY_ENABLED cannot both be enabled."
-#elif !defined(EDHOC_AUTH_CBOR_CERT_ENABLED) && \
-      !defined(EDHOC_AUTH_RAW_PUBKEY_ENABLED)
+#if !defined(EDHOC_AUTH_CBOR_CERT_ENABLED) && !defined(EDHOC_AUTH_RAW_PUBKEY_ENABLED)
 #error "There needs to be at least one credential type enabled."
 #endif
 

@@ -15,6 +15,13 @@
 #include "edhoc/edhoc.h"
 
 typedef enum {
+    COSE_HEADER_MAP_PARAM_ALG = 1,
+    COSE_HEADER_MAP_PARAM_CRIT = 2,
+    COSE_HEADER_MAP_PARAM_CTYPE = 3,
+    COSE_HEADER_MAP_PARAM_KID = 4
+} cose_header_map_param_t;
+
+typedef enum {
     COSE_KEY_COMMON_PARAM_KTY = 1,        /**< Key type identifier */
     COSE_KEY_COMMON_PARAM_KID = 2,        /**< Key identifier */
     COSE_KEY_COMMON_PARAM_ALGO = 3,       /**< Key algorithm */

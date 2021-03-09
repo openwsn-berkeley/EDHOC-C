@@ -7,15 +7,15 @@
 #define MESSAGE_2_SIZE          350
 #define MESSAGE_3_SIZE          350
 
-#define EHDOC_DATA_2_SIZE       100
-#define EDHOC_DATA_3_SIZE       100
+#define DATA_2_SIZE             100
+#define DATA_3_SIZE             100
 
-#define EDHOC_TH_SIZE           64
-#define EDHOC_M2_SIZE           1000
-#define EDHOC_SIGNATURE_SIZE    128
-#define EDHOC_PAYLOAD_SIZE      500
-#define EDHOC_SECRET_SIZE       64
-#define EDHOC_INFO_SIZE         100
+#define TH_SIZE                 64
+#define M2_SIZE                 1000
+#define SIGNATURE_SIZE          128
+#define PAYLOAD_SIZE            500
+#define SECRET_SIZE             64
+#define INFO_SIZE               100
 
 #define RAW_PUBLIC_KEY          64
 #define SYMMETRIC_KEY_SIZE      32

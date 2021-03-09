@@ -55,7 +55,7 @@
  * Enables COSE raw public keys as the EDHOC local credential
  *
  */
-// #define EDHOC_AUTH_RAW_PUBKEY_ENABLED
+#define EDHOC_AUTH_RAW_PUBKEY_ENABLED
 
 /**
  * @def EDHOC_CREDENTIAL_MAX_SIZE

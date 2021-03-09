@@ -4,33 +4,20 @@ on: [push, pull_request]
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: Debug
+  BUILD_TYPE: Release
 
 jobs:
   build:
-    # The CMake configure and build commands are platform agnostic and should work equally
-    # well on Windows or Mac.  You can convert this to a matrix build if you need
-    # cross-platform coverage.
-    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+    strategy:
+      fail-fast: false
+      matrix:
+        crypto: ['WOLFSSL', 'HACL']
+        cbor: ['NANOCBOR']
+
     runs-on: ubuntu-latest
 
     steps:
-    - name: Install WolfSSL dependancy
-      run: cd .. && git clone https://github.com/wolfSSL/wolfssl.git && cd wolfssl && ./autogen.sh && ./configure --enable-cryptonly --enable-curve25519 --enable-ed25519 --enable-hkdf --enable-aesccm && sudo make install && cd ../EDHOC-C
-    
-    - name: Install CN-CBOR dependancy
-      run: cd .. && git clone https://github.com/jimsch/cn-cbor.git && cd cn-cbor && mkdir -p build && cd build && cmake .. -DCN_CBOR_COVERALLS=OFF -DCN_CBOR_BUILD_TESTS=OFF && sudo cmake --build . --target install && cd ../../EDHOC-C
-
-    - name: Install cJSON dependancy
-      run: cd .. && git clone https://github.com/DaveGamble/cJSON.git && cd cJSON && mkdir -p build && cd build && cmake .. -DENABLE_CJSON_TEST=OFF && sudo cmake --build . --target install && cd ../../EDHOC-C
-
-    - name: Install NanoCBOR dependancy
-      run: cd .. && git clone https://github.com/bergzand/NanoCBOR.git && cd NanoCBOR && make && sudo mv bin/nanocbor.so /usr/local/lib/libnanocbor.so && sudo mv include/nanocbor /usr/local/include && cd ../EDHOC-C
-
     - uses: actions/checkout@v2
-
-    - name: Reload libraries
-      run: sudo ldconfig -v
 
     - name: Create Build Environment
       # Some projects don't allow in-source building, so create a separate build directory
@@ -45,7 +32,7 @@ jobs:
       # Note the current convention is to use the -S and -B options here to specify source 
       # and build directories, but this is only available with CMake 3.13 and higher.  
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DEDHOC_CBOR_BACKEND=${{ matrix.cbor }} -DEDHOC_CRYPTO_BACKEND=${{ matrix.crypto }}
 
     - name: Build
       working-directory: ${{runner.workspace}}/build
