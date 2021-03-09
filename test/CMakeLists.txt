@@ -10,6 +10,14 @@ if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
     include_directories(${CMAKE_BINARY_DIR}/3rdparty/wolfssl-build/include)
 endif ()
 
+if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
+    link_directories(${CMAKE_BINARY_DIR}/3rdparty/hacl-build/lib)
+    include_directories(
+            ${CMAKE_BINARY_DIR}/3rdparty/hacl-build/include
+            ${CMAKE_BINARY_DIR}/3rdparty/hacl/dist/kremlin/include
+            ${CMAKE_BINARY_DIR}/3rdparty/hacl/dist/kremlin/kremlib/dist/minimal)
+endif ()
+
 if ("${EDHOC_CBOR_BACKEND}" STREQUAL "NANOCBOR")
     link_directories(${CMAKE_BINARY_DIR}/3rdparty/nanocbor-build/lib)
     include_directories(${CMAKE_BINARY_DIR}/3rdparty/nanocbor-build/include)
@@ -31,10 +39,12 @@ add_executable(test_format
         ../src/cbor/nanocbor.c)
 
 add_dependencies(test_format nanocbor-backend)
+target_link_libraries(test_format PRIVATE nanocbor)
+
 add_dependencies(test_format json-parser)
+target_link_libraries(test_format PRIVATE cjson)
 
 target_include_directories(test_format PRIVATE ../src ../include)
-target_link_libraries(test_format PRIVATE cjson nanocbor)
 
 ###################################################################
 # PROCESSING
@@ -57,11 +67,19 @@ add_executable(test_process
         ../src/crypto/ccm.c)
 
 add_dependencies(test_process nanocbor-backend)
-add_dependencies(test_process wolfssl-backend)
+target_link_libraries(test_process PRIVATE nanocbor)
+
+if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
+    add_dependencies(test_process wolfssl-backend)
+elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
+    target_link_libraries(test_process PRIVATE evercrypt)
+    add_dependencies(test_process hacl-backend)
+endif ()
+
 add_dependencies(test_process json-parser)
 
 target_include_directories(test_process PRIVATE ../src ../include)
-target_link_libraries(test_process PRIVATE cjson wolfssl nanocbor)
+target_link_libraries(test_process PRIVATE cjson)
 
 ###################################################################
 # CRYPTO
@@ -83,10 +101,19 @@ add_executable(test_crypto
         ../src/crypto/ccm.c)
 
 add_dependencies(test_crypto nanocbor-backend)
-add_dependencies(test_crypto wolfssl-backend)
-add_dependencies(test_crypto json-parser)
+target_link_libraries(test_crypto PRIVATE nanocbor)
 
-target_link_libraries(test_crypto PRIVATE cjson wolfssl nanocbor)
+if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
+    add_dependencies(test_crypto wolfssl-backend)
+    target_link_libraries(test_crypto PRIVATE wolfssl)
+elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
+    add_dependencies(test_crypto hacl-backend)
+    target_link_libraries(test_crypto PRIVATE evercrypt)
+endif ()
+
+add_dependencies(test_crypto json-parser)
+target_link_libraries(test_crypto PRIVATE cjson)
+
 target_include_directories(test_crypto PRIVATE ../src ../include)
 
 ###################################################################
@@ -100,9 +127,11 @@ add_executable(test_cbor
         json.c)
 
 add_dependencies(test_cbor nanocbor-backend)
-add_dependencies(test_cbor json-parser)
+target_link_libraries(test_cbor PRIVATE nanocbor)
 
-target_link_libraries(test_cbor PRIVATE cjson nanocbor)
+add_dependencies(test_cbor json-parser)
+target_link_libraries(test_cbor PRIVATE cjson)
+
 target_include_directories(test_cbor PRIVATE ../src ../include)
 
 

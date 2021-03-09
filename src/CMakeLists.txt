@@ -50,22 +50,8 @@ endif ()
 
 if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
     include(wolfssl)
-    # elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
-    #     if (DEFINED ENV{HACL_HOME})
-    #
-    #         # find libevercrypt
-    #         find_library(EVERCRYPT NAMES evercrypt HINTS "$ENV{HACL_HOME}/dist/portable-gcc-compatible" REQUIRED)
-    #
-    #         # link against libevercrypt
-    #         target_link_libraries(${PROJECT_NAME} PRIVATE ${EVERCRYPT})
-    #
-    #         # provide the header search paths
-    #         target_include_directories(${PROJECT_NAME} PRIVATE "$ENV{HACL_HOME}/dist/portable-gcc-compatible")
-    #         target_include_directories(${PROJECT_NAME} PRIVATE "$ENV{HACL_HOME}/dist/kremlin/include")
-    #         target_include_directories(${PROJECT_NAME} PRIVATE "$ENV{HACL_HOME}/dist/kremlin/kremlib/dist/minimal")
-    #     else ()
-    #         message(FATAL_ERROR "Set HACL_HOME environment variable")
-    #     endif ()
+elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
+    include(hacl)
 endif ()
 
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
