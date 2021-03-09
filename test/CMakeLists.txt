@@ -3,31 +3,108 @@
 add_compile_definitions(${EDHOC_CRYPTO_BACKEND})
 add_compile_definitions(${EDHOC_CBOR_BACKEND})
 
-# create all executables
-add_executable(test_format test_format.c util.c util.h json.h json.c)
-target_link_libraries(test_format PRIVATE edhoc-c::edhoc-c)
-target_link_libraries(test_format PRIVATE cjson)
-target_include_directories(test_format PRIVATE ../src)
-
-add_executable(test_process test_process.c util.c util.h json.h json.c)
-target_link_libraries(test_process PRIVATE edhoc-c::edhoc-c)
-target_link_libraries(test_process PRIVATE cjson)
-target_include_directories(test_process PRIVATE ../src)
-
-add_executable(test_crypto test_crypto.c util.c util.h json.h json.c)
-target_link_libraries(test_crypto PRIVATE edhoc-c::edhoc-c)
-target_link_libraries(test_crypto PRIVATE cjson)
+include(cjson)
 
 if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
+    link_directories(${CMAKE_BINARY_DIR}/3rdparty/wolfssl-build/lib)
     include_directories(${CMAKE_BINARY_DIR}/3rdparty/wolfssl-build/include)
 endif ()
 
-target_include_directories(test_crypto PRIVATE ../src)
+if ("${EDHOC_CBOR_BACKEND}" STREQUAL "NANOCBOR")
+    link_directories(${CMAKE_BINARY_DIR}/3rdparty/nanocbor-build/lib)
+    include_directories(${CMAKE_BINARY_DIR}/3rdparty/nanocbor-build/include)
+endif ()
 
-add_executable(test_cbor test_cbor.c util.c util.h json.h json.c)
-target_link_libraries(test_cbor PRIVATE edhoc-c::edhoc-c)
-target_link_libraries(test_cbor PRIVATE cjson)
-target_include_directories(test_cbor PRIVATE ../src)
+# create all test executables
+
+###################################################################
+# FORMATTING
+###################################################################
+
+add_executable(test_format
+        test_format.c
+        util.c
+        json.c
+        ../src/cipher_suites.c
+        ../src/cose.c
+        ../src/format.c
+        ../src/cbor/nanocbor.c)
+
+add_dependencies(test_format nanocbor-backend)
+add_dependencies(test_format json-parser)
+
+target_include_directories(test_format PRIVATE ../src ../include)
+target_link_libraries(test_format PRIVATE cjson nanocbor)
+
+###################################################################
+# PROCESSING
+###################################################################
+
+add_executable(test_process
+        test_process.c
+        util.c
+        json.c
+        ../src/cbor/nanocbor.c
+        ../src/cose.c
+        ../src/cipher_suites.c
+        ../src/credentials.c
+        ../src/edhoc.c
+        ../src/format.c
+        ../src/process.c
+        ../src/crypto/wolfssl.c
+        ../src/crypto/hacl.c
+        ../src/crypto/aes128.c
+        ../src/crypto/ccm.c)
+
+add_dependencies(test_process nanocbor-backend)
+add_dependencies(test_process wolfssl-backend)
+add_dependencies(test_process json-parser)
+
+target_include_directories(test_process PRIVATE ../src ../include)
+target_link_libraries(test_process PRIVATE cjson wolfssl nanocbor)
+
+###################################################################
+# CRYPTO
+###################################################################
+
+add_executable(test_crypto
+        test_crypto.c
+        util.c
+        json.c
+        ../src/edhoc.c
+        ../src/format.c
+        ../src/credentials.c
+        ../src/cbor/nanocbor.c
+        ../src/crypto/wolfssl.c
+        ../src/cose.c
+        ../src/cipher_suites.c
+        ../src/crypto/hacl.c
+        ../src/crypto/aes128.c
+        ../src/crypto/ccm.c)
+
+add_dependencies(test_crypto nanocbor-backend)
+add_dependencies(test_crypto wolfssl-backend)
+add_dependencies(test_crypto json-parser)
+
+target_link_libraries(test_crypto PRIVATE cjson wolfssl nanocbor)
+target_include_directories(test_crypto PRIVATE ../src ../include)
+
+###################################################################
+# CBOR
+###################################################################
+
+add_executable(test_cbor
+        test_cbor.c
+        ../src/cbor/nanocbor.c
+        util.c
+        json.c)
+
+add_dependencies(test_cbor nanocbor-backend)
+add_dependencies(test_cbor json-parser)
+
+target_link_libraries(test_cbor PRIVATE cjson nanocbor)
+target_include_directories(test_cbor PRIVATE ../src ../include)
+
 
 add_test(
         NAME TEST_CBOR_BYTES_DECODING
