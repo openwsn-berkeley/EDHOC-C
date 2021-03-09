@@ -348,7 +348,7 @@ int main(int argc, char **argv) {
             const char *label = "K_2m";
             ctx = load_json_edhoc_test_file(argv[2]);
 
-            assert(load_from_json_CIPHERSUITE(ctx, (int *) &selected) == 0);
+            load_from_json_CIPHERSUITE(ctx, (int *) &selected);
 
             info_k2m_len = load_from_json_INFO_K2M(ctx, info_k2m, sizeof(info_k2m));
             th2_len = load_from_json_TH2(ctx, th2, sizeof(th2));
@@ -366,7 +366,7 @@ int main(int argc, char **argv) {
             const char *label = "IV_2m";
             ctx = load_json_edhoc_test_file(argv[2]);
 
-            assert(load_from_json_CIPHERSUITE(ctx, (int *) &selected) == 0);
+            load_from_json_CIPHERSUITE(ctx, (int *) &selected);
 
             info_iv2m_len = load_from_json_INFO_IV2M(ctx, info_iv2m, sizeof(info_iv2m));
             th2_len = load_from_json_TH2(ctx, th2, sizeof(th2));
