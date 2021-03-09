@@ -1,6 +1,7 @@
 # unit tests for EDHOC
 
 add_compile_definitions(${EDHOC_CRYPTO_BACKEND})
+add_compile_definitions(${EDHOC_CBOR_BACKEND})
 
 # create all executables
 add_executable(test_format test_format.c util.c util.h json.h json.c)
