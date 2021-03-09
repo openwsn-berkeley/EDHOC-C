@@ -70,6 +70,7 @@ add_dependencies(test_process nanocbor-backend)
 target_link_libraries(test_process PRIVATE nanocbor)
 
 if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
+    target_link_libraries(test_process PRIVATE wolfssl)
     add_dependencies(test_process wolfssl-backend)
 elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
     target_link_libraries(test_process PRIVATE evercrypt)
