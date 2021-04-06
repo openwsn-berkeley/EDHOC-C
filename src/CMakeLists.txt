@@ -62,3 +62,9 @@ endif ()
 
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "edhoc")
+
+if (CMAKE_TOOLCHAIN_FILE)
+    add_custom_command(
+            TARGET ${PROJECT_NAME}
+            POST_BUILD COMMAND ${SIZE_TOOL} ${CMAKE_BINARY_DIR}/lib/libedhoc.a)
+endif ()
