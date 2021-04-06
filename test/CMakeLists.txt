@@ -123,6 +123,8 @@ add_executable(test-credentials
         ../src/credentials.c
         ../src/cose.c
         ../src/crypto/wolfssl.c
+        ../src/crypto/aes128.c
+        ../src/crypto/ccm.c
         ../src/crypto/hacl.c
         ../src/cbor/nanocbor.c)
 
@@ -164,6 +166,8 @@ add_executable(test-process
         ../src/creddb.c
         ../src/process.c
         ../src/crypto/wolfssl.c
+        ../src/crypto/aes128.c
+        ../src/crypto/ccm.c
         ../src/crypto/hacl.c
         ../src/crypto/aes128.c
         ../src/crypto/ccm.c)
@@ -189,62 +193,6 @@ add_dependencies(test-process json-parser)
 target_include_directories(test-process PRIVATE ../src ../include)
 target_link_libraries(test-process PRIVATE cjson)
 
-# ###################################################################
-# # CRYPTO
-# ###################################################################
-#
-# add_executable(test_crypto
-#         test_crypto.c
-#         util.c
-#         json.c
-#         ../src/edhoc.c
-#         ../src/format.c
-#         ../src/credentials.c
-#         ../src/cbor/nanocbor.c
-#         ../src/crypto/wolfssl.c
-#         ../src/cose.c
-#         ../src/cipher_suites.c
-#         ../src/crypto/hacl.c
-#         ../src/crypto/aes128.c
-#         ../src/crypto/ccm.c)
-#
-# add_dependencies(test_crypto nanocbor-backend)
-# target_link_libraries(test_crypto PRIVATE nanocbor)
-#
-# if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
-#     add_dependencies(test_crypto wolfssl-backend)
-#     target_link_libraries(test_crypto PRIVATE wolfssl)
-# elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
-#     add_dependencies(test_crypto hacl-backend)
-#     target_link_libraries(test_crypto PRIVATE evercrypt)
-# endif ()
-#
-# add_dependencies(test_crypto json-parser)
-# target_link_libraries(test_crypto PRIVATE cjson)
-#
-# target_include_directories(test_crypto PRIVATE ../src ../include)
-#
-# ###################################################################
-# # CBOR
-# ###################################################################
-#
-# add_executable(test_cbor
-#         test_cbor.c
-#         ../src/cbor/nanocbor.c
-#         util.c
-#         json.c)
-#
-# add_dependencies(test_cbor nanocbor-backend)
-# target_link_libraries(test_cbor PRIVATE nanocbor)
-#
-# add_dependencies(test_cbor json-parser)
-# target_link_libraries(test_cbor PRIVATE cjson)
-#
-# target_include_directories(test_cbor PRIVATE ../src ../include)
-
-###################################################################
-# FORMATTING
-###################################################################
 
 add_test(
         NAME TEST_FORMAT_MESSAGE_1_ENCODE_V1

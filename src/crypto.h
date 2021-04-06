@@ -8,6 +8,15 @@
 #include <wolfssl/wolfcrypt/sha256.h>
 
 #elif defined(HACL)
+
+#define HASH_INPUT_BLEN     (256)
+
+typedef struct hash_ctx_t hash_ctx_t;
+
+struct hash_ctx_t{
+    uint16_t fillLevel;
+    uint8_t buffer[HASH_INPUT_BLEN];
+};
 #elif defined(EMPTY_X509)
 #else
 #error "No crypto backend selected"

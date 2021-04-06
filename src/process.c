@@ -42,6 +42,10 @@ ssize_t edhoc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suit
     wc_Sha256 hashCtx;
 #elif defined(EMPTY_CRYPTO)
     int hashCtx;
+#elif defined(HACL)
+    hash_ctx_t hashCtx;
+#elif
+#error "No crypto backend enabled."
 #endif
 
     const cipher_suite_t *suiteInfo;
@@ -137,6 +141,8 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, uint
     wc_Sha256 hashCtx;
 #elif defined(EMPTY_CRYPTO)
     int hashCtx;
+#elif defined(HACL)
+    hash_ctx_t hashCtx;
 #else
 #error "No crypto backend enabled"
 #endif
@@ -383,6 +389,8 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, uint
     wc_Sha256 hashCtx;
 #elif defined(EMPTY_X509)
     int hashCtx;
+#elif defined(HACL)
+    hash_ctx_t hashCtx;
 #else
 #error "No crypto backend enabled"
 #endif
@@ -688,6 +696,8 @@ ssize_t edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, bo
     wc_Sha256 hashCtx;
 #elif defined(EMPTY_X509)
     int hashCtx;
+#elif defined(HACL)
+    hash_ctx_t hashCtx;
 #else
 #error "No crypto backend enabled"
 #endif

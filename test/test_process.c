@@ -2,6 +2,9 @@
 #include <mbedtls/x509_crt.h>
 
 #include "edhoc/edhoc.h"
+#include "edhoc/creddb.h"
+
+#include "crypto.h"
 
 #include "util.h"
 #include "json.h"
@@ -30,7 +33,11 @@ int test_create_msg1(corr_t corr,
     edhoc_ctx_t ctx;
     edhoc_conf_t conf;
 
+#if defined(WOLFSSL)
     wc_Sha256 thCtx;
+#elif defined(HACL)
+    hash_ctx_t thCtx;
+#endif
 
     edhoc_ctx_init(&ctx);
     edhoc_conf_init(&conf);
@@ -76,7 +83,11 @@ int test_create_msg2(cred_type_t credType,
     edhoc_conf_t conf;
 
     cose_key_t authKey;
+#if defined(WOLFSSL)
     wc_Sha256 thCtx;
+#elif defined(HACL)
+    hash_ctx_t thCtx;
+#endif
 
     cose_key_init(&authKey);
 
@@ -153,7 +164,11 @@ int test_create_msg3(corr_t corr,
     edhoc_conf_t conf;
 
     cose_key_t authKey;
+#if defined(WOLFSSL)
     wc_Sha256 thCtx;
+#elif defined(HACL)
+    hash_ctx_t thCtx;
+#endif
 
     cose_key_init(&authKey);
 
@@ -233,7 +248,11 @@ int test_resp_finalize(cred_type_t credType,
     edhoc_conf_t conf;
 
     cose_key_t authKey;
+#if defined(WOLFSSL)
     wc_Sha256 thCtx;
+#elif defined(HACL)
+    hash_ctx_t thCtx;
+#endif
 
     cose_key_init(&authKey);
 

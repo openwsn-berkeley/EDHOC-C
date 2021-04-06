@@ -1,7 +1,6 @@
-#include "cose.h"
+#include "edhoc/cose.h"
 #include "edhoc/edhoc.h"
 #include "crypto.h"
-#include "format.h"
 
 #if defined(HACL)
 
@@ -21,9 +20,9 @@ int crypt_gen_keypair(cose_curve_t crv, cose_key_t *key) {
     }
 
     if (crv == COSE_EC_CURVE_X25519) {
-        Lib_RandomBuffer_System_randombytes(key->d, key->d_len);
+        Lib_RandomBuffer_System_randombytes(key->d, key->dLen);
         Hacl_Curve25519_51_secret_to_public(key->x, key->d);
-        key->x_len = EDHOC_ECC_KEY_MAX_SIZE;
+        key->xLen = COSE_ECC_KEY_SIZE;
     } else {
         EDHOC_FAIL(EDHOC_ERR_KEYGEN);
     }
@@ -32,53 +31,38 @@ int crypt_gen_keypair(cose_curve_t crv, cose_key_t *key) {
     return ret;
 }
 
-int crypt_hash_init(hash_ctx_t *ctx) {
+int crypt_hash_init(void *ctx) {
     (void) ctx;
-    ctx->fill_level = 0;
+    ((hash_ctx_t *) ctx)->fillLevel = 0;
 
     return EDHOC_SUCCESS;
 }
 
-int crypt_hash_update(hash_ctx_t *ctx, const uint8_t *in, size_t ilen) {
-    if (ctx->fill_level + ilen > HASH_INPUT_BLEN)
+int crypt_hash_update(void *ctx, const uint8_t *in, size_t ilen) {
+    if (((hash_ctx_t *) ctx)->fillLevel + ilen > HASH_INPUT_BLEN)
         return EDHOC_ERR_CRYPTO;
 
-    memcpy(ctx->input_buffer + ctx->fill_level, in, ilen);
+    memcpy(((hash_ctx_t *) ctx)->buffer + ((hash_ctx_t *) ctx)->fillLevel, in, ilen);
 
-    ctx->fill_level += ilen;
+    ((hash_ctx_t *) ctx)->fillLevel += ilen;
 
     return EDHOC_SUCCESS;
 }
 
-int crypt_hash_finish(hash_ctx_t *ctx, uint8_t *output) {
-    Hacl_Hash_SHA2_hash_256(ctx->input_buffer, ctx->fill_level, output);
+int crypt_hash_finish(void *ctx, uint8_t *output) {
+    Hacl_Hash_SHA2_hash_256(((hash_ctx_t *) ctx)->buffer, ((hash_ctx_t *) ctx)->fillLevel, output);
     return EDHOC_SUCCESS;
 }
 
-void crypt_hash_free(hash_ctx_t *ctx) {
-    ctx->fill_level = 0;
+void crypt_hash_free(void *ctx) {
+    ((hash_ctx_t *) ctx)->fillLevel = 0;
+    memset(((hash_ctx_t *) ctx)->buffer, 0, HASH_INPUT_BLEN);
 }
 
-int crypt_kdf(cose_algo_t id, const uint8_t *prk, const uint8_t *th, const char *label, int length, uint8_t *out) {
-    ssize_t ret;
-    uint8_t info_buf[EDHOC_KDF_INFO_MAX_SIZE];
-    ssize_t info_len;
+int crypt_kdf(const uint8_t *prk, const uint8_t *info, size_t infoLen, uint8_t *out, size_t outlen) {
+    Hacl_HKDF_expand_sha2_256(out, (uint8_t *) prk, EDHOC_DIGEST_SIZE, (uint8_t *) info, infoLen, outlen);
 
-    ret = EDHOC_ERR_CRYPTO;
-
-    // TODO: check if the label length doesn't cause a buffer overflow. If label is too long, it will cause info_buf to
-    //  overflow.
-
-    if ((info_len = edhoc_info_encode(id, th, label, length, info_buf, EDHOC_SIG23_MAX_SIZE)) < EDHOC_SUCCESS) {
-        ret = info_len;     // store the error code and return
-        goto exit;
-    }
-
-    Hacl_HKDF_expand_sha2_256(out, (uint8_t *) prk, EDHOC_HASH_MAX_SIZE, info_buf, info_len, length);
-
-    ret = EDHOC_SUCCESS;
-    exit:
-    return ret;
+    return EDHOC_SUCCESS;
 }
 
 /**
@@ -105,7 +89,7 @@ int crypt_derive_prk(const cose_key_t *sk,
                      uint8_t *prk) {
     int ret;
 
-    uint8_t secret[EDHOC_SHARED_SECRET_MAX_SIZE];
+    uint8_t secret[EDHOC_DH_SECRET_SIZE];
 
     ret = EDHOC_ERR_CRYPTO;
 
@@ -120,16 +104,16 @@ int crypt_derive_prk(const cose_key_t *sk,
 }
 
 
-int crypt_decrypt(
-        cose_algo_t alg,
-        const uint8_t *key,
-        const uint8_t *iv,
-        const uint8_t *aad,
-        size_t aad_len,
-        uint8_t *plaintext,
-        uint8_t *ciphertext,
-        size_t ct_pl_len,
-        uint8_t *tag) {
+int crypt_decrypt(const cose_key_t *sk,
+                  const uint8_t *iv,
+                  size_t ivLen,
+                  const uint8_t *aad,
+                  size_t aadLen,
+                  uint8_t *in,
+                  uint8_t *out,
+                  size_t inOutLen,
+                  uint8_t *tag,
+                  size_t tagLen) {
 
     int ret;
     ret = EDHOC_SUCCESS;
@@ -137,39 +121,44 @@ int crypt_decrypt(
 
 }
 
-int crypt_encrypt(cose_algo_t alg,
-                  const uint8_t *key,
+int crypt_copy_hash_context(void *dstCtx, void *srcCtx){
+    memcpy(dstCtx, srcCtx, sizeof(hash_ctx_t));
+}
+
+int crypt_encrypt(const cose_key_t *sk,
                   const uint8_t *iv,
+                  size_t ivLen,
                   const uint8_t *aad,
-                  size_t aad_len,
-                  uint8_t *plaintext,
-                  uint8_t *ciphertext,
-                  size_t ct_pl_len,
-                  uint8_t *tag) {
-    (void) alg;
-    (void) ciphertext;
+                  size_t aadLen,
+                  uint8_t *in,
+                  uint8_t *out,
+                  size_t inOutlen,
+                  uint8_t *tag,
+                  size_t tagLen) {
+    (void) ivLen;
+    (void) out;
 
     int ret;
 
     ret = EDHOC_ERR_CRYPTO;
 
     EDHOC_CHECK_SUCCESS(aes128_ccms_enc((uint8_t *) aad,
-                                        aad_len,
-                                        plaintext,
-                                        (size_t *) &ct_pl_len,
+                                        aadLen,
+                                        in,
+                                        (size_t *) &inOutlen,
                                         (uint8_t *) iv,
                                         2,
-                                        (uint8_t *) key,
+                                        (uint8_t *) sk->k,
                                         8));
-    memcpy(tag, &plaintext[ct_pl_len] - 8, 8);
+    memcpy(tag, &in[inOutlen] - tagLen, tagLen);
 
     exit:
     return ret;
 }
 
-int crypt_sign(const cose_key_t *authkey, const uint8_t *msg, size_t msg_len, uint8_t *signature) {
+int crypt_sign(const cose_key_t *authkey, const uint8_t *msg, size_t msgLen, uint8_t *signature, size_t *sigLen) {
 
-    Hacl_Ed25519_sign(signature, (uint8_t *) authkey->d, msg_len, (uint8_t *) msg);
+    Hacl_Ed25519_sign(signature, (uint8_t *) authkey->d, msgLen, (uint8_t *) msg);
 
     return 64;
 }
