@@ -31,8 +31,10 @@ set(edhoc_sources
         ${PROJECT_SOURCE_DIR}/src/format.c
         ${PROJECT_SOURCE_DIR}/src/edhoc.c
         ${PROJECT_SOURCE_DIR}/src/cbor/nanocbor.c
+        ${PROJECT_SOURCE_DIR}/src/cbor/empty.c
         ${PROJECT_SOURCE_DIR}/src/crypto/wolfssl.c
         ${PROJECT_SOURCE_DIR}/src/crypto/hacl.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/empty.c
         ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
         ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c)
 

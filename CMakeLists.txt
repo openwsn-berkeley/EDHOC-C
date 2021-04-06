@@ -48,7 +48,7 @@ if (NOT EDHOC_CRYPTO_BACKEND)
     set(EDHOC_CRYPTO_BACKEND "WOLFSSL" CACHE STRING "Backend for cryptography" FORCE)
 endif ()
 
-set_property(CACHE EDHOC_CRYPTO_BACKEND PROPERTY STRINGS "WOLFSSL" "HACL")
+set_property(CACHE EDHOC_CRYPTO_BACKEND PROPERTY STRINGS "WOLFSSL" "HACL" "EMPTY_CRYPTO")
 
 if (NOT EDHOC_CBOR_BACKEND)
     set(EDHOC_CBOR_BACKEND "NANOCBOR" CACHE STRING "Backend for CBOR encoding/decoding" FORCE)
@@ -59,6 +59,9 @@ set_property(CACHE EDHOC_CBOR_BACKEND PROPERTY STRINGS "NANOCBOR" "EMPTY_CBOR")
 if (NOT EDHOC_X509_BACKEND)
     set(EDHOC_X509_BACKEND "MBEDTLS_X509" CACHE STRING "Backend parsing X509 certificates and PKI keys" FORCE)
 endif ()
+
+set_property(CACHE EDHOC_X509_BACKEND PROPERTY STRINGS "MBEDTLS_X509" "EMPTY_X509")
+
 include(sanitizers)
 
 ###############################################################################
