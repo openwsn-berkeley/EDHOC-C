@@ -31,6 +31,7 @@ option(EDHOC_USE_ASAN "Use address sanitizers" ON)
 option(EDHOC_USE_LSAN "Use leak sanitizers" ON)
 option(EDHOC_USE_USAN "Use undefined sanitizers" ON)
 option(EDHOC_USE_MSAN "Use memory sanitizers" OFF)
+option(EDHOC_BUILD_FUZZ_TARGETS "Compile fuzz targets" ON)
 
 if (BUILD_SHARED_LIBS)
     set(BUILD_STATIC_LIBS OFF)
@@ -89,6 +90,14 @@ if (EDHOC_BUILD_EXAMPLES)
 endif ()
 
 ###############################################################################
+# ADD FUZZ TARGETS
+###############################################################################
+
+if (EDHOC_BUILD_FUZZ_TARGETS)
+    add_subdirectory(fuzzing)
+endif ()
+
+###############################################################################
 # PRINT CONFIG
 ###############################################################################
 
@@ -100,6 +109,7 @@ message(STATUS "EDHOC_USE_USAN:.................${EDHOC_USE_USAN}")
 message(STATUS "EDHOC_USE_MSAN:.................${EDHOC_USE_MSAN}")
 message(STATUS "EDHOC_BUILD_TESTS:..............${EDHOC_BUILD_TESTS}")
 message(STATUS "EDHOC_BUILD_EXAMPLES:...........${EDHOC_BUILD_EXAMPLES}")
+message(STATUS "EDHOC_BUILD_FUZZ_TARGETS........${EDHOC_BUILD_FUZZ_TARGETS}")
 message(STATUS "EDHOC_SHARED_LIBS:..............${BUILD_SHARED_LIBS}")
 message(STATUS "EDHOC_CRYPTO_BACKEND:...........${EDHOC_CRYPTO_BACKEND}")
 message(STATUS "EDHOC_X509_BACKEND:.............${EDHOC_X509_BACKEND}")
