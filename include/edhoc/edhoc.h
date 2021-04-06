@@ -4,8 +4,6 @@
 #if !defined(EDHOC_CONFIG_FILE)
 
 #include "edhoc/config.h"
-#include "edhoc/credentials.h"
-#include "edhoc/cose.h"
 
 #else
 #include EDHOC_CONFIG_FILE
@@ -14,6 +12,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
+
+#include "edhoc/credentials.h"
+#include "edhoc/cose.h"
 
 /**
  * @brief Definitions for internal buffer sizes

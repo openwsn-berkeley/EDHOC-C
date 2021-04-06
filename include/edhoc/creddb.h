@@ -1,9 +1,11 @@
 #include "edhoc/edhoc.h"
 
 extern const uint8_t x509_der_cert_init_tv1[];
+extern const uint8_t x509_auth_key_init_tv1[];
 extern const uint8_t x509_der_cert_init_id_tv1[];
 extern const uint8_t x509_der_cert_resp_tv1[];
 extern const uint8_t x509_der_cert_resp_id_tv1[];
+extern const uint8_t x509_auth_key_resp_tv1[];
 
 extern const uint8_t rpk_cbor_init_tv2[];
 extern const uint8_t rpk_cbor_init_id_tv2[];
@@ -22,8 +24,10 @@ extern const uint8_t x509_der_cert_resp_id_tv4[];
 
 extern size_t x509_der_cert_init_tv1_len;
 extern size_t x509_der_cert_init_id_tv1_len;
+extern size_t x509_auth_key_init_tv1_len;
 extern size_t x509_der_cert_resp_tv1_len;
 extern size_t x509_der_cert_resp_id_tv1_len;
+extern size_t x509_auth_key_resp_tv1_len;
 
 extern size_t rpk_cbor_init_tv2_len;
 extern size_t rpk_cbor_init_id_tv2_len;
