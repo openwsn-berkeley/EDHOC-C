@@ -12,138 +12,195 @@
 #include EDHOC_CONFIG_FILE
 #endif
 
-#include "edhoc/edhoc.h"
+#include "cipher_suites.h"
 
+typedef struct edhoc_data2_t edhoc_data2_t;
+typedef struct edhoc_data3_t edhoc_data3_t;
 
-typedef struct edhoc_msg1_t {
-    uint8_t method_corr;
-    uint8_t cipher_suite;
-    const uint8_t *g_x;
-    size_t g_x_len;
-    uint8_t cidi[EDHOC_CID_MAX_LEN];
-    size_t cidi_len;
-    const uint8_t *ad1;
-    size_t ad1_len;
-} edhoc_msg1_t;
+typedef struct edhoc_plaintext23_t edhoc_plaintext23_t;
 
-typedef struct edhoc_msg2_t {
-    const uint8_t *data;
-    size_t data_len;
-    uint8_t cidi[EDHOC_CID_MAX_LEN];
-    size_t cidi_len;
-    const uint8_t *g_y;
-    size_t g_y_len;
-    uint8_t cidr[EDHOC_CID_MAX_LEN];
-    size_t cidr_len;
-    uint8_t *ciphertext;
-    size_t ciphertext_len;
-} edhoc_msg2_t;
+typedef struct edhoc_msg1_t edhoc_msg1_t;
+typedef struct edhoc_msg2_t edhoc_msg2_t;
+typedef struct edhoc_msg3_t edhoc_msg3_t;
+typedef struct edhoc_error_msg_t edhoc_error_msg_t;
+
+typedef struct cose_adata_t cose_adata_t;
+
+typedef struct bstr_id_t bstr_id_t;
+
+struct bstr_id_t {
+    size_t length;
+    union {
+        int8_t integer;
+        const uint8_t *bstr;
+    };
+};
 
 /**
- * EDHOC message 3 deserializing structure
+ * @brief EDHOC message 1 serialization/deserialization structures
  */
-typedef struct edhoc_msg3_t {
-    const uint8_t *data;               ///< Pointer to the start of data_3
-    size_t data_len;                   ///< Length of data_3
-    uint8_t cidr[EDHOC_CID_MAX_LEN];
-    size_t cidr_len;
-    const uint8_t *ciphertext;         ///< Pointer to the start of the ciphertext_3
-    size_t ciphertext_len;             ///< Length of the ciphertext_3
-} edhoc_msg3_t;
 
+struct edhoc_msg1_t {
+    uint8_t methodCorr;                     ///< Method correlation value
+    const cipher_suite_t *cipherSuite;      ///< Selected cipher suites
+    cose_key_t gX;                         ///< Ephemeral public key
+    bstr_id_t cidi;                         ///< Initiator connection identifier
+    const uint8_t *ad1;                     ///< Additional data
+    size_t ad1Len;                         ///< Length of the additional data
+};
+
+/**
+ * @brief EDHOC message 2 serialization/deserialization structures
+ */
+
+struct edhoc_data2_t {
+    bstr_id_t cidi;
+    cose_key_t gY;
+    bstr_id_t cidr;
+};
+
+struct edhoc_plaintext23_t {
+    cred_id_t *credId;
+    const uint8_t *sigOrMac23;
+    size_t sigOrMac23Len;
+    const uint8_t *ad23;
+    size_t ad23Len;
+};
+
+struct edhoc_msg2_t {
+    edhoc_data2_t data2;
+    const uint8_t *ciphertext2;
+    size_t ciphertext2Len;
+};
+
+struct cose_adata_t {
+    const char *label;
+    const uint8_t *serializedHeader;
+    const uint8_t *externalData;
+};
+
+/**
+ * @brief EDHOC message 3 serialization/deserialization structure
+ */
+
+struct edhoc_data3_t {
+    bstr_id_t cidr;
+};
+
+struct edhoc_msg3_t {
+    edhoc_data3_t data3;
+    const uint8_t *ciphertext3;
+    size_t ciphertext3Len;
+};
+
+/**
+ * Brief EDHOC error message serialization/deserialization structure
+ */
+
+struct edhoc_error_msg_t {
+    bstr_id_t cid;
+    const char *diagnosticMsg;
+    const uint8_t *suitesR;
+    size_t suitesRLen;
+};
+
+/**
+ *
+ * @param msg1
+ */
+void format_msg1_init(edhoc_msg1_t *msg1);
+
+/**
+ *
+ * @param msg2
+ */
+void format_msg2_init(edhoc_msg2_t *msg2);
+
+/**
+ *
+ * @param msg3
+ */
+void format_msg3_init(edhoc_msg3_t *msg3);
+
+/**
+ *
+ * @param errMsg
+ */
+void format_error_msg_init(edhoc_error_msg_t* errMsg);
+
+/**
+ *
+ * @param plaintext
+ */
+void format_plaintext23_init(edhoc_plaintext23_t *plaintext);
 
 /**
  * @brief Message encoding routine for EDHOC message_1
  *
- * @param[in] corr          EDHOC correlation value
- * @param[in] m             EDHOC authentication method
- * @param[in] id            EDHOC selected cipher suite identifier
- * @param[in] key           Pointer to ephemeral COSE key (message includes only the public part)
- * @param[in] cidi          Pointer to connection identifier (Initiator)
- * @param[in] cidi_len      Length of @p cidi
- * @param[in] ad1           Pointer to additional data
- * @param[in] ad1_len       Length of @p ad1
- * @param[out] out          Output buffer for the CBOR encoded EDHOC message_1
- * @param[in] olen          Maximum capacity of @p out
+ * @param[in] msg1  Pointer to a populated EDHOC message 1 structure
+ * @param[out] out  Output buffer for the CBOR encoded EDHOC message_1
+ * @param[in] olen  Maximum capacity of @p out
  *
  * @return On success the size of the EDHOC message_1
  * @return On failure a negative value (EDHOC_ERR_CBOR_ENCODING)
  */
-ssize_t edhoc_msg1_encode(corr_t corr,
-                          method_t m,
-                          cipher_suite_id_t id,
-                          cose_key_t *key,
-                          const uint8_t *cidi,
-                          size_t cidi_len,
-                          ad_cb_t ad1,
-                          uint8_t *out,
-                          size_t olen);
+ssize_t format_msg1_encode(const edhoc_msg1_t *msg1, uint8_t *out, size_t olen);
 
 /**
  * @brief Message decoding routine for EDHOC message_1
  *
- * @param[in,out] msg1   EDHOC context structure
- * @param[in] msg1_buf      Buffer containing the EDHOC message_1
- * @param[in] msg1_len  Length of @p msg1
+ * @param[in,out] msg1  Pointer to EDHOC msg1 structure to populate
+ * @param[in] in  Buffer containing the EDHOC message_1
+ * @param[in] ilen  Length of @p msg1
  *
  * @return On success, EDHOC_SUCCESS
- * @return On failure a negative return code (EDHOC_ERR_CBOR_DECODING, EDHOC_ERR_BUFFER_OVERFLOW,
- * EDHOC_ERR_ILLEGAL_CIPHERSUITE, ..)
+ * @return On failure a negative return code (EDHOC_ERR_CBOR_DECODING)
  */
-int edhoc_msg1_decode(edhoc_msg1_t *msg1, const uint8_t *msg1_buf, size_t msg1_len);
+int format_msg1_decode(edhoc_msg1_t *msg1, const uint8_t *in, size_t ilen);
 
 /**
  * @brief Message encoding routine for EDHOC message_2
  *
- * @param[in] data2         Buffer containing the CBOR encoded EDHOC data_2 structure
- * @param[in] data2_len     Length of @p data2
- * @param[in] ct2           Buffer containing EDHOC ciphertext_2
- * @param[in] ct2_len       Length of @p ct2
+ * @param[in,out] msg2      Pointer to EDHOC message 2 structure to populate
+ * @param[in] corr          EDHOC correlation value
  * @param[out] out          Output buffer for the CBOR encoded EDHOC message_2
  * @param[in] olen          Maximum capacity of @p out
  *
  * @return On success returns the size of the EDHOC message_2
  * @return On failure returns a negative value (EDHOC_ERR_CBOR_ENCODING)
  */
-ssize_t edhoc_msg2_encode(const uint8_t *data2,
-                          size_t data2_len,
-                          const uint8_t *ct2,
-                          size_t ct2_len,
-                          uint8_t *out,
-                          size_t olen);
+ssize_t format_msg2_encode(const edhoc_msg2_t *msg2, corr_t corr, uint8_t *out, size_t olen);
 
 /**
  * @brief Decoding routine for EDHOC message_2
  *
- * @param[in,out] ctx   EDHOC context structure
+ * @param[in] ctx       Pointer to EDHOC message 2 structure
+ * @param[in] corr      EDHOC correlation value
+ * @param[in] suite     Selected cipher suite
  * @param[in] msg2      Buffer containing the EDHOC message_2
- * @param[in] msg2_len  Length of @p msg2
+ * @param[in] msg2Len  Length of @p msg2
  *
  * @return On success returns EDHOC_SUCCESS
  * @return On failure a negative return code (EDHOC_ERR_CBOR_DECODING, EDHOC_ERR_BUFFER_OVERFLOW,
  * EDHOC_ERR_ILLEGAL_CIPHERSUITE, ..)
  */
-int edhoc_msg2_decode(edhoc_msg2_t *msg2, corr_t corr, const uint8_t *msg2_buf, size_t msg2_len);
+int format_msg2_decode(edhoc_msg2_t *msg2,
+                       corr_t corr,
+                       const cipher_suite_t *suite,
+                       const uint8_t *msg2Buf,
+                       size_t msg2Len);
 
 /**
  * @brief Message encoding routine for EDHOC message_3
  *
- * @param[in] data3         Buffer containing the CBOR encoded EDHOC data_3 structure
- * @param[in] data3_len     Length of @p data3
- * @param[in] ct3           Buffer containing EDHOC ciphertext_3
- * @param[in] ct3_len       Length of @p ct3
+ * @param[in] msg3
  * @param[out] out          Output buffer for the CBOR encoded EDHOC message_3
  * @param[in] olen          Maximum capacity of @p out
  *
  * @return On success returns the size of the EDHOC message_3
  * @return On failure returns a negative value (EDHOC_ERR_CBOR_ENCODING)
  */
-ssize_t edhoc_msg3_encode(const uint8_t *data3,
-                          size_t data3_len,
-                          const uint8_t *ct3,
-                          size_t ct3_len,
-                          uint8_t *out,
-                          size_t olen);
+ssize_t format_msg3_encode(const edhoc_msg3_t *msg3, corr_t corr, uint8_t *out, size_t olen);
 
 /**
  * @brief Decoding routine for EDHOC message 3
@@ -155,31 +212,20 @@ ssize_t edhoc_msg3_encode(const uint8_t *data3,
  * @return On success returns EDHOC_SUCCESS
  * @return On failure a negative return code (EDHOC_ERR_CBOR_ENCODING)
  */
-int edhoc_msg3_decode(edhoc_msg3_t *msg3, corr_t correlation, const uint8_t *msg3_buf, size_t msg3_len);
+int format_msg3_decode(edhoc_msg3_t *msg3, corr_t corr, const uint8_t *msg3_buf, size_t msg3_len);
 
 /**
  * @brief Encoding routine for the EDHOC data_2 structure
  *
- * @param[in] corr      EDHOC correlation value.
- * @param[in] cidi      Pointer to the Initiator's connection identifier.
- * @param[in] cidi_len  Length of @p cidi
- * @param[in] cidr      Pointer to the Responder's connection identifier.
- * @param[in] cidr_len  Length of @p cidr
- * @param[in] eph_key   Pointer to Responder's ephemeral key
+ * @param[in] data2     Pointer to an EDHOC data2 structure
+ * @param[in] corr      Correlation value
  * @param[out] out      Output buffer
  * @param[in] olen      Maximum length of @p out
  *
  * @return On success the size of data_2 message part
  * @return On failure a negative value (EDHOC_ERR_CBOR_ENCODING, ..)
  */
-ssize_t edhoc_data2_encode(corr_t corr,
-                           const uint8_t *cidi,
-                           size_t cidi_len,
-                           const uint8_t *cidr,
-                           size_t cidr_len,
-                           const cose_key_t *eph_key,
-                           uint8_t *out,
-                           size_t olen);
+ssize_t format_data2_encode(const edhoc_data2_t *data2, corr_t corr, uint8_t *out, size_t olen);
 
 /**
  * @brief Encoding routine for the EDHOC data_3 structure
@@ -193,7 +239,7 @@ ssize_t edhoc_data2_encode(corr_t corr,
  * @return On success returns the size of the EDHOC message_3
  * @return On failure returns a negative value (e.g. EDHOC_CBOR_ERR_ENCODING)
  */
-ssize_t edhoc_data3_encode(corr_t corr, const uint8_t *cidr, size_t cidr_len, uint8_t *out, size_t olen);
+ssize_t format_data3_encode(const edhoc_data3_t *data3, corr_t corr, uint8_t *out, size_t olen);
 
 /**
  * @brief Encoding routine for the EDHOC-KDF info structure
@@ -203,154 +249,56 @@ ssize_t edhoc_data3_encode(corr_t corr, const uint8_t *cidr, size_t cidr_len, ui
  * @param[in] label     String label
  * @param[in] len       The length of the KDF output
  * @param[out] out      Output buffer
- * @param[in] olen     The maximum capacity of @p out
+ * @param[in] olen      The maximum capacity of @p out
  *
  * @returns  On success, length of the final CBOR encode info byte string
  * @returns  On failure, EDHOC_ERR_CBOR_ENCODING or another negative value
  **/
-ssize_t edhoc_info_encode(cose_algo_t id, const uint8_t *th, const char *label, size_t len, uint8_t *out, size_t olen);
+ssize_t
+format_info_encode(cose_algo_id_t id, const uint8_t *th, const char *label, size_t len, uint8_t *out, size_t olen);
 
 /**
- * @brief Creates the external additional data for a COSE message.
+ * @brief Encoding routine for the external data of the inner COSE Encrypt0 message.
  *
- * @param[in] th        Transcript hash
- * @param[in] cred      Public credentials (CBOR certificate or public key)
- * @param[in] cred_len  Length of @p cred
- * @param[out] out      Output buffer
- * @param[in] olen      Maximum length of @p out
- *
- * @return On success the size of the external data
- * @return On failure a negative error code (EDHOC_ERR_CBOR_ENCODING, ..)
+ * @param th
+ * @param credCtx
+ * @param credType
+ * @param ad2
+ * @return
  */
-ssize_t edhoc_cose_ex_aad_encode(const uint8_t *th,
-                                 const uint8_t *cred,
-                                 size_t cred_len,
-                                 ad_cb_t ad2,
-                                 uint8_t *out,
-                                 size_t olen);
+ssize_t format_external_data_encode(const uint8_t *th,
+                                    cred_t credCtx,
+                                    cred_type_t credType,
+                                    ad_cb_t ad2,
+                                    uint8_t *out,
+                                    size_t olen);
 
 /**
- * @brief Create the Enc structure for the COSE Encrypt0 message
  *
- * @param[in] cred_id           Pointer to the credential identifier
- * @param[in] cred_id_len       Length of @p cred_id
- * @param[in] external_aad      Pointer to the external additional data for the COSE Encrypt0 message
- * @param[in] external_aad_len  Length of @p external_aad
- * @param[out] out              Buffer to store the CBOR encoded Enc structure
- * @param[in] olen              Maximum length of @p out
- *
- * @return On success the size of the CBOR encoded Enc structure
- * @return On failure a negative value (EDHOC_ERR_CBOR_ENCODING, ...)
- */
-ssize_t edhoc_cose_enc_struct_encode(const uint8_t *cred_id,
-                                     size_t cred_id_len,
-                                     const uint8_t *external_aad,
-                                     size_t external_aad_len,
-                                     uint8_t *out,
-                                     size_t olen);
-
-
-/**
- * @brief Decodes P_2e and verifies the included signature
- *
- * @param[in] p2e       Plaintext included in EDHOC message 2
- * @param[in] p2e_len   Length of @p p2e
- *
- * @return On success returns EDHOC_SUCCESS
- * @return On failure a negative value (i.e., EDHOC_ERR_CRYPTO, EDHOC_ERR_CBOR_DECODING, ...)
- */
-int edhoc_p2e_decode(edhoc_msg2_t *msg2, const uint8_t *p2e, size_t p2e_len);
-
-/**
- * @brief Decodes P_3ae and verifies the included signature
- *
- * @param[in] p3ae       Plaintext included in EDHOC message 3
- * @param[in] p3ae_len   Length of @p p3ae
- *
- * @return On success returns EDHOC_SUCCESS
- * @return On failure a negative value (i.e., EDHOC_ERR_CRYPTO, EDHOC_ERR_CBOR_DECODING, ...)
- */
-int edhoc_p3ae_decode(edhoc_ctx_t *ctx, uint8_t *p3ae, size_t p3ae_len);
-
-/**
- * @brief Encoding routine to create the M_2 or M_3 structure, which is subsequently signed by the authentication key.
- *
- * @param[in] th23              Transcript hash (EDHOC TH_2 or TH_3)
- * @param[in] auth_bytes    Raw public key bytes or the raw certificate
- * @param[in] auth_len    Length of @p raw_bytes_len
- * @param[in] ad23              Callback function for AD_2 or AD_3
- * @param[in] tag               Authentication tag
- * @param[in] tag_len           Length @p tag
- * @param[out] out              Output buffer to store M_2 or M_3
- * @param[in] olen              Maximum capacity of @p out
- *
- * @return On success returns the size of M_2 or M_3
- * @return On failure returns a negative value
- */
-ssize_t edhoc_m23_encode(const uint8_t *th23,
-                         const uint8_t *auth_bytes,
-                         size_t auth_len,
-                         const uint8_t *cred_id,
-                         size_t cred_id_len,
-                         ad_cb_t ad23,
-                         const uint8_t *tag,
-                         size_t tag_len,
-                         uint8_t *out,
-                         size_t olen);
-
-
-/**
- * @brief Encoding routine for the associated data structure (A_3ae) in the outer COSE_Encrypt0 structure in
- * EDHOC message_3
- *
- * @param[in] th3       Transcript hash 3
- * @param[out] out      Output buffer for the result
- * @param[in] olen      Maximum capacity of @p out
- *
- * @return On success returns the size of A_3ae
- * @return On failure a negative value (i.e., EDHOC_ERR_CBOR_ENCODING, ...)
- */
-ssize_t edhoc_a3ae_encode(const uint8_t *th3, uint8_t *out, size_t olen);
-
-/**
- * @brief Encoding routine for the plaintext structures (P_2e and P_3ae) in EDHOC message_2 and message_3
- *
- * @param[in] cred_id           CBOR encoded credential identifier
- * @param[in] cred_id_len       Length of @p cred_id
- * @param[in] sig_or_mac23      Signature_or_mac_2 or Signature_or_mac_3
- * @param[in] sig_or_mac23_len  Length of @p sig_or_mac23
- * @param[out] out              Pointer to output buffer to store the P_2e CBOR sequence
- * @param[in] olen              Maximum length of @p out
- *
- * @return On success returns the size of P_2e or P_3ae
- * @return On failure a negative value (i.e., EDHOC_ERR_CBOR_ENCODING, ...)
- */
-ssize_t edhoc_p2e_or_p3ae_encode(uint8_t *cred_id,
-                                 size_t cred_id_len,
-                                 uint8_t *sig_or_mac23,
-                                 size_t sig_or_mac23_len,
-                                 uint8_t *out,
-                                 size_t olen);
-
-/**
- * @brief Encoding routine for A_2m or A_3m EDHOC structure (used for authentication tag computation).
- *
- * @param cred
- * @param cred_type
- * @param cred_id
- * @param cred_id_len
- * @param th23
+ * @param plaintext
  * @param out
  * @param olen
  * @return
  */
-ssize_t edhoc_a23m_encode(const uint8_t *auth_bytes,
-                          size_t auth_len,
-                          const uint8_t *cred_id,
-                          size_t cred_id_len,
-                          const uint8_t *th23,
-                          uint8_t *out,
-                          size_t olen);
+ssize_t format_plaintext23_encode(const edhoc_plaintext23_t *plaintext, uint8_t *out, size_t olen);
+
+/**
+ *
+ * @param plaintext
+ * @param in
+ * @param ilen
+ * @return
+ */
+int format_plaintext23_decode(edhoc_plaintext23_t *plaintext, uint8_t *in, size_t ilen);
+
+/**
+ *
+ * @param errMsg
+ * @param out
+ * @param olen
+ * @return
+ */
+ssize_t format_error_msg_encode(const edhoc_error_msg_t* errMsg, uint8_t* out, size_t olen);
 
 
 #endif /* EDHOC_FORMATTING_H */

@@ -42,7 +42,7 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type" FORCE)
 endif ()
 
-set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "MinSizeRel, Release")
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "MinSizeRel" "Release")
 
 if (NOT EDHOC_CRYPTO_BACKEND)
     set(EDHOC_CRYPTO_BACKEND "WOLFSSL" CACHE STRING "Backend for cryptography" FORCE)
@@ -54,7 +54,7 @@ if (NOT EDHOC_CBOR_BACKEND)
     set(EDHOC_CBOR_BACKEND "NANOCBOR" CACHE STRING "Backend for CBOR encoding/decoding" FORCE)
 endif ()
 
-set_property(CACHE EDHOC_CBOR_BACKEND PROPERTY STRINGS "NANOCBOR")
+set_property(CACHE EDHOC_CBOR_BACKEND PROPERTY STRINGS "NANOCBOR" "EMPTY_CBOR")
 
 include(sanitizers)
 
