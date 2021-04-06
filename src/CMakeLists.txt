@@ -19,6 +19,7 @@ endif ()
 
 add_compile_definitions(${EDHOC_CRYPTO_BACKEND})
 add_compile_definitions(${EDHOC_CBOR_BACKEND})
+add_compile_definitions(${EDHOC_X509_BACKEND})
 
 add_library(${PROJECT_NAME})
 
@@ -43,6 +44,9 @@ target_include_directories(${PROJECT_NAME}
         PRIVATE
         ${PROJECT_SOURCE_DIR}/src)
 
+if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS_X509")
+    include(mbedtls)
+endif ()
 
 if ("${EDHOC_CBOR_BACKEND}" STREQUAL "NANOCBOR")
     include(nanocbor)

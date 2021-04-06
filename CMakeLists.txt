@@ -56,6 +56,9 @@ endif ()
 
 set_property(CACHE EDHOC_CBOR_BACKEND PROPERTY STRINGS "NANOCBOR" "EMPTY_CBOR")
 
+if (NOT EDHOC_X509_BACKEND)
+    set(EDHOC_X509_BACKEND "MBEDTLS_X509" CACHE STRING "Backend parsing X509 certificates and PKI keys" FORCE)
+endif ()
 include(sanitizers)
 
 ###############################################################################
@@ -96,4 +99,5 @@ message(STATUS "EDHOC_BUILD_TESTS:..............${EDHOC_BUILD_TESTS}")
 message(STATUS "EDHOC_BUILD_EXAMPLES:...........${EDHOC_BUILD_EXAMPLES}")
 message(STATUS "EDHOC_SHARED_LIBS:..............${BUILD_SHARED_LIBS}")
 message(STATUS "EDHOC_CRYPTO_BACKEND:...........${EDHOC_CRYPTO_BACKEND}")
+message(STATUS "EDHOC_X509_BACKEND:.............${EDHOC_X509_BACKEND}")
 message(STATUS "EDHOC_CBOR_BACKEND:.............${EDHOC_CBOR_BACKEND}")
