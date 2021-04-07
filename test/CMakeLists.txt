@@ -161,6 +161,7 @@ add_executable(test-process
         ../src/cipher_suites.c
         ../src/edhoc.c
         ../src/format.c
+        ../src/creddb.c
         ../src/process.c
         ../src/crypto/wolfssl.c
         ../src/crypto/hacl.c

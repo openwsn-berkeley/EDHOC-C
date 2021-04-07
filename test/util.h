@@ -43,14 +43,6 @@
 #define CONN_ID_SIZE            4
 #define X5T_BUFFER_SIZE         50
 
-typedef struct cred_map_t cred_map_t;
-
-struct cred_map_t {
-    const uint8_t *key;
-    size_t keyLen;
-    const uint8_t *value;
-    size_t valueLen;
-};
 
 #define TEST_CHECK_EQUAL(r1, r2)                                        \
 do {                                                                    \
@@ -62,7 +54,5 @@ do {                                                                    \
 } while(0)
 
 ssize_t compare_arrays(const uint8_t a[], const uint8_t b[], int size);
-
-int f_remote_creds(const uint8_t *key, size_t keyLen, const uint8_t **out, size_t *olen);
 
 #endif /* EDHOC_TEST_UTIL_H */
