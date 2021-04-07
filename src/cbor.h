@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/types.h>
 
 #define CBOR_CHECK_RET(enc)            \
 if ((written = (enc)) < 0) {           \
