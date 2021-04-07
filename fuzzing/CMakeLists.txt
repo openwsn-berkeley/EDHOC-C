@@ -30,7 +30,7 @@ add_executable(fuzz-message1
         ../src/cbor/nanocbor.c
         ../src/credentials.c
         ../src/cose.c
-        ../src/cipher_suites.c
+        ../src/ciphersuites.c
         ../src/edhoc.c
         ../src/format.c
         ../src/process.c
@@ -65,7 +65,7 @@ add_executable(fuzz-message2
         ../src/cbor/nanocbor.c
         ../src/credentials.c
         ../src/cose.c
-        ../src/cipher_suites.c
+        ../src/ciphersuites.c
         ../src/edhoc.c
         ../src/format.c
         ../src/process.c

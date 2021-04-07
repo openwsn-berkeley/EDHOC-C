@@ -12,7 +12,7 @@
 #include EDHOC_CONFIG_FILE
 #endif
 
-#include "cipher_suites.h"
+#include "ciphersuites.h"
 
 typedef struct edhoc_data2_t edhoc_data2_t;
 typedef struct edhoc_data3_t edhoc_data3_t;

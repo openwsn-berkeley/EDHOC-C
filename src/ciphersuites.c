@@ -1,5 +1,5 @@
 #include "edhoc/edhoc.h"
-#include "cipher_suites.h"
+#include "ciphersuites.h"
 
 static const cipher_suite_t ciphersuites_supported[] =
         {

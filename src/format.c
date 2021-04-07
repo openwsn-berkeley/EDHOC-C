@@ -1,7 +1,7 @@
 #include <string.h>
 
 #include "format.h"
-#include "cipher_suites.h"
+#include "ciphersuites.h"
 #include "cbor.h"
 
 #if defined(MBEDTLS_X509)

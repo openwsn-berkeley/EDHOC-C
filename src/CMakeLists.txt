@@ -26,7 +26,7 @@ add_library(${PROJECT_NAME})
 set(edhoc_sources
         ${PROJECT_SOURCE_DIR}/src/process.c
         ${PROJECT_SOURCE_DIR}/src/credentials.c
-        ${PROJECT_SOURCE_DIR}/src/cipher_suites.c
+        ${PROJECT_SOURCE_DIR}/src/ciphersuites.c
         ${PROJECT_SOURCE_DIR}/src/cose.c
         ${PROJECT_SOURCE_DIR}/src/format.c
         ${PROJECT_SOURCE_DIR}/src/edhoc.c

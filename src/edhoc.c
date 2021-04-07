@@ -1,7 +1,7 @@
 #include <string.h>
 
 #include "edhoc/edhoc.h"
-#include "cipher_suites.h"
+#include "ciphersuites.h"
 
 #include "crypto.h"
 #include "edhoc/credentials.h"

@@ -85,9 +85,11 @@ add_executable(test-format
         util.c
         json.c
         ../src/cose.c
-        ../src/cipher_suites.c
+        ../src/ciphersuites.c
         ../src/format.c
         ../src/crypto/wolfssl.c
+        ../src/crypto/aes128.c
+        ../src/crypto/ccm.c
         ../src/crypto/hacl.c
         ../src/cbor/nanocbor.c)
 
@@ -160,7 +162,7 @@ add_executable(test-process
         ../src/cbor/nanocbor.c
         ../src/credentials.c
         ../src/cose.c
-        ../src/cipher_suites.c
+        ../src/ciphersuites.c
         ../src/edhoc.c
         ../src/format.c
         ../src/creddb.c

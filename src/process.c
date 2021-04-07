@@ -11,7 +11,7 @@
 #include "edhoc/cose.h"
 
 #include "process.h"
-#include "cipher_suites.h"
+#include "ciphersuites.h"
 #include "crypto.h"
 #include "format.h"
 #include "cbor.h"
