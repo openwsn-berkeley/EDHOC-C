@@ -49,7 +49,7 @@ int test_create_msg1(corr_t corr,
     TEST_CHECK_EQUAL((long) edhoc_session_preset_cidi(&ctx, cid, cidLen), (long) 0);
 
     TEST_CHECK_EQUAL(edhoc_create_msg1(&ctx, corr, m, id, msg1, sizeof(msg1)), (long) expectedLen);
-    TEST_CHECK_EQUAL(compare_arrays(msg1, expected, expectedLen), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(msg1, expected, expectedLen), (long) 0);
 
     ret = EDHOC_SUCCESS;
     exit:
@@ -124,7 +124,7 @@ int test_create_msg2(cred_type_t credType,
     edhoc_ctx_setup(&ctx, &conf, &thCtx);
 
     TEST_CHECK_EQUAL(edhoc_create_msg2(&ctx, msg1, msg1Len, msg2, MESSAGE_2_SIZE), expectedLen);
-    TEST_CHECK_EQUAL(compare_arrays(msg2, expected, expectedLen), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(msg2, expected, expectedLen), (long) 0);
 
     ret = EDHOC_SUCCESS;
     exit:
@@ -205,10 +205,10 @@ int test_create_msg3(corr_t corr,
     edhoc_ctx_setup(&ctx, &conf, &thCtx);
 
     TEST_CHECK_EQUAL(edhoc_create_msg1(&ctx, corr, m, id, msg1, sizeof(msg1)), (long) m1ExpectedLen);
-    TEST_CHECK_EQUAL(compare_arrays(msg1, m1Expected, m1ExpectedLen), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(msg1, m1Expected, m1ExpectedLen), (long) 0);
 
     TEST_CHECK_EQUAL(edhoc_create_msg3(&ctx, msg2, msg2Len, msg3, MESSAGE_3_SIZE), m3ExpectedLen);
-    TEST_CHECK_EQUAL(compare_arrays(msg3, m3Expected, m3ExpectedLen), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(msg3, m3Expected, m3ExpectedLen), (long) 0);
 
     ret = EDHOC_SUCCESS;
     exit:
@@ -289,10 +289,10 @@ int test_resp_finalize(cred_type_t credType,
     edhoc_ctx_setup(&ctx, &conf, &thCtx);
 
     TEST_CHECK_EQUAL(edhoc_create_msg2(&ctx, msg1, msg1Len, msg2, MESSAGE_2_SIZE), m2ExpectedLen);
-    TEST_CHECK_EQUAL(compare_arrays(msg2, m2Expected, m2ExpectedLen), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(msg2, m2Expected, m2ExpectedLen), (long) 0);
 
     TEST_CHECK_EQUAL(edhoc_resp_finalize(&ctx, msg3, msg3Len, sendMsg4, msg4, MESSAGE_4_SIZE), m4ExpectedLen);
-    TEST_CHECK_EQUAL(compare_arrays(msg4, m4Expected, m4ExpectedLen), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(msg4, m4Expected, m4ExpectedLen), (long) 0);
 
     ret = EDHOC_SUCCESS;
     exit:

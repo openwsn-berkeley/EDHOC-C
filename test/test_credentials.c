@@ -37,10 +37,10 @@ int test_rpk_from_cbor(const uint8_t *rpk,
     TEST_CHECK_EQUAL((long) rpkCtx.coseKey.crv, (long) curve);
 
     TEST_CHECK_EQUAL((long) rpkCtx.coseKey.xLen, (long) x_len);
-    TEST_CHECK_EQUAL(compare_arrays(rpkCtx.coseKey.x, x, x_len), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(rpkCtx.coseKey.x, x, x_len), (long) 0);
 
     TEST_CHECK_EQUAL((long) rpkCtx.coseKey.dLen, (long) d_len);
-    TEST_CHECK_EQUAL(compare_arrays(rpkCtx.coseKey.d, d, d_len), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(rpkCtx.coseKey.d, d, d_len), (long) 0);
 
     ret = TEST_SUCCESSFUL;
     exit:
@@ -74,19 +74,19 @@ int test_cert_from_cbor(const uint8_t *raw_cert,
     TEST_CHECK_EQUAL((long) certCtx.issuerSignatureAlgorithm, (long) issuerAlg);
 
     TEST_CHECK_EQUAL((long) certCtx.serialNumber.length, sn_len);
-    TEST_CHECK_EQUAL(compare_arrays(certCtx.serialNumber.p, serialNumber, sn_len), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(certCtx.serialNumber.p, serialNumber, sn_len), (long) 0);
 
     TEST_CHECK_EQUAL((long) certCtx.issuer.length, issuer_len);
-    TEST_CHECK_EQUAL(compare_arrays(certCtx.issuer.p, issuer, issuer_len), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(certCtx.issuer.p, issuer, issuer_len), (long) 0);
 
     TEST_CHECK_EQUAL((long) certCtx.subject.length, subject_len);
-    TEST_CHECK_EQUAL(compare_arrays(certCtx.subject.p, subject, subject_len), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(certCtx.subject.p, subject, subject_len), (long) 0);
 
     TEST_CHECK_EQUAL((long) certCtx.subjectPublicKey.length, subjectPk_len);
-    TEST_CHECK_EQUAL(compare_arrays(certCtx.subjectPublicKey.p, subjectPk, subjectPk_len), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(certCtx.subjectPublicKey.p, subjectPk, subjectPk_len), (long) 0);
 
     TEST_CHECK_EQUAL((long) certCtx.issuerSignatureValue.length, signature_len);
-    TEST_CHECK_EQUAL(compare_arrays(certCtx.issuerSignatureValue.p, signature, signature_len), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(certCtx.issuerSignatureValue.p, signature, signature_len), (long) 0);
 
     ret = TEST_SUCCESSFUL;
     exit:

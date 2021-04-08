@@ -40,10 +40,10 @@ int test_oscore_master_secret(int cipherSuite,
 
     len = format_info_encode(aeadCipher->id, ctx.session.th4, label, aeadCipher->keyLength, infoBuf, sizeof(infoBuf));
     TEST_CHECK_EQUAL(len, oscoreSecretInfoLen);
-    TEST_CHECK_EQUAL(compare_arrays(oscoreSecretInfo, infoBuf, oscoreSecretLen), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(oscoreSecretInfo, infoBuf, oscoreSecretLen), (long) 0);
 
     TEST_CHECK_EQUAL((long) edhoc_exporter(&ctx, label, aeadCipher->keyLength, out, sizeof(out)), (long) 0);
-    TEST_CHECK_EQUAL(compare_arrays(oscoreSecret, out, oscoreSecretLen), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(oscoreSecret, out, oscoreSecretLen), (long) 0);
 
     ret = EDHOC_SUCCESS;
     exit:
@@ -84,10 +84,10 @@ int test_oscore_master_salt(int cipherSuite,
 
     len = format_info_encode(aeadCipher->id, ctx.session.th4, label, 8, infoBuf, sizeof(infoBuf));
     TEST_CHECK_EQUAL(len, oscoreSaltInfoLen);
-    TEST_CHECK_EQUAL(compare_arrays(oscoreSaltInfo, infoBuf, oscoreSaltLen), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(oscoreSaltInfo, infoBuf, oscoreSaltLen), (long) 0);
 
     TEST_CHECK_EQUAL((long) edhoc_exporter(&ctx, label, 8, out, sizeof(out)), (long) 0);
-    TEST_CHECK_EQUAL(compare_arrays(oscoreSalt, out, oscoreSaltLen), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(oscoreSalt, out, oscoreSaltLen), (long) 0);
 
     ret = EDHOC_SUCCESS;
     exit:

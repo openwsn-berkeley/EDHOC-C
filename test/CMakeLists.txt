@@ -36,7 +36,6 @@ endif ()
 ###################################################################
 
 add_executable(test-edhoc
-        util.c
         json.c
         test_edhoc.c
         ../src/cbor/nanocbor.c
@@ -82,7 +81,6 @@ target_include_directories(test-edhoc PRIVATE ../src ../include)
 
 add_executable(test-format
         test_format.c
-        util.c
         json.c
         ../src/cose.c
         ../src/ciphersuites.c
@@ -120,7 +118,6 @@ target_include_directories(test-format PRIVATE ../src ../include)
 
 add_executable(test-credentials
         test_credentials.c
-        util.c
         json.c
         ../src/credentials.c
         ../src/cose.c
@@ -156,7 +153,6 @@ target_include_directories(test-credentials PRIVATE ../src ../include)
 ###################################################################
 
 add_executable(test-process
-        util.c
         json.c
         test_process.c
         ../src/cbor/nanocbor.c

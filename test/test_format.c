@@ -17,7 +17,7 @@ int test_msg1_encode(const edhoc_msg1_t *msg1, const uint8_t *expected, size_t e
 
     TEST_CHECK_EQUAL(expected_len, message1_len);
 
-    TEST_CHECK_EQUAL((long) compare_arrays(message1, expected, expected_len), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(message1, expected, expected_len), (long) 0);
 
     ret = TEST_SUCCESSFUL;
     exit:
@@ -41,13 +41,13 @@ int test_msg1_decode(const uint8_t *m1,
     TEST_CHECK_EQUAL((long) format_msg1_decode(&msg1, m1, m1_len), (long) 0);
     TEST_CHECK_EQUAL((long) msg1.methodCorr, (long) method_corr);
     TEST_CHECK_EQUAL(msg1.gX.xLen, g_x_len);
-    TEST_CHECK_EQUAL((long) compare_arrays(msg1.gX.x, g_x, g_x_len), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(msg1.gX.x, g_x, g_x_len), (long) 0);
 
     TEST_CHECK_EQUAL(msg1.cidi.length, cidi_len);
     if (msg1.cidi.length == 1)
-        TEST_CHECK_EQUAL(compare_arrays((const uint8_t *) &msg1.cidi.integer, cidi, cidi_len), (long) 0);
+        TEST_CHECK_EQUAL((long) memcmp((const uint8_t *) &msg1.cidi.integer, cidi, cidi_len), (long) 0);
     else
-        TEST_CHECK_EQUAL(compare_arrays(msg1.cidi.bstr, cidi, cidi_len), (long) 0);
+        TEST_CHECK_EQUAL((long) memcmp(msg1.cidi.bstr, cidi, cidi_len), (long) 0);
 
 
     ret = TEST_SUCCESSFUL;
@@ -66,7 +66,7 @@ int test_msg2_encode(const edhoc_msg2_t *msg2, corr_t corr, const uint8_t *expec
 
     TEST_CHECK_EQUAL(expected_len, message2_len);
 
-    TEST_CHECK_EQUAL(compare_arrays(message2, expected, expected_len), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(message2, expected, expected_len), (long) 0);
 
     ret = TEST_SUCCESSFUL;
     exit:
@@ -99,24 +99,24 @@ int test_msg2_decode(const uint8_t *m2,
     if (corr == CORR_2_3 || corr == NO_CORR) {
         TEST_CHECK_EQUAL(msg2.data2.cidi.length, cidi_len);
         if (msg2.data2.cidi.length == 1)
-            TEST_CHECK_EQUAL(compare_arrays((const uint8_t *) &msg2.data2.cidi.integer, cidi, cidi_len), (long) 0);
+            TEST_CHECK_EQUAL((long) memcmp((const uint8_t *) &msg2.data2.cidi.integer, cidi, cidi_len), (long) 0);
         else
-            TEST_CHECK_EQUAL(compare_arrays(msg2.data2.cidi.bstr, cidi, cidi_len), (long) 0);
+            TEST_CHECK_EQUAL((long) memcmp(msg2.data2.cidi.bstr, cidi, cidi_len), (long) 0);
     } else {
         TEST_CHECK_EQUAL(msg2.data2.cidi.length, (long) 0);
     }
 
     TEST_CHECK_EQUAL(msg2.data2.gY.xLen, gYLen);
-    TEST_CHECK_EQUAL((long) compare_arrays(msg2.data2.gY.x, gY, gYLen), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(msg2.data2.gY.x, gY, gYLen), (long) 0);
 
     TEST_CHECK_EQUAL(msg2.data2.cidr.length, cidr_len);
     if (msg2.data2.cidr.length == 1)
-        TEST_CHECK_EQUAL(compare_arrays((const uint8_t *) &msg2.data2.cidr.integer, cidr, cidr_len), (long) 0);
+        TEST_CHECK_EQUAL((long) memcmp((const uint8_t *) &msg2.data2.cidr.integer, cidr, cidr_len), (long) 0);
     else
-        TEST_CHECK_EQUAL(compare_arrays(msg2.data2.cidr.bstr, cidr, cidr_len), (long) 0);
+        TEST_CHECK_EQUAL((long) memcmp(msg2.data2.cidr.bstr, cidr, cidr_len), (long) 0);
 
     TEST_CHECK_EQUAL(msg2.ciphertext2Len, ct2_len);
-    TEST_CHECK_EQUAL((long) compare_arrays(msg2.ciphertext2, ct2, ct2_len), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(msg2.ciphertext2, ct2, ct2_len), (long) 0);
 
     ret = TEST_SUCCESSFUL;
     exit:
@@ -134,7 +134,7 @@ int test_msg3_encode(const edhoc_msg3_t *msg3, corr_t corr, const uint8_t *expec
 
     TEST_CHECK_EQUAL(expected_len, message3_len);
 
-    TEST_CHECK_EQUAL(compare_arrays(message3, expected, expected_len), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(message3, expected, expected_len), (long) 0);
 
     ret = TEST_SUCCESSFUL;
     exit:
@@ -161,15 +161,15 @@ int test_msg3_decode(const uint8_t *m3,
     if (corr == CORR_1_2 || corr == NO_CORR) {
         TEST_CHECK_EQUAL(msg3.data3.cidr.length, cidr_len);
         if (msg3.data3.cidr.length == 1)
-            TEST_CHECK_EQUAL(compare_arrays((const uint8_t *) &msg3.data3.cidr.integer, cidr, cidr_len), (long) 0);
+            TEST_CHECK_EQUAL((long) memcmp((const uint8_t *) &msg3.data3.cidr.integer, cidr, cidr_len), (long) 0);
         else
-            TEST_CHECK_EQUAL(compare_arrays(msg3.data3.cidr.bstr, cidr, cidr_len), (long) 0);
+            TEST_CHECK_EQUAL((long) memcmp(msg3.data3.cidr.bstr, cidr, cidr_len), (long) 0);
     } else {
         TEST_CHECK_EQUAL(msg3.data3.cidr.length, (long) 0);
     }
 
     TEST_CHECK_EQUAL(msg3.ciphertext3Len, ct3_len);
-    TEST_CHECK_EQUAL((long) compare_arrays(msg3.ciphertext3, ct3, ct3_len), (long) 0);
+    TEST_CHECK_EQUAL((long) memcmp(msg3.ciphertext3, ct3, ct3_len), (long) 0);
 
     ret = TEST_SUCCESSFUL;
     exit:

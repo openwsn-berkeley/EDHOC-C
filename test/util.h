@@ -53,6 +53,4 @@ do {                                                                    \
     }                                                                   \
 } while(0)
 
-ssize_t compare_arrays(const uint8_t a[], const uint8_t b[], int size);
-
 #endif /* EDHOC_TEST_UTIL_H */
