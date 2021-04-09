@@ -414,6 +414,9 @@ int cose_sign1_sign(cose_sign1_t *coseMsgCtx, const cose_key_t *key) {
     ssize_t toBeSignedLen;
     uint8_t toBeSigned[EDHOC_TOBESIGNED_SIZE];
 
+    // debugging purposes
+    memset(toBeSigned, 0, EDHOC_TOBESIGNED_SIZE);
+
     if (key->kty != COSE_KTY_OCTET && key->kty != COSE_KTY_EC2) {
         return EDHOC_ERR_INVALID_KEY;
     }
@@ -429,6 +432,9 @@ int cose_sign1_sign(cose_sign1_t *coseMsgCtx, const cose_key_t *key) {
 int cose_encrypt0_decrypt(cose_encrypt0_t *coseMsgCtx, const cose_key_t *key, const uint8_t *iv, size_t ivLen) {
     ssize_t addAuthDataLen;
     uint8_t addAuthData[EDHOC_ASSOCIATED_DATA_SIZE];
+
+    // debugging purposes
+    memset(addAuthData, 0, EDHOC_ASSOCIATED_DATA_SIZE);
 
     if (key->kty != COSE_KTY_SYMMETRIC) {
         return EDHOC_ERR_INVALID_KEY;
@@ -453,6 +459,9 @@ int cose_encrypt0_decrypt(cose_encrypt0_t *coseMsgCtx, const cose_key_t *key, co
 int cose_encrypt0_encrypt(cose_encrypt0_t *coseMsgCtx, const cose_key_t *key, const uint8_t *iv, size_t ivLen) {
     ssize_t addAuthDataLen;
     uint8_t addAuthData[EDHOC_ASSOCIATED_DATA_SIZE];
+
+    // debugging purposes
+    memset(addAuthData, 0, EDHOC_ASSOCIATED_DATA_SIZE);
 
     if (key->kty != COSE_KTY_SYMMETRIC) {
         return EDHOC_ERR_INVALID_KEY;

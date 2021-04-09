@@ -81,7 +81,8 @@ int edhoc_exporter(edhoc_ctx_t *ctx, const char *label, size_t length, uint8_t *
     const cipher_suite_t *cipherSuite;
     const cose_aead_t *aeadCipher;
 
-    uint8_t infoBuf[4 * CBOR_HDR + sizeof(uint32_t) + EDHOC_DIGEST_SIZE + EDHOC_MAX_LABEL_SIZE + sizeof(uint32_t)];
+    uint8_t infoBuf[
+            4 * CBOR_HDR + sizeof(uint32_t) + EDHOC_DIGEST_SIZE + EDHOC_MAX_LABEL_SIZE + sizeof(uint32_t)] = {0};
 
     cipherSuite = NULL;
     aeadCipher = NULL;
@@ -112,6 +113,27 @@ int edhoc_exporter(edhoc_ctx_t *ctx, const char *label, size_t length, uint8_t *
     return ret;
 }
 
+
+ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1Buf, size_t msg1Len, uint8_t *out, size_t olen) {
+    return proc_create_msg2(ctx, msg1Buf, msg1Len, out, olen);
+}
+
+ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2Buf, size_t msg2Len, uint8_t *out, size_t olen) {
+    return proc_create_msg3(ctx, msg2Buf, msg2Len, out, olen);
+}
+
+ssize_t edhoc_resp_finalize(edhoc_ctx_t *ctx,
+                            const uint8_t *msg3Buf,
+                            size_t msg3Len,
+                            bool doMsg4,
+                            uint8_t *out,
+                            size_t olen) {
+    return proc_resp_finalize(ctx, msg3Buf, msg3Len, doMsg4, out, olen);
+}
+
+ssize_t edhoc_init_finalize(edhoc_ctx_t *ctx) {
+    return proc_init_finalize(ctx);
+}
 
 #if defined(EDHOC_DEBUG_ENABLED)
 

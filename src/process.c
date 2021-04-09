@@ -34,7 +34,7 @@ ssize_t edhoc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suit
     ssize_t ret, len;
     ssize_t ad1Len;
 
-    uint8_t ad1Buf[EDHOC_ADDITIONAL_DATA_SIZE];
+    uint8_t ad1Buf[EDHOC_ADDITIONAL_DATA_SIZE] = {0};
 
     edhoc_msg1_t msg1;
 
@@ -155,14 +155,14 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, uint
 #error "No CBOR backend enabled"
 #endif
 
-    uint8_t iv2m[EDHOC_IV23M_SIZE];
-    uint8_t mac2[EDHOC_MAC23_SIZE];
-    uint8_t signature2[EDHOC_SIGNATURE23_SIZE];
-    uint8_t p2e[EDHOC_PLAINTEXT23_SIZE];
-    uint8_t keystream2[EDHOC_KEYSTREAM2_SIZE];
+    uint8_t iv2m[EDHOC_IV23M_SIZE] = {0};
+    uint8_t mac2[EDHOC_MAC23_SIZE] = {0};
+    uint8_t signature2[EDHOC_SIGNATURE23_SIZE] = {0};
+    uint8_t p2e[EDHOC_PLAINTEXT23_SIZE] = {0};
+    uint8_t keystream2[EDHOC_KEYSTREAM2_SIZE] = {0};
 
     // << TH_2, CRED_R, ? AD_2 >>
-    uint8_t extData[EDHOC_EXTDATA_SIZE];
+    uint8_t extData[EDHOC_EXTDATA_SIZE] = {0};
 
     edhoc_msg1_t msg1;
     edhoc_msg2_t msg2;
@@ -403,15 +403,15 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, uint
 #error "No CBOR backend enabled"
 #endif
 
-    uint8_t iv3mOrIv3ae[EDHOC_IV23M_SIZE];
-    uint8_t mac3[EDHOC_MAC23_SIZE];
-    uint8_t signature3[EDHOC_SIGNATURE23_SIZE];
-    uint8_t keystream2[EDHOC_KEYSTREAM2_SIZE];
-    uint8_t p2eOrP3ae[EDHOC_PLAINTEXT23_SIZE];
-    uint8_t ciphertext3[EDHOC_PLAINTEXT23_SIZE + EDHOC_MAC23_SIZE];
+    uint8_t iv3mOrIv3ae[EDHOC_IV23M_SIZE] = {0};
+    uint8_t mac3[EDHOC_MAC23_SIZE] = {0};
+    uint8_t signature3[EDHOC_SIGNATURE23_SIZE] = {0};
+    uint8_t keystream2[EDHOC_KEYSTREAM2_SIZE] = {0};
+    uint8_t p2eOrP3ae[EDHOC_PLAINTEXT23_SIZE] = {0};
+    uint8_t ciphertext3[EDHOC_PLAINTEXT23_SIZE + EDHOC_MAC23_SIZE] = {0};
 
     // << TH_3, CRED_I, ? AD_3 >>
-    uint8_t extData[EDHOC_EXTDATA_SIZE];
+    uint8_t extData[EDHOC_EXTDATA_SIZE] = {0};
 
     edhoc_msg3_t msg3;
     edhoc_msg2_t msg2;
@@ -710,8 +710,8 @@ ssize_t edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, bo
 #error "No CBOR backend enabled."
 #endif
 
-    uint8_t iv3ae[EDHOC_IV23M_SIZE];
-    uint8_t temp[EDHOC_PLAINTEXT23_SIZE + EDHOC_MAC23_SIZE];
+    uint8_t iv3ae[EDHOC_IV23M_SIZE] = {0};
+    uint8_t temp[EDHOC_PLAINTEXT23_SIZE + EDHOC_MAC23_SIZE] = {0};
 
     edhoc_msg3_t msg3;
     edhoc_plaintext23_t plaintext3;
@@ -898,7 +898,7 @@ int edhoc_compute_K23mOrK3ae(const cose_aead_t *aeadInfo,
                              size_t olen) {
 
     int ret;
-    uint8_t k23m[EDHOC_K23M_SIZE];
+    uint8_t k23m[EDHOC_K23M_SIZE] = {0};
 
     if ((ret = format_info_encode(aeadInfo->id, th, label, aeadInfo->keyLength, out, olen)) <= 0) {
         if (ret < 0) {
@@ -932,7 +932,7 @@ int edhoc_compute_keystream2(const cose_aead_t *aeadInfo,
                              uint8_t *out,
                              size_t olen) {
     int ret;
-    uint8_t keystream2[EDHOC_KEYSTREAM2_SIZE];
+    uint8_t keystream2[EDHOC_KEYSTREAM2_SIZE] = {0};
 
     if ((ret = format_info_encode(aeadInfo->id, th, label, keyStreamLen, out, olen)) <= 0) {
         if (ret < 0) {
@@ -966,7 +966,7 @@ int edhoc_compute_IV23mOrIV3ae(const cose_aead_t *aeadInfo,
                                size_t olen) {
 
     int ret;
-    uint8_t iv23m[EDHOC_IV23M_SIZE];
+    uint8_t iv23m[EDHOC_IV23M_SIZE] = {0};
 
     if ((ret = format_info_encode(aeadInfo->id, th, label, aeadInfo->ivLength, out, olen)) <= 0) {
         if (ret < 0) {
