@@ -272,7 +272,7 @@ int edhoc_conf_setup_role(edhoc_conf_t *conf, edhoc_role_t role);
  * @param credType
  * @param credCtx
  * @param idCtx
- * @param f_remote_cred
+ * @param fRemoteCred
  * @return
  */
 int edhoc_conf_setup_credentials(edhoc_conf_t *conf,
@@ -280,7 +280,7 @@ int edhoc_conf_setup_credentials(edhoc_conf_t *conf,
                                  cred_type_t credType,
                                  cred_t credCtx,
                                  cred_id_t *idCtx,
-                                 edhoc_cred_cb_t f_remote_cred);
+                                 edhoc_cred_cb_t fRemoteCred);
 
 /**
  *
@@ -307,8 +307,6 @@ void edhoc_conf_setup_ad_callbacks(edhoc_conf_t *conf, ad_cb_t ad1Cb, ad_cb_t ad
  */
 int edhoc_exporter(edhoc_ctx_t *ctx, const char *label, size_t length, uint8_t *out, size_t olen);
 
-#if defined(EDHOC_ASYNC_API_ENABLED)
-
 /**
  * @brief   Create EDHOC message 1
  *
@@ -334,28 +332,28 @@ ssize_t edhoc_create_msg1(edhoc_ctx_t *ctx,
  *
  * @param[in] ctx           EDHOC context
  * @param[in] msg1Buf      Buffer containing EDHOC message 1
- * @param[in] msg1_len      Length of EDHOC message 1
+ * @param[in] msg1Len      Length of EDHOC message 1
  * @param[out] out          Output buffer to hold EDHOC message 1
  * @param[in] olen          Length of @p out
  *
  * @returns     On success size of EDHOC message 2
  * @returns     On failure a negative value
  */
-ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1Buf, size_t msg1_len, uint8_t *out, size_t olen);
+ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1Buf, size_t msg1Len, uint8_t *out, size_t olen);
 
 /**
  * @brief   Create EDHOC message 3
  *
  * @param[in] ctx           EDHOC context
- * @param[in] msg2_buf      Buffer containing EDHOC message 2
- * @param[in] msg2_len      Length of @p msg2_buf
+ * @param[in] msg2Buf      Buffer containing EDHOC message 2
+ * @param[in] msg2Len      Length of @p msg2_buf
  * @param[out] out          Output buffer to hold EDHOC message 3
  * @param[in] olen          Capacity of @p out
  *
  * @return  On success the size of EDHOC message 3
  * @return  On failure a negative value
  */
-ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2_buf, size_t msg2_len, uint8_t *out, size_t olen);
+ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2Buf, size_t msg2Len, uint8_t *out, size_t olen);
 
 /**
  * @brief   Finalize the EDHOC ecxhange on the Initiator side
@@ -371,27 +369,18 @@ ssize_t edhoc_init_finalize(edhoc_ctx_t *ctx);
  * @brief   Finalize the EDHOC ecxhange on the Responder side
  *
  * @param[in,out] ctx       EDHOC context
- * @param[in] in      Buffer containing EDHOC message 3
- * @param[in] ilen      Length of @p msg3_buf
+ * @param[in] msg3Buf      Buffer containing EDHOC message 3
+ * @param[in] msg3Len      Length of @p msg3_buf
  *
  * @return On success returns EDHOC_SUCCESS
  * @return On failure a negative value
  */
-ssize_t edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, bool msg4, uint8_t *out, size_t olen);
-
-#else
-
-/**
- * @brief   Perform the EDHOC handshake.
- *
- * @param[in] ctx           EDHOC context
- *
- * @return On success returns EDHOC_SUCCESS
- * @return On failure a negative value
- */
-int edhoc_do_handshake(edhoc_ctx_t *ctx);
-
-#endif /* EDHOC_ASYNC_API_ENABLED */
+ssize_t edhoc_resp_finalize(edhoc_ctx_t *ctx,
+                            const uint8_t *msg3Buf,
+                            size_t msg3Len,
+                            bool doMsg4,
+                            uint8_t *out,
+                            size_t olen);
 
 #if defined(EDHOC_DEBUG_ENABLED)
 

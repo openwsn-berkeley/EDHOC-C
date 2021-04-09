@@ -1,11 +1,12 @@
 #include <string.h>
 
 #include "edhoc/edhoc.h"
-#include "ciphersuites.h"
-
-#include "crypto.h"
 #include "edhoc/credentials.h"
+
+#include "ciphersuites.h"
+#include "crypto.h"
 #include "format.h"
+#include "process.h"
 
 
 void edhoc_ctx_init(edhoc_ctx_t *ctx) {
@@ -47,7 +48,7 @@ int edhoc_conf_setup_credentials(edhoc_conf_t *conf,
                                  cred_type_t credType,
                                  cred_t credCtx,
                                  cred_id_t *idCtx,
-                                 edhoc_cred_cb_t f_remote_cred) {
+                                 edhoc_cred_cb_t fRemoteCred) {
 
     if (credType != CRED_TYPE_RPK && credType != CRED_TYPE_DER_CERT && credType != CRED_TYPE_CBOR_CERT) {
         return EDHOC_ERR_INVALID_CRED;
@@ -58,11 +59,11 @@ int edhoc_conf_setup_credentials(edhoc_conf_t *conf,
     conf->myCred.authKey = authKey;
     conf->myCred.idCtx = idCtx;
 
-    if (f_remote_cred == NULL){
+    if (fRemoteCred == NULL) {
         return EDHOC_ERR_INVALID_CRED;
     }
 
-    conf->f_remote_cred = f_remote_cred;
+    conf->f_remote_cred = fRemoteCred;
 
     return EDHOC_SUCCESS;
 }
@@ -113,6 +114,14 @@ int edhoc_exporter(edhoc_ctx_t *ctx, const char *label, size_t length, uint8_t *
     return ret;
 }
 
+ssize_t edhoc_create_msg1(edhoc_ctx_t *ctx,
+                          corr_t correlation,
+                          method_t m,
+                          cipher_suite_id_t id,
+                          uint8_t *out,
+                          size_t olen) {
+    return proc_create_msg1(ctx, correlation, m, id, out, olen);
+}
 
 ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1Buf, size_t msg1Len, uint8_t *out, size_t olen) {
     return proc_create_msg2(ctx, msg1Buf, msg1Len, out, olen);
@@ -122,6 +131,28 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2Buf, size_t msg2L
     return proc_create_msg3(ctx, msg2Buf, msg2Len, out, olen);
 }
 
+/**
+ * @brief   Finalize the EDHOC ecxhange on the Initiator side
+ *
+ * @param[in,out] ctx       EDHOC context
+ *
+ * @return On success returns EDHOC_SUCCESS
+ * @return On failure a negative value
+ */
+ssize_t edhoc_init_finalize(edhoc_ctx_t *ctx) {
+    return proc_init_finalize(ctx);
+}
+
+/**
+ * @brief   Finalize the EDHOC ecxhange on the Responder side
+ *
+ * @param[in,out] ctx       EDHOC context
+ * @param[in] msg3Buf      Buffer containing EDHOC message 3
+ * @param[in] msg3Len      Length of @p msg3_buf
+ *
+ * @return On success returns EDHOC_SUCCESS
+ * @return On failure a negative value
+ */
 ssize_t edhoc_resp_finalize(edhoc_ctx_t *ctx,
                             const uint8_t *msg3Buf,
                             size_t msg3Len,
@@ -129,10 +160,6 @@ ssize_t edhoc_resp_finalize(edhoc_ctx_t *ctx,
                             uint8_t *out,
                             size_t olen) {
     return proc_resp_finalize(ctx, msg3Buf, msg3Len, doMsg4, out, olen);
-}
-
-ssize_t edhoc_init_finalize(edhoc_ctx_t *ctx) {
-    return proc_init_finalize(ctx);
 }
 
 #if defined(EDHOC_DEBUG_ENABLED)

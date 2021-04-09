@@ -30,7 +30,7 @@ static void generate_conn_id(uint8_t *p, size_t *length) {
 }
 
 
-ssize_t edhoc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suite_id_t id, uint8_t *out, size_t olen) {
+ssize_t proc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suite_id_t id, uint8_t *out, size_t olen) {
     ssize_t ret, len;
     ssize_t ad1Len;
 
@@ -130,7 +130,7 @@ ssize_t edhoc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suit
     return ret;
 }
 
-ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, uint8_t *out, size_t olen) {
+ssize_t proc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1Buf, size_t msg1Len, uint8_t *out, size_t olen) {
     ssize_t ret, len;
 
     cred_t credCtx;
@@ -194,7 +194,7 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, uint
     }
 
     // (1) decode message 1 (checks if acceptable cipher suite)
-    EDHOC_CHECK_SUCCESS(format_msg1_decode(&msg1, in, ilen));
+    EDHOC_CHECK_SUCCESS(format_msg1_decode(&msg1, msg1Buf, msg1Len));
 
     // setup method and correlation values
     ctx->correlation = msg1.methodCorr % 4;
@@ -263,14 +263,14 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, uint
 
     // TH_2 = H ( msg1, data_2 )
     crypt_hash_init(&hashCtx);
-    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hashCtx, in, ilen));
+    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hashCtx, msg1Buf, msg1Len));
     EDHOC_CHECK_SUCCESS(crypt_hash_update(&hashCtx, out, len));
     EDHOC_CHECK_SUCCESS(crypt_hash_finish(&hashCtx, ctx->th2));
 
     // (3) compute the inner cose_encrypt0 - mac_2
-    EDHOC_CHECK_SUCCESS(edhoc_compute_prk2e(&msg2.data2.gY, &msg1.gX, ctx->prk2e));
+    EDHOC_CHECK_SUCCESS(proc_compute_prk2e(&msg2.data2.gY, &msg1.gX, ctx->prk2e));
     EDHOC_CHECK_SUCCESS(
-            edhoc_compute_prk3e2m(ctx->method, ctx->prk2e, ctx->conf->myCred.authKey, &msg1.gX, ctx->prk3e2m));
+            proc_compute_prk3e2m(ctx->method, ctx->prk2e, ctx->conf->myCred.authKey, &msg1.gX, ctx->prk3e2m));
 
     if ((aeadCipher = cose_algo_get_aead_info(msg1.cipherSuite->aeadCipher)) == NULL) {
         EDHOC_FAIL(EDHOC_ERR_AEAD_CIPHER_UNAVAILABLE);
@@ -294,11 +294,11 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, uint
     cose_message_set_protected_hdr((cose_message_t *) &innerCoseEncrypt0, ctx->conf->myCred.idCtx->map);
 
     // compute the K_2m key
-    EDHOC_CHECK_SUCCESS(edhoc_compute_K23mOrK3ae(aeadCipher, ctx->th2, ctx->prk3e2m, "K_2m", out, olen));
+    EDHOC_CHECK_SUCCESS(proc_compute_K23mOrK3ae(aeadCipher, ctx->th2, ctx->prk3e2m, "K_2m", out, olen));
     cose_symmetric_key_from_buffer(&k2m, out, aeadCipher->keyLength);
 
     // compute the nonce
-    EDHOC_CHECK_SUCCESS(edhoc_compute_IV23mOrIV3ae(aeadCipher, ctx->th2, ctx->prk3e2m, "IV_2m", out, olen));
+    EDHOC_CHECK_SUCCESS(proc_compute_IV23mOrIV3ae(aeadCipher, ctx->th2, ctx->prk3e2m, "IV_2m", out, olen));
     memcpy(iv2m, out, aeadCipher->ivLength);
 
     cose_encrypt0_encrypt(&innerCoseEncrypt0, &k2m, iv2m, aeadCipher->ivLength);
@@ -332,7 +332,7 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, uint
         }
     }
 
-    EDHOC_CHECK_SUCCESS(edhoc_compute_keystream2(aeadCipher, ctx->th2, ctx->prk2e, "KEYSTREAM_2", len, out, olen));
+    EDHOC_CHECK_SUCCESS(proc_compute_keystream2(aeadCipher, ctx->th2, ctx->prk2e, "KEYSTREAM_2", len, out, olen));
     memcpy(keystream2, out, len);
 
     for (ssize_t i = 0; i < len; i++) {
@@ -374,7 +374,7 @@ ssize_t edhoc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, uint
     return ret;
 }
 
-ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, uint8_t *out, size_t olen) {
+ssize_t proc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2Buf, size_t msg2Len, uint8_t *out, size_t olen) {
     ssize_t ret, len;
     int i;
 
@@ -450,7 +450,7 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, uint
         EDHOC_FAIL(EDHOC_ERR_ILLEGAL_STATE);
     }
 
-    EDHOC_CHECK_SUCCESS(format_msg2_decode(&msg2, ctx->correlation, cipherSuite, in, ilen));
+    EDHOC_CHECK_SUCCESS(format_msg2_decode(&msg2, ctx->correlation, cipherSuite, msg2Buf, msg2Len));
 
     if (msg2.data2.cidr.length <= EDHOC_CID_LEN && msg2.data2.cidr.length > 0) {
         ctx->session.cidrLen = msg2.data2.cidr.length;
@@ -476,10 +476,10 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, uint
     EDHOC_CHECK_SUCCESS(crypt_hash_update(&hashCtx, out, len));
     EDHOC_CHECK_SUCCESS(crypt_hash_finish(&hashCtx, ctx->th2));
 
-    edhoc_compute_prk2e(&ctx->myEphKey, &msg2.data2.gY, ctx->prk2e);
+    proc_compute_prk2e(&ctx->myEphKey, &msg2.data2.gY, ctx->prk2e);
 
     EDHOC_CHECK_SUCCESS(
-            edhoc_compute_keystream2(aeadCipher, ctx->th2, ctx->prk2e, "KEYSTREAM_2", msg2.ciphertext2Len, out, olen));
+            proc_compute_keystream2(aeadCipher, ctx->th2, ctx->prk2e, "KEYSTREAM_2", msg2.ciphertext2Len, out, olen));
     memcpy(keystream2, out, msg2.ciphertext2Len);
 
     for (size_t b = 0; b < msg2.ciphertext2Len; b++) {
@@ -533,7 +533,7 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, uint
     }
 
     EDHOC_CHECK_SUCCESS(
-            edhoc_compute_prk3e2m(ctx->method, ctx->prk2e, &ctx->myEphKey, &remoteAuthKey, ctx->prk3e2m));
+            proc_compute_prk3e2m(ctx->method, ctx->prk2e, &ctx->myEphKey, &remoteAuthKey, ctx->prk3e2m));
 
     // TODO: call the AD3 callback
 
@@ -566,8 +566,8 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, uint
     EDHOC_CHECK_SUCCESS(crypt_hash_finish(&hashCtx, ctx->th3));
 
     // (3) compute the inner cose_encrypt0 - mac_3
-    EDHOC_CHECK_SUCCESS(edhoc_compute_prk4x3m(ctx->method, ctx->prk3e2m, ctx->conf->myCred.authKey, &msg2.data2.gY,
-                                              ctx->session.prk4x3m));
+    EDHOC_CHECK_SUCCESS(proc_compute_prk4x3m(ctx->method, ctx->prk3e2m, ctx->conf->myCred.authKey, &msg2.data2.gY,
+                                             ctx->session.prk4x3m));
 
     cose_encrypt0_init(&ioCoseEncrypt0, NULL, 0, aeadCipher, mac3);
     credCtx = ctx->conf->myCred.credCtx;
@@ -586,11 +586,11 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, uint
     cose_message_set_protected_hdr((cose_message_t *) &ioCoseEncrypt0, ctx->conf->myCred.idCtx->map);
 
     // compute the K_2m key
-    EDHOC_CHECK_SUCCESS(edhoc_compute_K23mOrK3ae(aeadCipher, ctx->th3, ctx->session.prk4x3m, "K_3m", out, olen));
+    EDHOC_CHECK_SUCCESS(proc_compute_K23mOrK3ae(aeadCipher, ctx->th3, ctx->session.prk4x3m, "K_3m", out, olen));
     cose_symmetric_key_from_buffer(&k3mOrk3ae, out, aeadCipher->keyLength);
 
     // compute the nonce
-    EDHOC_CHECK_SUCCESS(edhoc_compute_IV23mOrIV3ae(aeadCipher, ctx->th3, ctx->session.prk4x3m, "IV_3m", out, olen));
+    EDHOC_CHECK_SUCCESS(proc_compute_IV23mOrIV3ae(aeadCipher, ctx->th3, ctx->session.prk4x3m, "IV_3m", out, olen));
     memcpy(iv3mOrIv3ae, out, aeadCipher->ivLength);
 
     cose_encrypt0_encrypt(&ioCoseEncrypt0, &k3mOrk3ae, iv3mOrIv3ae, aeadCipher->ivLength);
@@ -632,10 +632,10 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, uint
 
     // reset cose key
     cose_key_init(&k3mOrk3ae);
-    EDHOC_CHECK_SUCCESS(edhoc_compute_K23mOrK3ae(aeadCipher, ctx->th3, ctx->prk3e2m, "K_3ae", out, olen));
+    EDHOC_CHECK_SUCCESS(proc_compute_K23mOrK3ae(aeadCipher, ctx->th3, ctx->prk3e2m, "K_3ae", out, olen));
     cose_symmetric_key_from_buffer(&k3mOrk3ae, out, aeadCipher->keyLength);
 
-    EDHOC_CHECK_SUCCESS(edhoc_compute_IV23mOrIV3ae(aeadCipher, ctx->th3, ctx->prk3e2m, "IV_3ae", out, olen));
+    EDHOC_CHECK_SUCCESS(proc_compute_IV23mOrIV3ae(aeadCipher, ctx->th3, ctx->prk3e2m, "IV_3ae", out, olen));
     memcpy(iv3mOrIv3ae, out, aeadCipher->ivLength);
 
     cose_encrypt0_encrypt(&ioCoseEncrypt0, &k3mOrk3ae, iv3mOrIv3ae, aeadCipher->ivLength);
@@ -677,14 +677,15 @@ ssize_t edhoc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, uint
     return ret;
 }
 
-ssize_t edhoc_init_finalize(edhoc_ctx_t *ctx) {
+ssize_t proc_init_finalize(edhoc_ctx_t *ctx) {
     int ret;
 
+    ret = EDHOC_SUCCESS;
     return ret;
 }
 
 
-ssize_t edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, bool msg4, uint8_t *out, size_t olen) {
+ssize_t proc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3Buf, size_t msg3Len, bool doMsg4, uint8_t *out, size_t olen) {
     ssize_t ret, len;
     int i;
 
@@ -744,7 +745,7 @@ ssize_t edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, bo
         EDHOC_FAIL(EDHOC_ERR_ILLEGAL_STATE);
     }
 
-    EDHOC_CHECK_SUCCESS(format_msg3_decode(&msg3, ctx->correlation, in, ilen));
+    EDHOC_CHECK_SUCCESS(format_msg3_decode(&msg3, ctx->correlation, msg3Buf, msg3Len));
 
     // TODO: retrieve security context
 
@@ -775,10 +776,10 @@ ssize_t edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, bo
 
     EDHOC_CHECK_SUCCESS(crypt_hash_finish(&hashCtx, ctx->session.th4));
 
-    EDHOC_CHECK_SUCCESS(edhoc_compute_K23mOrK3ae(aeadCipher, ctx->th3, ctx->prk3e2m, "K_3ae", temp, sizeof(temp)));
+    EDHOC_CHECK_SUCCESS(proc_compute_K23mOrK3ae(aeadCipher, ctx->th3, ctx->prk3e2m, "K_3ae", temp, sizeof(temp)));
     cose_symmetric_key_from_buffer(&k3ae, temp, aeadCipher->keyLength);
 
-    EDHOC_CHECK_SUCCESS(edhoc_compute_IV23mOrIV3ae(aeadCipher, ctx->th3, ctx->prk3e2m, "IV_3ae", temp, sizeof(temp)));
+    EDHOC_CHECK_SUCCESS(proc_compute_IV23mOrIV3ae(aeadCipher, ctx->th3, ctx->prk3e2m, "IV_3ae", temp, sizeof(temp)));
     memcpy(iv3ae, temp, aeadCipher->ivLength);
 
     memcpy(temp, msg3.ciphertext3, msg3.ciphertext3Len);
@@ -842,18 +843,18 @@ ssize_t edhoc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *in, size_t ilen, bo
     // TODO: pass AD3 back to application
 
     EDHOC_CHECK_SUCCESS(
-            edhoc_compute_prk4x3m(ctx->method, ctx->prk3e2m, &ctx->myEphKey, &remoteAuthKey, ctx->session.prk4x3m));
+            proc_compute_prk4x3m(ctx->method, ctx->prk3e2m, &ctx->myEphKey, &remoteAuthKey, ctx->session.prk4x3m));
 
     exit:
     return ret;
 }
 
-ssize_t edhoc_create_error_msg(edhoc_ctx_t *ctx,
-                               const char *diagMsg,
-                               const uint8_t *suitesR,
-                               size_t suitesRLen,
-                               uint8_t *out,
-                               size_t olen) {
+ssize_t proc_create_error_msg(edhoc_ctx_t *ctx,
+                              const char *diagMsg,
+                              const uint8_t *suitesR,
+                              size_t suitesRLen,
+                              uint8_t *out,
+                              size_t olen) {
     ssize_t ret, len;
     edhoc_error_msg_t errMsg;
 
@@ -890,12 +891,12 @@ ssize_t edhoc_create_error_msg(edhoc_ctx_t *ctx,
     return ret;
 }
 
-int edhoc_compute_K23mOrK3ae(const cose_aead_t *aeadInfo,
-                             const uint8_t *th,
-                             const uint8_t *prk,
-                             const char *label,
-                             uint8_t *out,
-                             size_t olen) {
+int proc_compute_K23mOrK3ae(const cose_aead_t *aeadInfo,
+                            const uint8_t *th,
+                            const uint8_t *prk,
+                            const char *label,
+                            uint8_t *out,
+                            size_t olen) {
 
     int ret;
     uint8_t k23m[EDHOC_K23M_SIZE] = {0};
@@ -924,13 +925,13 @@ int edhoc_compute_K23mOrK3ae(const cose_aead_t *aeadInfo,
     return ret;
 }
 
-int edhoc_compute_keystream2(const cose_aead_t *aeadInfo,
-                             const uint8_t *th,
-                             const uint8_t *prk,
-                             const char *label,
-                             size_t keyStreamLen,
-                             uint8_t *out,
-                             size_t olen) {
+int proc_compute_keystream2(const cose_aead_t *aeadInfo,
+                            const uint8_t *th,
+                            const uint8_t *prk,
+                            const char *label,
+                            size_t keyStreamLen,
+                            uint8_t *out,
+                            size_t olen) {
     int ret;
     uint8_t keystream2[EDHOC_KEYSTREAM2_SIZE] = {0};
 
@@ -958,12 +959,12 @@ int edhoc_compute_keystream2(const cose_aead_t *aeadInfo,
     return ret;
 }
 
-int edhoc_compute_IV23mOrIV3ae(const cose_aead_t *aeadInfo,
-                               const uint8_t *th,
-                               const uint8_t *prk,
-                               const char *label,
-                               uint8_t *out,
-                               size_t olen) {
+int proc_compute_IV23mOrIV3ae(const cose_aead_t *aeadInfo,
+                              const uint8_t *th,
+                              const uint8_t *prk,
+                              const char *label,
+                              uint8_t *out,
+                              size_t olen) {
 
     int ret;
     uint8_t iv23m[EDHOC_IV23M_SIZE] = {0};
@@ -992,15 +993,15 @@ int edhoc_compute_IV23mOrIV3ae(const cose_aead_t *aeadInfo,
     return ret;
 }
 
-int edhoc_compute_prk2e(const cose_key_t *sk, const cose_key_t *pk, uint8_t *prk_2e) {
+int proc_compute_prk2e(const cose_key_t *sk, const cose_key_t *pk, uint8_t *prk_2e) {
     return crypt_derive_prk(sk, pk, NULL, 0, prk_2e);
 }
 
-int edhoc_compute_prk3e2m(method_t m,
-                          const uint8_t *prk2e,
-                          const cose_key_t *sk,
-                          const cose_key_t *pk,
-                          uint8_t *prk3e2m) {
+int proc_compute_prk3e2m(method_t m,
+                         const uint8_t *prk2e,
+                         const cose_key_t *sk,
+                         const cose_key_t *pk,
+                         uint8_t *prk3e2m) {
     int ret;
 
     switch (m) {
@@ -1022,11 +1023,11 @@ int edhoc_compute_prk3e2m(method_t m,
     return ret;
 }
 
-int edhoc_compute_prk4x3m(method_t m,
-                          const uint8_t *prk3e2m,
-                          const cose_key_t *sk,
-                          const cose_key_t *pk,
-                          uint8_t *prk4x3m) {
+int proc_compute_prk4x3m(method_t m,
+                         const uint8_t *prk3e2m,
+                         const cose_key_t *sk,
+                         const cose_key_t *pk,
+                         uint8_t *prk4x3m) {
     int ret;
 
     switch (m) {
