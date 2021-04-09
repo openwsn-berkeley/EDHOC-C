@@ -292,6 +292,8 @@ ssize_t proc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1Buf, size_t msg1Le
 
     cose_message_set_external_aad((cose_message_t *) &innerCoseEncrypt0, extData, len);
     cose_message_set_protected_hdr((cose_message_t *) &innerCoseEncrypt0, ctx->conf->myCred.idCtx->map);
+    // payload length is 0, but we don't want to pass a NULL pointer for the payload buffer
+    cose_message_set_payload((cose_message_t *) &innerCoseEncrypt0, p2e, 0);
 
     // compute the K_2m key
     EDHOC_CHECK_SUCCESS(proc_compute_K23mOrK3ae(aeadCipher, ctx->th2, ctx->prk3e2m, "K_2m", out, olen));
@@ -569,7 +571,7 @@ ssize_t proc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2Buf, size_t msg2Le
     EDHOC_CHECK_SUCCESS(proc_compute_prk4x3m(ctx->method, ctx->prk3e2m, ctx->conf->myCred.authKey, &msg2.data2.gY,
                                              ctx->session.prk4x3m));
 
-    cose_encrypt0_init(&ioCoseEncrypt0, NULL, 0, aeadCipher, mac3);
+    cose_encrypt0_init(&ioCoseEncrypt0, p2eOrP3ae, 0, aeadCipher, mac3);
     credCtx = ctx->conf->myCred.credCtx;
     credType = ctx->conf->myCred.credType;
     ad3 = ctx->conf->ad3;
