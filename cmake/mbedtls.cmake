@@ -28,19 +28,11 @@ ExternalProject_Add(
 
 ExternalProject_Get_Property(mbedtls-backend install_dir)
 
-add_library(mbedtls SHARED IMPORTED)
-set_property(TARGET mbedtls PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libmbedtls.so)
-
 add_library(mbedx509 SHARED IMPORTED)
 set_property(TARGET mbedx509 PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libmbedx509.so)
-
-add_library(mbedcrypto SHARED IMPORTED)
-set_property(TARGET mbedcrypto PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libmbedcrypto.so)
 
 add_dependencies(edhoc-c mbedtls-backend)
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${install_dir}/include)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE mbedtls)
 target_link_libraries(${PROJECT_NAME} PRIVATE mbedx509)
-target_link_libraries(${PROJECT_NAME} PRIVATE mbedcrypto)

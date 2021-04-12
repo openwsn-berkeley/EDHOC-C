@@ -16,7 +16,6 @@
 #include "util.h"
 
 #define PORT            (9830)
-
 // #define IPV6
 
 int counter = 1;

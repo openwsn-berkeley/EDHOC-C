@@ -69,8 +69,6 @@ endif ()
 
 add_dependencies(test-edhoc mbedtls-backend)
 target_link_libraries(test-edhoc PRIVATE mbedx509)
-target_link_libraries(test-edhoc PRIVATE mbedtls)
-target_link_libraries(test-edhoc PRIVATE mbedcrypto)
 
 target_include_directories(test-edhoc PRIVATE ../src ../include)
 
@@ -107,8 +105,6 @@ endif ()
 
 add_dependencies(test-format mbedtls-backend)
 target_link_libraries(test-format PRIVATE mbedx509)
-target_link_libraries(test-format PRIVATE mbedtls)
-target_link_libraries(test-format PRIVATE mbedcrypto)
 
 target_include_directories(test-format PRIVATE ../src ../include)
 
@@ -132,8 +128,6 @@ target_link_libraries(test-credentials PRIVATE nanocbor)
 
 add_dependencies(test-credentials mbedtls-backend)
 target_link_libraries(test-credentials PRIVATE mbedx509)
-target_link_libraries(test-credentials PRIVATE mbedtls)
-target_link_libraries(test-credentials PRIVATE mbedcrypto)
 
 add_dependencies(test-credentials json-parser)
 target_link_libraries(test-credentials PRIVATE cjson)
@@ -183,8 +177,6 @@ endif ()
 
 add_dependencies(test-process mbedtls-backend)
 target_link_libraries(test-process PRIVATE mbedx509)
-target_link_libraries(test-process PRIVATE mbedtls)
-target_link_libraries(test-process PRIVATE mbedcrypto)
 
 add_dependencies(test-process json-parser)
 
