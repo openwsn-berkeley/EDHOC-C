@@ -43,7 +43,7 @@ ssize_t proc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suite
 #elif defined(EMPTY_CRYPTO)
     int hashCtx;
 #elif defined(HACL)
-    hash_ctx_t hashCtx;
+    hacl_Sha256 hashCtx;
 #elif
 #error "No crypto backend enabled."
 #endif
@@ -142,7 +142,7 @@ ssize_t proc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1Buf, size_t msg1Le
 #elif defined(EMPTY_CRYPTO)
     int hashCtx;
 #elif defined(HACL)
-    hash_ctx_t hashCtx;
+    hacl_Sha256 hashCtx;
 #else
 #error "No crypto backend enabled"
 #endif
@@ -392,7 +392,7 @@ ssize_t proc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2Buf, size_t msg2Le
 #elif defined(EMPTY_X509)
     int hashCtx;
 #elif defined(HACL)
-    hash_ctx_t hashCtx;
+    hacl_Sha256 hashCtx;
 #else
 #error "No crypto backend enabled"
 #endif
@@ -700,7 +700,7 @@ ssize_t proc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3Buf, size_t msg3
 #elif defined(EMPTY_X509)
     int hashCtx;
 #elif defined(HACL)
-    hash_ctx_t hashCtx;
+    hacl_Sha256 hashCtx;
 #else
 #error "No crypto backend enabled"
 #endif

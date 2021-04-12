@@ -53,11 +53,8 @@ add_executable(test-edhoc
         ../src/crypto/aes128.c
         ../src/crypto/ccm.c)
 
-add_dependencies(test-edhoc nanocbor-backend)
-target_link_libraries(test-edhoc PRIVATE nanocbor)
-
-add_dependencies(test-edhoc json-parser)
-target_link_libraries(test-edhoc PRIVATE cjson)
+add_dependencies(test-edhoc json-parser nanocbor-backend)
+target_link_libraries(test-edhoc PRIVATE cjson nanocbor)
 
 if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
     target_link_libraries(test-edhoc PRIVATE wolfssl)
@@ -67,8 +64,10 @@ elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
     add_dependencies(test-edhoc hacl-backend)
 endif ()
 
-add_dependencies(test-edhoc mbedtls-backend)
-target_link_libraries(test-edhoc PRIVATE mbedx509)
+if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS_X509")
+    add_dependencies(test-edhoc mbedtls-backend)
+    target_link_libraries(test-edhoc PRIVATE mbedx509)
+endif ()
 
 target_include_directories(test-edhoc PRIVATE ../src ../include)
 
@@ -89,11 +88,8 @@ add_executable(test-format
         ../src/crypto/hacl.c
         ../src/cbor/nanocbor.c)
 
-add_dependencies(test-format nanocbor-backend)
-target_link_libraries(test-format PRIVATE nanocbor)
-
-add_dependencies(test-format json-parser)
-target_link_libraries(test-format PRIVATE cjson)
+add_dependencies(test-format json-parser nanocbor-backend)
+target_link_libraries(test-format PRIVATE cjson nanocbor)
 
 if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
     target_link_libraries(test-format PRIVATE wolfssl)
@@ -103,8 +99,10 @@ elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
     add_dependencies(test-format hacl-backend)
 endif ()
 
-add_dependencies(test-format mbedtls-backend)
-target_link_libraries(test-format PRIVATE mbedx509)
+if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS_X509")
+    add_dependencies(test-format mbedtls-backend)
+    target_link_libraries(test-format PRIVATE mbedx509)
+endif ()
 
 target_include_directories(test-format PRIVATE ../src ../include)
 
@@ -123,14 +121,8 @@ add_executable(test-credentials
         ../src/crypto/hacl.c
         ../src/cbor/nanocbor.c)
 
-add_dependencies(test-credentials nanocbor-backend)
-target_link_libraries(test-credentials PRIVATE nanocbor)
-
-add_dependencies(test-credentials mbedtls-backend)
-target_link_libraries(test-credentials PRIVATE mbedx509)
-
-add_dependencies(test-credentials json-parser)
-target_link_libraries(test-credentials PRIVATE cjson)
+add_dependencies(test-credentials json-parser nanocbor-backend)
+target_link_libraries(test-credentials PRIVATE cjson nanocbor)
 
 if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
     target_link_libraries(test-credentials PRIVATE wolfssl)
@@ -138,6 +130,11 @@ if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
 elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
     target_link_libraries(test-credentials PRIVATE evercrypt)
     add_dependencies(test-credentials hacl-backend)
+endif ()
+
+if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS_X509")
+    add_dependencies(test-edhoc mbedtls-backend)
+    target_link_libraries(test-credentials PRIVATE mbedx509)
 endif ()
 
 target_include_directories(test-credentials PRIVATE ../src ../include)
@@ -164,8 +161,8 @@ add_executable(test-process
         ../src/crypto/aes128.c
         ../src/crypto/ccm.c)
 
-add_dependencies(test-process nanocbor-backend)
-target_link_libraries(test-process PRIVATE nanocbor)
+add_dependencies(test-process json-parser nanocbor-backend)
+target_link_libraries(test-process PRIVATE cjson nanocbor)
 
 if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
     target_link_libraries(test-process PRIVATE wolfssl)
@@ -175,14 +172,14 @@ elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
     add_dependencies(test-process hacl-backend)
 endif ()
 
-add_dependencies(test-process mbedtls-backend)
-target_link_libraries(test-process PRIVATE mbedx509)
-
-add_dependencies(test-process json-parser)
+if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS_X509")
+    add_dependencies(test-process mbedtls-backend)
+    target_link_libraries(test-process PRIVATE mbedx509)
+endif ()
 
 target_include_directories(test-process PRIVATE ../src ../include)
-target_link_libraries(test-process PRIVATE cjson)
 
+###########################################################
 
 add_test(
         NAME TEST_FORMAT_MESSAGE_1_ENCODE_V1

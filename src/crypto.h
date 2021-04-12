@@ -11,9 +11,9 @@
 
 #define HASH_INPUT_BLEN     (256)
 
-typedef struct hash_ctx_t hash_ctx_t;
+typedef struct hacl_Sha256 hacl_Sha256;
 
-struct hash_ctx_t{
+struct hacl_Sha256 {
     uint16_t fillLevel;
     uint8_t buffer[HASH_INPUT_BLEN];
 };

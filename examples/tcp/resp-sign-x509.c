@@ -8,8 +8,11 @@
 #include <edhoc/creddb.h>
 
 #include <mbedtls/x509_crt.h>
+
+#if defined(WOLFSSL)
 #include <wolfssl/options.h>
 #include <wolfssl/wolfcrypt/sha256.h>
+#endif
 
 #include "util.h"
 
@@ -44,8 +47,12 @@ int edhoc_handshake(int sockfd) {
     mbedtls_x509_crt x509Ctx;
     cose_key_t authKey;
 
+#if defined(WOLFSSL)
     wc_Sha256 thCtx;
     wc_InitSha256(&thCtx);
+#elif defined(HACL)
+    int thCtx;
+#endif
 
     printf("[%d] Set up EDHOC configuration...\n", counter++);
     edhoc_ctx_init(&ctx);

@@ -24,15 +24,6 @@
 #define EDHOC_AUTH_METHOD_2_ENABLED
 #define EDHOC_AUTH_METHOD_3_ENABLED
 
-
-/**
- * @def EDHOC_ASYNC_API_ENABLED
- *
- * Exposes the individual EDHOC message functions for asynchronous usage.
- *
- */
-#define EDHOC_ASYNC_API_ENABLED
-
 /**
  * @def EDHOC_DEBUG_ENABLE
  *

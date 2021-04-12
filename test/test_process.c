@@ -4,8 +4,6 @@
 #include "edhoc/edhoc.h"
 #include "edhoc/creddb.h"
 
-#include "crypto.h"
-
 #include "util.h"
 #include "json.h"
 
@@ -14,7 +12,18 @@
 #include <wolfssl/options.h>
 #include <wolfssl/wolfcrypt/sha256.h>
 
+#elif defined(HACL)
+
+#define HASH_INPUT_BLEN     (256)
+
+typedef struct hacl_Sha256 hacl_Sha256;
+
+struct hacl_Sha256 {
+    uint16_t fillLevel;
+    uint8_t buffer[HASH_INPUT_BLEN];
+};
 #endif
+
 
 
 int test_create_msg1(corr_t corr,
@@ -36,7 +45,7 @@ int test_create_msg1(corr_t corr,
 #if defined(WOLFSSL)
     wc_Sha256 thCtx;
 #elif defined(HACL)
-    hash_ctx_t thCtx;
+    hacl_Sha256 thCtx;
 #endif
 
     edhoc_ctx_init(&ctx);
@@ -86,7 +95,7 @@ int test_create_msg2(cred_type_t credType,
 #if defined(WOLFSSL)
     wc_Sha256 thCtx;
 #elif defined(HACL)
-    hash_ctx_t thCtx;
+    hacl_Sha256 thCtx;
 #endif
 
     cose_key_init(&authKey);
@@ -167,7 +176,7 @@ int test_create_msg3(corr_t corr,
 #if defined(WOLFSSL)
     wc_Sha256 thCtx;
 #elif defined(HACL)
-    hash_ctx_t thCtx;
+    hacl_Sha256 thCtx;
 #endif
 
     cose_key_init(&authKey);
@@ -251,7 +260,7 @@ int test_resp_finalize(cred_type_t credType,
 #if defined(WOLFSSL)
     wc_Sha256 thCtx;
 #elif defined(HACL)
-    hash_ctx_t thCtx;
+    hacl_Sha256 thCtx;
 #endif
 
     cose_key_init(&authKey);
