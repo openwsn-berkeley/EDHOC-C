@@ -44,7 +44,9 @@ ssize_t proc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suite
     int hashCtx;
 #elif defined(HACL)
     hacl_Sha256 hashCtx;
-#elif
+#elif defined(TINYCRYPT)
+    tinycrypt_Sha256 hashCtx;
+#else
 #error "No crypto backend enabled."
 #endif
 
@@ -143,6 +145,8 @@ ssize_t proc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1Buf, size_t msg1Le
     int hashCtx;
 #elif defined(HACL)
     hacl_Sha256 hashCtx;
+#elif defined(TINYCRYPT)
+    tinycrypt_Sha256 hashCtx;
 #else
 #error "No crypto backend enabled"
 #endif
@@ -393,6 +397,8 @@ ssize_t proc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2Buf, size_t msg2Le
     int hashCtx;
 #elif defined(HACL)
     hacl_Sha256 hashCtx;
+#elif defined(TINYCRYPT)
+    tinycrypt_Sha256 hashCtx;
 #else
 #error "No crypto backend enabled"
 #endif
@@ -701,6 +707,8 @@ ssize_t proc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3Buf, size_t msg3
     int hashCtx;
 #elif defined(HACL)
     hacl_Sha256 hashCtx;
+#elif defined(TINYCRYPT)
+    tinycrypt_Sha256 hashCtx;
 #else
 #error "No crypto backend enabled"
 #endif
@@ -996,7 +1004,9 @@ int proc_compute_IV23mOrIV3ae(const cose_aead_t *aeadInfo,
 }
 
 int proc_compute_prk2e(const cose_key_t *sk, const cose_key_t *pk, uint8_t *prk_2e) {
-    return crypt_derive_prk(sk, pk, NULL, 0, prk_2e);
+    const uint8_t zeroSalt[EDHOC_DIGEST_SIZE] = {0};
+
+    return crypt_derive_prk(sk, pk, zeroSalt, EDHOC_DIGEST_SIZE, prk_2e);
 }
 
 int proc_compute_prk3e2m(method_t m,

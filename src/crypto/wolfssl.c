@@ -64,12 +64,12 @@ void crypt_hash_free(void *ctx) {
     wc_Sha256Free((wc_Sha256 *) ctx);
 }
 
-int crypt_kdf(const uint8_t *prk, const uint8_t *info, size_t infoLen, uint8_t *out, size_t outLen) {
-    ssize_t ret;
+int crypt_kdf(const uint8_t *prk, const uint8_t *info, size_t infoLen, uint8_t *out, size_t olen) {
+    int ret;
 
     ret = EDHOC_ERR_CRYPTO;
 
-    if (wc_HKDF_Expand(SHA256, prk, EDHOC_DIGEST_SIZE, info, infoLen, out, outLen) != EDHOC_SUCCESS) {
+    if (wc_HKDF_Expand(SHA256, prk, EDHOC_DIGEST_SIZE, info, infoLen, out, olen) != EDHOC_SUCCESS) {
         ret = EDHOC_ERR_CRYPTO;
         goto exit;
     }
@@ -178,7 +178,7 @@ static int crypt_ecdh(const cose_key_t *sk, const cose_key_t *pk, uint8_t *out) 
 int crypt_derive_prk(const cose_key_t *sk,
                      const cose_key_t *pk,
                      const uint8_t *salt,
-                     size_t salt_len,
+                     size_t saltLen,
                      uint8_t *prk) {
     int ret;
     Hmac hmac;
@@ -190,7 +190,7 @@ int crypt_derive_prk(const cose_key_t *sk,
 
     EDHOC_CHECK_SUCCESS(crypt_ecdh(sk, pk, secret));
 
-    if (wc_HmacSetKey(&hmac, SHA256, salt, salt_len) != EDHOC_SUCCESS)
+    if (wc_HmacSetKey(&hmac, SHA256, salt, saltLen) != EDHOC_SUCCESS)
         goto exit;
 
     if (wc_HmacUpdate(&hmac, secret, 32) != EDHOC_SUCCESS)
@@ -283,8 +283,10 @@ int crypt_sign(const cose_key_t *authkey, const uint8_t *msg, size_t msgLen, uin
     if (wc_ed25519_import_private_key(authkey->d, authkey->dLen, pk, COSE_ECC_KEY_SIZE, &sk) != EDHOC_SUCCESS)
         goto exit;
 
-    if (wc_ed25519_sign_msg(msg, msgLen, signature, (word32 *) &sigLen, &sk) != EDHOC_SUCCESS)
+    if (wc_ed25519_sign_msg(msg, msgLen, signature, (word32 *) sigLen, &sk) != EDHOC_SUCCESS)
         goto exit;
+
+    *sigLen = 64;
 
     ret = EDHOC_SUCCESS;
     exit:

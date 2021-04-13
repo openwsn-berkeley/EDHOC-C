@@ -27,17 +27,33 @@ endif ()
 
 add_executable(fuzz-message1
         decode_msg1.c
-        ../src/cbor/nanocbor.c
-        ../src/credentials.c
-        ../src/cose.c
-        ../src/ciphersuites.c
-        ../src/edhoc.c
-        ../src/format.c
-        ../src/process.c
-        ../src/crypto/hacl.c
-        ../src/crypto/aes128.c
-        ../src/crypto/ccm.c
-        ../src/crypto/wolfssl.c)
+        ${PROJECT_SOURCE_DIR}/src/cbor/nanocbor.c
+        ${PROJECT_SOURCE_DIR}/src/credentials.c
+        ${PROJECT_SOURCE_DIR}/src/cose.c
+        ${PROJECT_SOURCE_DIR}/src/ciphersuites.c
+        ${PROJECT_SOURCE_DIR}/src/edhoc.c
+        ${PROJECT_SOURCE_DIR}/src/format.c
+        ${PROJECT_SOURCE_DIR}/src/process.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/hacl.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/wolfssl.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/tinycrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_decrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_encrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hkdf.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac_prng.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ccm_mode.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/utils.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha256.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/fprime.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha512.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ed25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/c25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/f25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/morph25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/edsign.c)
 
 add_dependencies(fuzz-message1 nanocbor-backend)
 target_link_libraries(fuzz-message1 PRIVATE nanocbor)
@@ -62,17 +78,33 @@ target_include_directories(fuzz-message1 PRIVATE ../src ../include)
 
 add_executable(fuzz-message2
         decode_msg2.c
-        ../src/cbor/nanocbor.c
-        ../src/credentials.c
-        ../src/cose.c
-        ../src/ciphersuites.c
-        ../src/edhoc.c
-        ../src/format.c
-        ../src/process.c
-        ../src/crypto/hacl.c
-        ../src/crypto/aes128.c
-        ../src/crypto/ccm.c
-        ../src/crypto/wolfssl.c)
+        ${PROJECT_SOURCE_DIR}/src/cbor/nanocbor.c
+        ${PROJECT_SOURCE_DIR}/src/credentials.c
+        ${PROJECT_SOURCE_DIR}/src/cose.c
+        ${PROJECT_SOURCE_DIR}/src/ciphersuites.c
+        ${PROJECT_SOURCE_DIR}/src/edhoc.c
+        ${PROJECT_SOURCE_DIR}/src/format.c
+        ${PROJECT_SOURCE_DIR}/src/process.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/hacl.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/wolfssl.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/tinycrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_decrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_encrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hkdf.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac_prng.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ccm_mode.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/utils.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha256.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/fprime.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha512.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ed25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/c25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/f25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/morph25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/edsign.c)
 
 add_dependencies(fuzz-message2 nanocbor-backend)
 target_link_libraries(fuzz-message2 PRIVATE nanocbor)

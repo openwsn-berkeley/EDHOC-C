@@ -22,6 +22,8 @@ struct hacl_Sha256 {
     uint16_t fillLevel;
     uint8_t buffer[HASH_INPUT_BLEN];
 };
+#elif defined(TINYCRYPT)
+#include "crypto/tinycrypt/sha256.h"
 #endif
 
 
@@ -46,6 +48,8 @@ int test_create_msg1(corr_t corr,
     wc_Sha256 thCtx;
 #elif defined(HACL)
     hacl_Sha256 thCtx;
+#elif defined(TINYCRYPT)
+    tinycrypt_Sha256 thCtx;
 #endif
 
     edhoc_ctx_init(&ctx);
@@ -96,6 +100,8 @@ int test_create_msg2(cred_type_t credType,
     wc_Sha256 thCtx;
 #elif defined(HACL)
     hacl_Sha256 thCtx;
+#elif defined(TINYCRYPT)
+    tinycrypt_Sha256 thCtx;
 #endif
 
     cose_key_init(&authKey);
@@ -177,6 +183,8 @@ int test_create_msg3(corr_t corr,
     wc_Sha256 thCtx;
 #elif defined(HACL)
     hacl_Sha256 thCtx;
+#elif defined(TINYCRYPT)
+    tinycrypt_Sha256 thCtx;
 #endif
 
     cose_key_init(&authKey);
@@ -261,6 +269,8 @@ int test_resp_finalize(cred_type_t credType,
     wc_Sha256 thCtx;
 #elif defined(HACL)
     hacl_Sha256 thCtx;
+#elif defined(TINYCRYPT)
+    tinycrypt_Sha256 thCtx;
 #endif
 
     cose_key_init(&authKey);

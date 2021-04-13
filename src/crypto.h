@@ -18,6 +18,8 @@ struct hacl_Sha256 {
     uint8_t buffer[HASH_INPUT_BLEN];
 };
 #elif defined(EMPTY_X509)
+#elif defined(TINYCRYPT)
+#include "crypto/tinycrypt/sha256.h"
 #else
 #error "No crypto backend selected"
 #endif
@@ -90,7 +92,7 @@ void crypt_hash_free(void *ctx);
  * @return On success, EDHOC_SUCCESS
  * @return On failure, EDHOC_ERR_CRYPTO, EDHOC_ERR_CBOR_ENCODING or another negative value
  */
-int crypt_kdf(const uint8_t *prk, const uint8_t *info, size_t infoLen, uint8_t *out, size_t outLen);
+int crypt_kdf(const uint8_t *prk, const uint8_t *info, size_t infoLen, uint8_t *out, size_t olen);
 
 /**
  * @brief Compute the EDHOC PRK_2e value.
@@ -102,7 +104,7 @@ int crypt_kdf(const uint8_t *prk, const uint8_t *info, size_t infoLen, uint8_t *
  * @return On success, EDHOC_SUCCESS
  * @return On failure, EDHOC_ERR_CRYPTO
  **/
-int crypt_derive_prk(const cose_key_t *sk, const cose_key_t *pk, const uint8_t *salt, size_t salt_len, uint8_t *prk);
+int crypt_derive_prk(const cose_key_t *sk, const cose_key_t *pk, const uint8_t *salt, size_t saltLen, uint8_t *prk);
 
 /**
  * @brief Encrypts and authenticates the payload using a COSE AEAD cipher

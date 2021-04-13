@@ -12,6 +12,18 @@
 #if defined(WOLFSSL)
 #include <wolfssl/options.h>
 #include <wolfssl/wolfcrypt/sha256.h>
+#elif defined(HACL)
+
+#define HASH_INPUT_BLEN     (256)
+
+typedef struct hacl_Sha256 hacl_Sha256;
+
+struct hacl_Sha256 {
+    uint16_t fillLevel;
+    uint8_t buffer[HASH_INPUT_BLEN];
+};
+#elif defined(TINYCRYPT)
+#include "../../src/crypto/tinycrypt/sha256.h"
 #endif
 
 #include "util.h"
@@ -51,7 +63,11 @@ int edhoc_handshake(int sockfd) {
     wc_Sha256 thCtx;
     wc_InitSha256(&thCtx);
 #elif defined(HACL)
-    int thCtx;
+    hacl_Sha256 thCtx;
+#elif defined(TINYCRYPT)
+    tinycrypt_Sha256 thCtx;
+#else
+#error "No crypto backend enabled."
 #endif
 
     printf("[%d] Set up EDHOC configuration...\n", counter++);

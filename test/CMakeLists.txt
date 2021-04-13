@@ -32,26 +32,87 @@ endif ()
 # create all test executables
 
 ###################################################################
+# CRYPTO
+###################################################################
+
+add_executable(test-crypto
+        json.c
+        test_crypto.c
+        ${PROJECT_SOURCE_DIR}/src/cose.c
+        ${PROJECT_SOURCE_DIR}/src/cbor/nanocbor.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/wolfssl.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/hacl.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/tinycrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_decrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_encrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hkdf.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac_prng.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ccm_mode.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/utils.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha256.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/fprime.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha512.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ed25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/c25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/f25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/morph25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/edsign.c)
+
+add_dependencies(test-crypto json-parser nanocbor-backend)
+target_link_libraries(test-crypto PRIVATE cjson nanocbor)
+
+if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
+    target_link_libraries(test-crypto PRIVATE wolfssl)
+    add_dependencies(test-crypto wolfssl-backend)
+elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
+    target_link_libraries(test-crypto PRIVATE evercrypt)
+    add_dependencies(test-crypto hacl-backend)
+endif ()
+
+target_include_directories(test-crypto PRIVATE ../src ../include)
+
+###################################################################
 # EDHOC
 ###################################################################
 
 add_executable(test-edhoc
         json.c
         test_edhoc.c
-        ../src/cbor/nanocbor.c
-        ../src/credentials.c
-        ../src/cose.c
-        ../src/ciphersuites.c
-        ../src/edhoc.c
-        ../src/format.c
-        ../src/creddb.c
-        ../src/process.c
-        ../src/crypto/wolfssl.c
-        ../src/crypto/aes128.c
-        ../src/crypto/ccm.c
-        ../src/crypto/hacl.c
-        ../src/crypto/aes128.c
-        ../src/crypto/ccm.c)
+        ${PROJECT_SOURCE_DIR}/src/cbor/nanocbor.c
+        ${PROJECT_SOURCE_DIR}/src/credentials.c
+        ${PROJECT_SOURCE_DIR}/src/cose.c
+        ${PROJECT_SOURCE_DIR}/src/ciphersuites.c
+        ${PROJECT_SOURCE_DIR}/src/edhoc.c
+        ${PROJECT_SOURCE_DIR}/src/format.c
+        ${PROJECT_SOURCE_DIR}/src/creddb.c
+        ${PROJECT_SOURCE_DIR}/src/process.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/wolfssl.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/hacl.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/tinycrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_decrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_encrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hkdf.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac_prng.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ccm_mode.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/utils.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha256.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/fprime.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha512.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ed25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/c25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/f25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/morph25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/edsign.c)
 
 add_dependencies(test-edhoc json-parser nanocbor-backend)
 target_link_libraries(test-edhoc PRIVATE cjson nanocbor)
@@ -79,14 +140,30 @@ target_include_directories(test-edhoc PRIVATE ../src ../include)
 add_executable(test-format
         test_format.c
         json.c
-        ../src/cose.c
-        ../src/ciphersuites.c
-        ../src/format.c
-        ../src/crypto/wolfssl.c
-        ../src/crypto/aes128.c
-        ../src/crypto/ccm.c
-        ../src/crypto/hacl.c
-        ../src/cbor/nanocbor.c)
+        ${PROJECT_SOURCE_DIR}/src/cose.c
+        ${PROJECT_SOURCE_DIR}/src/ciphersuites.c
+        ${PROJECT_SOURCE_DIR}/src/format.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/wolfssl.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/hacl.c
+        ${PROJECT_SOURCE_DIR}/src/cbor/nanocbor.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/tinycrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_decrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_encrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hkdf.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac_prng.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ccm_mode.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/utils.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha256.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/fprime.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha512.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ed25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/c25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/f25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/morph25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/edsign.c)
 
 add_dependencies(test-format json-parser nanocbor-backend)
 target_link_libraries(test-format PRIVATE cjson nanocbor)
@@ -113,13 +190,29 @@ target_include_directories(test-format PRIVATE ../src ../include)
 add_executable(test-credentials
         test_credentials.c
         json.c
-        ../src/credentials.c
-        ../src/cose.c
-        ../src/crypto/wolfssl.c
-        ../src/crypto/aes128.c
-        ../src/crypto/ccm.c
-        ../src/crypto/hacl.c
-        ../src/cbor/nanocbor.c)
+        ${PROJECT_SOURCE_DIR}/src/credentials.c
+        ${PROJECT_SOURCE_DIR}/src/cose.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/wolfssl.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/hacl.c
+        ${PROJECT_SOURCE_DIR}/src/cbor/nanocbor.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/tinycrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_decrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_encrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hkdf.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac_prng.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ccm_mode.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/utils.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha256.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/fprime.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha512.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ed25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/c25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/f25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/morph25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/edsign.c)
 
 add_dependencies(test-credentials json-parser nanocbor-backend)
 target_link_libraries(test-credentials PRIVATE cjson nanocbor)
@@ -146,20 +239,36 @@ target_include_directories(test-credentials PRIVATE ../src ../include)
 add_executable(test-process
         json.c
         test_process.c
-        ../src/cbor/nanocbor.c
-        ../src/credentials.c
-        ../src/cose.c
-        ../src/ciphersuites.c
-        ../src/edhoc.c
-        ../src/format.c
-        ../src/creddb.c
-        ../src/process.c
-        ../src/crypto/wolfssl.c
-        ../src/crypto/aes128.c
-        ../src/crypto/ccm.c
-        ../src/crypto/hacl.c
-        ../src/crypto/aes128.c
-        ../src/crypto/ccm.c)
+        ${PROJECT_SOURCE_DIR}/src/cbor/nanocbor.c
+        ${PROJECT_SOURCE_DIR}/src/credentials.c
+        ${PROJECT_SOURCE_DIR}/src/cose.c
+        ${PROJECT_SOURCE_DIR}/src/ciphersuites.c
+        ${PROJECT_SOURCE_DIR}/src/edhoc.c
+        ${PROJECT_SOURCE_DIR}/src/format.c
+        ${PROJECT_SOURCE_DIR}/src/creddb.c
+        ${PROJECT_SOURCE_DIR}/src/process.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/wolfssl.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/hacl.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/tinycrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_decrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_encrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hkdf.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac_prng.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ccm_mode.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/utils.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha256.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/fprime.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha512.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ed25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/c25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/f25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/morph25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/edsign.c)
 
 add_dependencies(test-process json-parser nanocbor-backend)
 target_link_libraries(test-process PRIVATE cjson nanocbor)
@@ -473,6 +582,94 @@ add_test(
         NAME TEST_PROCESS_RESPONDER_FINALIZE_V4
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMAND test-process --finalize-responder test_vectors/vector4.json
+)
+
+###################################################################
+# CRYPTO
+###################################################################
+
+add_test(
+        NAME TEST_CRYPTO_HASHING_V1
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test-crypto --hashing test_vectors/vector1.json
+)
+
+add_test(
+        NAME TEST_CRYPTO_HASHING_V2
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test-crypto --hashing test_vectors/vector2.json
+)
+
+add_test(
+        NAME TEST_CRYPTO_HASHING_V3
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test-crypto --hashing test_vectors/vector3.json
+)
+
+add_test(
+        NAME TEST_CRYPTO_HASHING_V4
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test-crypto --hashing test_vectors/vector4.json
+)
+
+# --
+
+add_test(
+        NAME TEST_CRYPTO_EDSIGN_V1
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test-crypto --edsign test_vectors/vector1.json
+)
+
+# --
+
+add_test(
+        NAME TEST_CRYPTO_PRK_ECDH_V1
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test-crypto --ecdh-hmac test_vectors/vector1.json
+)
+
+add_test(
+        NAME TEST_CRYPTO_PRK_ECDH_V2
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test-crypto --ecdh-hmac test_vectors/vector2.json
+)
+
+add_test(
+        NAME TEST_CRYPTO_PRK_ECDH_V3
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test-crypto --ecdh-hmac test_vectors/vector3.json
+)
+
+add_test(
+        NAME TEST_CRYPTO_PRK_ECDH_V4
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test-crypto --ecdh-hmac test_vectors/vector4.json
+)
+
+# --
+
+add_test(
+        NAME TEST_CRYPTO_KDF_V1
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test-crypto --kdf test_vectors/vector1.json
+)
+
+add_test(
+        NAME TEST_CRYPTO_KDF_V2
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test-crypto --kdf test_vectors/vector2.json
+)
+
+add_test(
+        NAME TEST_CRYPTO_KDF_V3
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test-crypto --kdf test_vectors/vector3.json
+)
+
+add_test(
+        NAME TEST_CRYPTO_KDF_V4
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND test-crypto --kdf test_vectors/vector4.json
 )
 
 ###################################################################

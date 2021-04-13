@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
         return 1;
     }
     if (fread(contents, fileSize, 1, fp) != 1) {
-        fprintf(stderr, "Unable t read content of %s\n", filename);
+        fprintf(stderr, "Unable to read content of %s\n", filename);
         fclose(fp);
         free(contents);
         return 1;

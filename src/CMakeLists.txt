@@ -37,7 +37,23 @@ set(edhoc_sources
         ${PROJECT_SOURCE_DIR}/src/crypto/hacl.c
         ${PROJECT_SOURCE_DIR}/src/crypto/empty.c
         ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c)
+        ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/tinycrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_decrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_encrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hkdf.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac_prng.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ccm_mode.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/utils.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha256.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/fprime.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha512.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ed25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/c25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/f25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/morph25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/edsign.c)
 
 target_sources(${PROJECT_NAME} PRIVATE ${edhoc_sources})
 
