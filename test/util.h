@@ -2,10 +2,26 @@
 #define EDHOC_TEST_UTIL_H
 
 #include <stdint.h>
+#include <stdlib.h>
+
+#define TEST_FAILED             (-1)
+#define TEST_SUCCESSFUL         (0)
 
 #define MESSAGE_1_SIZE          350
 #define MESSAGE_2_SIZE          350
 #define MESSAGE_3_SIZE          350
+#define MESSAGE_4_SIZE          350
+
+#define CERT_SIZE               500
+#define CERT_SN_SIZE            20
+#define CERT_ISSUER_SIZE        50
+#define CERT_SUBJECT_SIZE       50
+#define CERT_SUBJECTPK_SIZE     64
+#define CERT_SIGNATURE_SIZE     64
+
+#define RPK_SIZE                350
+#define X_SIZE                  64
+#define D_SIZE                  64
 
 #define DATA_2_SIZE             100
 #define DATA_3_SIZE             100
@@ -27,26 +43,14 @@
 #define CONN_ID_SIZE            4
 #define X5T_BUFFER_SIZE         50
 
-#define CHECK_TEST_RET_GT(f, v)                                     \
-do{                                                                 \
-    if((ret = (f)) <= (v)){                                         \
-        fprintf(stderr, "Test returned: %ld\n", ret);               \
-        goto exit;                                                  \
-    }                                                               \
-} while(0)
 
-#define CHECK_TEST_RET_EQ(f, v)                                         \
-do{                                                                     \
-    if((ret = (f)) != (v)){                                             \
-        if (ret < 0){                                                   \
-            fprintf(stderr, "Test returned: %ld\n", ret);               \
-        } else {                                                        \
-            fprintf(stderr, "Expected %ld, but got %ld\n", v, ret);     \
-        }                                                               \
+#define TEST_CHECK_EQUAL(r1, r2)                                        \
+do {                                                                    \
+    if ((r1) != (r2)){                                                  \
+        fprintf(stderr, "Values are not equal: %ld != %ld\n", r1, r2);  \
+        ret = TEST_FAILED;                                              \
         goto exit;                                                      \
     }                                                                   \
 } while(0)
-
-int compare_arrays(const uint8_t a[], const uint8_t b[], int size);
 
 #endif /* EDHOC_TEST_UTIL_H */

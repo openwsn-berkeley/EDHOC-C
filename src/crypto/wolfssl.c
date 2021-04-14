@@ -1,7 +1,6 @@
 
-#include "cose.h"
+#include "edhoc/cose.h"
 #include "edhoc/edhoc.h"
-#include "format.h"
 #include "crypto.h"
 
 #if defined(WOLFSSL)
@@ -24,65 +23,53 @@ int crypt_gen_keypair(cose_curve_t crv, cose_key_t *key) {
     wc_InitRng(&rng); // initialize random number generator
     wc_curve25519_init(&_key);
 
-    // if true, key already initialized
-    if (key->kty != COSE_KTY_NONE){
-        wc_FreeRng(&rng);
-        return EDHOC_SUCCESS;
-    }
-
     EDHOC_CHECK_SUCCESS(wc_curve25519_make_key(&rng, CURVE25519_KEYSIZE, &_key));
 
-    key->d_len = EDHOC_ECC_KEY_MAX_SIZE;
-    key->x_len = EDHOC_ECC_KEY_MAX_SIZE;
-    wc_curve25519_export_key_raw(&_key, key->d, (word32 *) &key->d_len, key->x, (word32 *) &key->x_len);
+    key->dLen = COSE_ECC_KEY_SIZE;
+    key->xLen = COSE_ECC_KEY_SIZE;
+    wc_curve25519_export_key_raw(&_key, key->d, (word32 *) &key->dLen, key->x, (word32 *) &key->xLen);
 
     exit:
     wc_FreeRng(&rng);
     return ret;
 }
 
-int crypt_hash_init(hash_ctx_t *ctx) {
-    if (wc_InitSha256(&ctx->digest_ctx) != EDHOC_SUCCESS)
+
+int crypt_copy_hash_context(void *dstCtx, void *srcCtx) {
+    return wc_Sha256Copy(srcCtx, dstCtx);
+}
+
+int crypt_hash_init(void *ctx) {
+    if (wc_InitSha256((wc_Sha256 *) ctx) != EDHOC_SUCCESS)
         return EDHOC_ERR_CRYPTO;
     else
         return EDHOC_SUCCESS;
 }
 
-int crypt_hash_update(hash_ctx_t *ctx, const uint8_t *in, size_t ilen) {
-    if (wc_Sha256Update(&ctx->digest_ctx, in, ilen) != EDHOC_SUCCESS)
+int crypt_hash_update(void *ctx, const uint8_t *in, size_t ilen) {
+    if (wc_Sha256Update((wc_Sha256 *) ctx, in, ilen) != EDHOC_SUCCESS)
         return EDHOC_ERR_CRYPTO;
     else
         return EDHOC_SUCCESS;
 }
 
-int crypt_hash_finish(hash_ctx_t *ctx, uint8_t *out) {
-    if (wc_Sha256Final(&ctx->digest_ctx, out) != EDHOC_SUCCESS)
+int crypt_hash_finish(void *ctx, uint8_t *out) {
+    if (wc_Sha256Final((wc_Sha256 *) ctx, out) != EDHOC_SUCCESS)
         return EDHOC_ERR_CRYPTO;
     else
         return EDHOC_SUCCESS;
 }
 
-void crypt_hash_free(hash_ctx_t *ctx) {
-    wc_Sha256Free(&ctx->digest_ctx);
+void crypt_hash_free(void *ctx) {
+    wc_Sha256Free((wc_Sha256 *) ctx);
 }
 
-int
-crypt_kdf(cose_algo_t id, const uint8_t *prk, const uint8_t *th, const char *label, int length, uint8_t *out) {
-    ssize_t ret;
-    uint8_t info_buf[EDHOC_KDF_INFO_MAX_SIZE];
-    ssize_t info_len;
+int crypt_kdf(const uint8_t *prk, const uint8_t *info, size_t infoLen, uint8_t *out, size_t olen) {
+    int ret;
 
     ret = EDHOC_ERR_CRYPTO;
 
-    // TODO: check if the label length doesn't cause a buffer overflow. If label is too long, it will cause info_buf to
-    //  overflow.
-
-    if ((info_len = edhoc_info_encode(id, th, label, length, info_buf, EDHOC_SIG23_MAX_SIZE)) < EDHOC_SUCCESS) {
-        ret = info_len;     // store the error code and return
-        goto exit;
-    }
-
-    if (wc_HKDF_Expand(SHA256, prk, EDHOC_HASH_MAX_SIZE, info_buf, info_len, out, length) != EDHOC_SUCCESS) {
+    if (wc_HKDF_Expand(SHA256, prk, EDHOC_DIGEST_SIZE, info, infoLen, out, olen) != EDHOC_SUCCESS) {
         ret = EDHOC_ERR_CRYPTO;
         goto exit;
     }
@@ -105,7 +92,7 @@ static int load_private_key_from_cose_key(const cose_key_t *private_key, curve25
     if (private_key == NULL)
         return EDHOC_ERR_CRYPTO;
 
-    if (wc_curve25519_import_private_ex(private_key->d, private_key->d_len, d, EC25519_LITTLE_ENDIAN) != EDHOC_SUCCESS)
+    if (wc_curve25519_import_private_ex(private_key->d, private_key->dLen, d, EC25519_LITTLE_ENDIAN) != EDHOC_SUCCESS)
         return EDHOC_ERR_CRYPTO;
     else
         return EDHOC_SUCCESS;
@@ -124,10 +111,10 @@ static int load_public_key_from_cose_key(const cose_key_t *public_key, curve2551
     if (public_key == NULL)
         return EDHOC_ERR_CRYPTO;
 
-    if (wc_curve25519_check_public(public_key->x, public_key->x_len, EC25519_LITTLE_ENDIAN) != EDHOC_SUCCESS)
+    if (wc_curve25519_check_public(public_key->x, public_key->xLen, EC25519_LITTLE_ENDIAN) != EDHOC_SUCCESS)
         return EDHOC_ERR_CRYPTO;
 
-    if (wc_curve25519_import_public_ex(public_key->x, public_key->x_len, Q, EC25519_LITTLE_ENDIAN) != EDHOC_SUCCESS)
+    if (wc_curve25519_import_public_ex(public_key->x, public_key->xLen, Q, EC25519_LITTLE_ENDIAN) != EDHOC_SUCCESS)
         return EDHOC_ERR_CRYPTO;
     else
         return EDHOC_SUCCESS;
@@ -147,7 +134,7 @@ static int crypt_ecdh(const cose_key_t *sk, const cose_key_t *pk, uint8_t *out) 
 
     int ret;
 
-    word32 key_size = EDHOC_ECC_KEY_MAX_SIZE;
+    word32 key_size = COSE_ECC_KEY_SIZE;
 
     curve25519_key d;
     curve25519_key Q;
@@ -157,17 +144,22 @@ static int crypt_ecdh(const cose_key_t *sk, const cose_key_t *pk, uint8_t *out) 
 
     ret = EDHOC_ERR_CRYPTO;
 
-    // check if the groups
-    if (pk->kty != sk->kty) {
-        ret = EDHOC_ERR_CURVE_UNAVAILABLE;
+    // check if the groups (mismatch curves when doing static DH key (Ed25519) * ephemeral key (X25519)
+    if (pk->kty != sk->kty /* || pk->crv != sk->crv */) {
+        ret = EDHOC_ERR_INVALID_KEY;
         goto exit;
     }
 
-    if (load_private_key_from_cose_key(sk, &d) != EDHOC_SUCCESS) {
+    if (sk->dLen == 0 && sk->xLen == 0) {
+        ret = EDHOC_ERR_INVALID_KEY;
         goto exit;
     }
 
-    if (load_public_key_from_cose_key(pk, &Q) != EDHOC_SUCCESS) {
+    if (sk->dLen == 0 || load_private_key_from_cose_key(sk, &d) != EDHOC_SUCCESS) {
+        goto exit;
+    }
+
+    if (pk->xLen == 0 || load_public_key_from_cose_key(pk, &Q) != EDHOC_SUCCESS) {
         goto exit;
     }
 
@@ -186,19 +178,19 @@ static int crypt_ecdh(const cose_key_t *sk, const cose_key_t *pk, uint8_t *out) 
 int crypt_derive_prk(const cose_key_t *sk,
                      const cose_key_t *pk,
                      const uint8_t *salt,
-                     size_t salt_len,
+                     size_t saltLen,
                      uint8_t *prk) {
     int ret;
     Hmac hmac;
 
-    uint8_t secret[EDHOC_SHARED_SECRET_MAX_SIZE];
+    uint8_t secret[EDHOC_DH_SECRET_SIZE];
 
     ret = EDHOC_ERR_CRYPTO;
     memset(&hmac, 0, sizeof(hmac));
 
     EDHOC_CHECK_SUCCESS(crypt_ecdh(sk, pk, secret));
 
-    if (wc_HmacSetKey(&hmac, SHA256, salt, salt_len) != EDHOC_SUCCESS)
+    if (wc_HmacSetKey(&hmac, SHA256, salt, saltLen) != EDHOC_SUCCESS)
         goto exit;
 
     if (wc_HmacUpdate(&hmac, secret, 32) != EDHOC_SUCCESS)
@@ -213,94 +205,56 @@ int crypt_derive_prk(const cose_key_t *sk,
     return ret;
 }
 
-
-int crypt_decrypt(
-        cose_algo_t alg,
-        const uint8_t *key,
-        const uint8_t *iv,
-        const uint8_t *aad,
-        size_t aad_len,
-        uint8_t *plaintext,
-        uint8_t *ciphertext,
-        size_t ct_pl_len,
-        uint8_t *tag) {
-
+int crypt_decrypt(const cose_key_t *sk,
+                  const uint8_t *iv,
+                  size_t ivLen,
+                  const uint8_t *aad,
+                  size_t aadLen,
+                  uint8_t *in,
+                  uint8_t *out,
+                  size_t inOutLen,
+                  uint8_t *tag,
+                  size_t tagLen) {
+    int ret;
     Aes aes;
-    int ret, key_len, iv_len, tag_len;
-    const aead_info_t *aead_info;
 
     ret = EDHOC_ERR_CRYPTO;
 
-    aead_info = cose_aead_info_from_id(alg);
-
-    if (aead_info == NULL)
-        return EDHOC_ERR_AEAD_CIPHER_UNAVAILABLE;
-
-    key_len = aead_info->key_length;
-    iv_len = aead_info->iv_length;
-    tag_len = aead_info->tag_length;
-
-    if (wc_AesCcmSetKey(&aes, key, key_len) != EDHOC_SUCCESS)
+    if (wc_AesCcmSetKey(&aes, sk->k, sk->kLen) != EDHOC_SUCCESS)
         goto exit;
 
-    if (wc_AesCcmDecrypt(&aes,
-                         plaintext,
-                         ciphertext,
-                         ct_pl_len,
-                         iv,
-                         iv_len,
-                         tag,
-                         tag_len,
-                         aad,
-                         aad_len) != EDHOC_SUCCESS)
+    if (wc_AesCcmDecrypt(&aes, out, in, inOutLen, iv, ivLen, tag, tagLen, aad, aadLen) != EDHOC_SUCCESS)
         goto exit;
+
 
     ret = EDHOC_SUCCESS;
     exit:
     wc_AesFree(&aes);
     return ret;
-
 }
+
 
 int crypt_encrypt(
-        cose_algo_t alg,
-        const uint8_t *key,
+        const cose_key_t *sk,
         const uint8_t *iv,
+        size_t ivLen,
         const uint8_t *aad,
-        size_t aad_len,
-        uint8_t *plaintext,
-        uint8_t *ciphertext,
-        size_t ct_pl_len,
-        uint8_t *tag) {
+        size_t aadLen,
+        uint8_t *in,
+        uint8_t *out,
+        size_t inOutLen,
+        uint8_t *tag,
+        size_t tagLen) {
 
+    int ret;
     Aes aes;
-    int ret, key_len, iv_len, tag_len;
-    const aead_info_t *aead_info;
 
     ret = EDHOC_ERR_CRYPTO;
 
-    aead_info = cose_aead_info_from_id(alg);
-
-    if (aead_info == NULL)
-        return EDHOC_ERR_AEAD_CIPHER_UNAVAILABLE;
-
-    key_len = aead_info->key_length;
-    iv_len = aead_info->iv_length;
-    tag_len = aead_info->tag_length;
-
-    if (wc_AesCcmSetKey(&aes, key, key_len) != EDHOC_SUCCESS)
+    if (wc_AesCcmSetKey(&aes, sk->k, sk->kLen) != EDHOC_SUCCESS)
         goto exit;
 
-    if (wc_AesCcmEncrypt(&aes,
-                         ciphertext,
-                         plaintext,
-                         ct_pl_len,
-                         iv,
-                         iv_len,
-                         tag,
-                         tag_len,
-                         aad,
-                         aad_len) != EDHOC_SUCCESS)
+    if (wc_AesCcmEncrypt(&aes, out, in, inOutLen, iv, ivLen, tag, tagLen, aad, aadLen) != EDHOC_SUCCESS)
         goto exit;
 
     ret = EDHOC_SUCCESS;
@@ -309,34 +263,36 @@ int crypt_encrypt(
     return ret;
 }
 
-int crypt_sign(const cose_key_t *authkey, const uint8_t *msg, size_t msg_len, uint8_t *signature) {
+int crypt_sign(const cose_key_t *authkey, const uint8_t *msg, size_t msgLen, uint8_t *signature, size_t *sigLen) {
 
     int ret;
+
     ed25519_key sk;
+    uint8_t pk[COSE_ECC_KEY_SIZE];
+
     wc_ed25519_init(&sk);
-    size_t sig_len = EDHOC_SIG23_MAX_SIZE;
-    uint8_t pk[EDHOC_ECC_KEY_MAX_SIZE];
 
     ret = EDHOC_ERR_CRYPTO;
 
-    if (wc_ed25519_import_private_only(authkey->d, authkey->d_len, &sk) != EDHOC_SUCCESS)
+    if (wc_ed25519_import_private_only(authkey->d, authkey->dLen, &sk) != EDHOC_SUCCESS)
         goto exit;
 
-    if (wc_ed25519_make_public(&sk, pk, EDHOC_ECC_KEY_MAX_SIZE) != EDHOC_SUCCESS)
+    if (wc_ed25519_make_public(&sk, pk, COSE_ECC_KEY_SIZE) != EDHOC_SUCCESS)
         goto exit;
 
-    if (wc_ed25519_import_private_key(authkey->d, authkey->d_len, pk, EDHOC_ECC_KEY_MAX_SIZE, &sk) != EDHOC_SUCCESS)
+    if (wc_ed25519_import_private_key(authkey->d, authkey->dLen, pk, COSE_ECC_KEY_SIZE, &sk) != EDHOC_SUCCESS)
         goto exit;
 
-    if (wc_ed25519_sign_msg(msg, msg_len, signature, (word32 *) &sig_len, &sk) != EDHOC_SUCCESS)
+    if (wc_ed25519_sign_msg(msg, msgLen, signature, (word32 *) sigLen, &sk) != EDHOC_SUCCESS)
         goto exit;
 
-    // store and return the length of the signature
-    ret = sig_len;
+    *sigLen = 64;
 
+    ret = EDHOC_SUCCESS;
     exit:
     wc_ed25519_free(&sk);
     return ret;
 }
+
 
 #endif /* WOLFSSL */

@@ -7,33 +7,25 @@
 #include <wolfssl/options.h>
 #include <wolfssl/wolfcrypt/sha256.h>
 
-#elif defined(MBEDTLS)
-#include <mbedtls/sha256.h>
 #elif defined(HACL)
+
+#define HASH_INPUT_BLEN     (256)
+
+typedef struct hacl_Sha256 hacl_Sha256;
+
+struct hacl_Sha256 {
+    uint16_t fillLevel;
+    uint8_t buffer[HASH_INPUT_BLEN];
+};
+#elif defined(EMPTY_X509)
+#elif defined(TINYCRYPT)
+#include "crypto/tinycrypt/sha256.h"
 #else
 #error "No crypto backend selected"
 #endif
 
 #include "edhoc/edhoc.h"
 
-#if defined(HACL)
-#define HASH_INPUT_BLEN         (1000)
-#endif
-
-typedef struct hash_ctx hash_ctx_t;
-
-struct hash_ctx {
-#if defined(WOLFSSL)
-    wc_Sha256 digest_ctx;
-#elif defined(MBEDTLS)
-    mbedtls_sha256_context digest_ctx;
-#elif defined(HACL)
-    size_t fill_level;
-    uint8_t input_buffer[HASH_INPUT_BLEN];
-#else
-#error "No crypto backend selected"
-#endif
-};
 
 /**
  * @brief Generate a random key pair over a COSE curve
@@ -54,7 +46,7 @@ int crypt_gen_keypair(cose_curve_t crv, cose_key_t *key);
  * @return On success returns EDHOC_SUCCESS
  * @return On failure returns EDHOC_ERR_CRYPTO
  */
-int crypt_hash_init(hash_ctx_t *ctx);
+int crypt_hash_init(void *ctx);
 
 /**
  * @brief Update the hashing context with
@@ -66,7 +58,7 @@ int crypt_hash_init(hash_ctx_t *ctx);
  * @return On success returns EDHOC_SUCCESS
  * @return On failure returns EDHOC_ERR_CRYPTO
  */
-int crypt_hash_update(hash_ctx_t *ctx, const uint8_t *in, size_t ilen);
+int crypt_hash_update(void *ctx, const uint8_t *in, size_t ilen);
 
 /**
  * @brief Finalize a hashing context
@@ -77,7 +69,7 @@ int crypt_hash_update(hash_ctx_t *ctx, const uint8_t *in, size_t ilen);
  * @return On success returns EDHOC_SUCCESS
  * @return On failure returns EDHOC_ERR_CRYPTO
  */
-int crypt_hash_finish(hash_ctx_t *ctx, uint8_t *out);
+int crypt_hash_finish(void *ctx, uint8_t *out);
 
 /**
  * @brief Free the hashing context
@@ -85,7 +77,7 @@ int crypt_hash_finish(hash_ctx_t *ctx, uint8_t *out);
  * @param[in] digest_ctx    Hashing context
  *
  */
-void crypt_hash_free(hash_ctx_t *ctx);
+void crypt_hash_free(void *ctx);
 
 /**
  * @brief Compute the EDHOC-KDF
@@ -100,8 +92,7 @@ void crypt_hash_free(hash_ctx_t *ctx);
  * @return On success, EDHOC_SUCCESS
  * @return On failure, EDHOC_ERR_CRYPTO, EDHOC_ERR_CBOR_ENCODING or another negative value
  */
-int
-crypt_kdf(cose_algo_t id, const uint8_t *prk, const uint8_t *th, const char *label, int length, uint8_t *out);
+int crypt_kdf(const uint8_t *prk, const uint8_t *info, size_t infoLen, uint8_t *out, size_t olen);
 
 /**
  * @brief Compute the EDHOC PRK_2e value.
@@ -113,7 +104,7 @@ crypt_kdf(cose_algo_t id, const uint8_t *prk, const uint8_t *th, const char *lab
  * @return On success, EDHOC_SUCCESS
  * @return On failure, EDHOC_ERR_CRYPTO
  **/
-int crypt_derive_prk(const cose_key_t *sk, const cose_key_t *pk, const uint8_t *salt, size_t salt_len, uint8_t *prk);
+int crypt_derive_prk(const cose_key_t *sk, const cose_key_t *pk, const uint8_t *salt, size_t saltLen, uint8_t *prk);
 
 /**
  * @brief Encrypts and authenticates the payload using a COSE AEAD cipher
@@ -131,15 +122,16 @@ int crypt_derive_prk(const cose_key_t *sk, const cose_key_t *pk, const uint8_t *
  * @return On success, EDHOC_SUCCESS
  * @return On failure EDHOC_ERR_CRYPTO or another negative value
  */
-int crypt_encrypt(cose_algo_t alg,
-                  const uint8_t *key,
+int crypt_encrypt(const cose_key_t *sk,
                   const uint8_t *iv,
+                  size_t ivLen,
                   const uint8_t *aad,
-                  size_t aad_len,
-                  uint8_t *plaintext,
-                  uint8_t *ciphertext,
-                  size_t ct_pl_len,
-                  uint8_t *tag);
+                  size_t aadLen,
+                  uint8_t *in,
+                  uint8_t *out,
+                  size_t inOutLen,
+                  uint8_t *tag,
+                  size_t tagLen);
 
 
 /**
@@ -158,26 +150,35 @@ int crypt_encrypt(cose_algo_t alg,
  * @return On success, EDHOC_SUCCESS
  * @return On failure EDHOC_ERR_CRYPTO or another negative value
  */
-int crypt_decrypt(cose_algo_t alg,
-                  const uint8_t *key,
+int crypt_decrypt(const cose_key_t *sk,
                   const uint8_t *iv,
+                  size_t ivLen,
                   const uint8_t *aad,
-                  size_t aad_len,
-                  uint8_t *plaintext,
-                  uint8_t *ciphertext,
-                  size_t ct_pl_len,
-                  uint8_t *tag);
+                  size_t aadLen,
+                  uint8_t *in,
+                  uint8_t *out,
+                  size_t inOutLen,
+                  uint8_t *tag,
+                  size_t tagLen);
+
+/**
+ *
+ * @param dstCtx
+ * @param srcCtx
+ * @return
+ */
+int crypt_copy_hash_context(void *dstCtx, void *srcCtx);
 
 /**
  * @brief Compute a signature of the digest
  *
  * @param[in] authkey       Private key
  * @param[in] msg           Message to sign
- * @param[in] msg_len       Length of @p msg
+ * @param[in] msgLen       Length of @p msg
  *
  * @return On success returns the size of the signature
  * @return On failure returns an EDHOC error code (< 0, i.e., EDHOC_ERR_CRYPTO, EDHOC_ERR_CURVE_UNAVAILABLE, ..)
  */
-int crypt_sign(const cose_key_t *authkey, const uint8_t *msg, size_t msg_len, uint8_t *signature);
+int crypt_sign(const cose_key_t *authkey, const uint8_t *msg, size_t msgLen, uint8_t *signature, size_t *sigLen);
 
 #endif /* EDHOC_CRYPTO_INTERNAL_H */

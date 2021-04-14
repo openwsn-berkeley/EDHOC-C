@@ -1,63 +1,48 @@
 #include <string.h>
 
-#include "edhoc/edhoc.h"
-
 #include "format.h"
-#include "cipher_suites.h"
+#include "ciphersuites.h"
 #include "cbor.h"
 
-#define SUPPORTED_SUITES_BUFFER_SIZE     (8)
+#if defined(MBEDTLS_X509)
+
+#include <mbedtls/x509_crt.h>
+
+#elif defined(EMPTY_X509)
+#else
+#error "No X509 backend enabled"
+#endif
+
+#if defined(NANOCBOR)
+
+#include <nanocbor/nanocbor.h>
+
+#elif defined(EMPTY_CBOR)
+#else
+#error "No CBOR backend enabled"
+#endif
+
+
 #define CBOR_ARRAY_INFO_LEN              (4)
 
+void format_msg1_init(edhoc_msg1_t *msg1) {
+    memset(msg1, 0, sizeof(edhoc_msg1_t));
+}
 
-ssize_t edhoc_msg1_encode(corr_t corr,
-                          method_t m,
-                          cipher_suite_id_t id,
-                          cose_key_t *key,
-                          const uint8_t *cidi,
-                          size_t cidi_len,
-                          ad_cb_t ad1,
-                          uint8_t *out,
-                          size_t olen) {
-    ssize_t size, written, ad1_len;
-    int8_t single_byte_conn_id;
-    uint8_t method_corr;
-    uint8_t cipher_list[edhoc_supported_suites_len() + 1];
-    uint8_t ad1_buf[EDHOC_ADD_DATA_MAX_SIZE];
+void format_msg2_init(edhoc_msg2_t *msg2) {
+    memset(msg2, 0, sizeof(edhoc_msg2_t));
+}
 
-    size = 0;
-    method_corr = m * 4 + corr;
+void format_msg3_init(edhoc_msg3_t *msg3) {
+    memset(msg3, 0, sizeof(edhoc_msg3_t));
+}
 
-    CBOR_CHECK_RET(cbor_int_encode(method_corr, out, size, olen));
+void format_error_msg_init(edhoc_error_msg_t *errMsg) {
+    memset(errMsg, 0, sizeof(edhoc_error_msg_t));
+}
 
-    if (edhoc_supported_suites_len() == 1) {
-        CBOR_CHECK_RET(cbor_int_encode(edhoc_supported_suites()[0].id, out, size, olen));
-    } else {
-        cipher_list[0] = id;
-        for (size_t i = 0; i < edhoc_supported_suites_len(); i++) {
-            cipher_list[i + 1] = edhoc_supported_suites()[i].id;
-        }
-        CBOR_CHECK_RET(cbor_bytes_encode(cipher_list, edhoc_supported_suites_len() + 1, out, size, olen));
-    }
-
-    CBOR_CHECK_RET(cbor_bytes_encode(key->x, key->x_len, out, size, olen));
-
-    if (cidi_len == 1) {
-        single_byte_conn_id = cidi[0] - 24;
-        CBOR_CHECK_RET(cbor_int_encode(single_byte_conn_id, out, size, olen));
-    } else {
-        CBOR_CHECK_RET(cbor_bytes_encode(cidi, cidi_len, out, size, olen));
-    }
-
-    if (ad1 != NULL)
-        ad1(ad1_buf, EDHOC_ADD_DATA_MAX_SIZE, &ad1_len);
-
-    if (ad1 != NULL) {
-        CBOR_CHECK_RET(cbor_bytes_encode(ad1_buf, ad1_len, out, size, olen));
-    }
-
-    exit:
-    return size;
+void format_plaintext23_init(edhoc_plaintext23_t *plaintext) {
+    memset(plaintext, 0, sizeof(edhoc_plaintext23_t));
 }
 
 /**
@@ -91,424 +76,629 @@ static int has_support(uint8_t cipher_suite) {
 /**
  * @brief Verifies if the Initiator's preferred cipher suite, is truly the best choice.
  *
- * @param preferred_suite[in]   Selected suite by the Initiator
- * @param remote_suites[in]     Suites supported by the Responder
- * @param remote_suites_len[in] Length of @p remote_suites
+ * @param preferredSuite[in]   Selected suite by the Initiator
+ * @param alternatives[in]     Suites supported by the Responder
+ * @param alternativesLen[in] Length of @p remote_suites
  *
  * @return On success EDHOC_SUCCESS
  * @return On failure EDHOC_ERR_ILLEGAL_CIPHERSUITE
  **/
-static int verify_cipher_suite(uint8_t preferred_suite, const uint8_t *remote_suites, size_t remote_suites_len) {
+static int verify_cipher_suite(uint8_t preferredSuite, const uint8_t *alternatives, size_t alternativesLen) {
+    int ret;
 
-    if (has_support(preferred_suite) != EDHOC_SUCCESS)
-        return EDHOC_ERR_CIPHERSUITE_UNAVAILABLE;
+    // first check if the responder supports the preferred suite
+    EDHOC_CHECK_SUCCESS(has_support(preferredSuite));
 
-    for (size_t i = 0; i < remote_suites_len; i++) {
-        if (has_support(remote_suites[i]) && remote_suites[i] != preferred_suite)
-            return EDHOC_ERR_CIPHERSUITE_UNAVAILABLE;
-        else if (has_support(remote_suites[i]) && remote_suites[i] == preferred_suite)
-            return EDHOC_SUCCESS;
-        else
+    // verify that no prior cipher suite in the alternatives is supported
+    for (size_t i = 0; i < alternativesLen; i++) {
+        if (has_support(alternatives[i]) && alternatives[i] != preferredSuite) {
+            // if another prior cipher suite is supported, return error
+            EDHOC_FAIL(EDHOC_ERR_PRIOR_CIPHERSUITE_SUPPORTED);
+        } else if (has_support(alternatives[i]) && alternatives[i] == preferredSuite) {
+            // if preferredSuite is the first one that the Responder supports we are good
+            break;
+        } else {
+            // prior alternative not supported by the responder, verify next one
             continue;
-    }
-
-    return EDHOC_SUCCESS;
-}
-
-int edhoc_msg3_decode(edhoc_msg3_t *msg3, corr_t correlation, const uint8_t *msg3_buf, size_t msg3_len) {
-    int ret;
-    ssize_t size, written;
-
-    size = 0;
-    ret = EDHOC_ERR_CBOR_DECODING;
-
-    if (correlation == NO_CORR || correlation == CORR_1_2) {
-        CBOR_CHECK_RET(cbor_bstr_id_decode(msg3->cidr, &msg3->cidr_len, msg3_buf, size, msg3_len))
-    }
-
-    msg3->data = msg3_buf;
-    msg3->data_len = msg3->cidr_len;
-
-    CBOR_CHECK_RET(cbor_bytes_decode(&msg3->ciphertext, &msg3->ciphertext_len, msg3_buf, size, msg3_len));
-
-    ret = EDHOC_SUCCESS;
-    exit:
-    return ret;
-}
-
-int edhoc_msg2_decode(edhoc_msg2_t *msg2, corr_t corr, const uint8_t *msg2_buf, size_t msg2_len) {
-    int ret;
-    ssize_t size, written;
-
-    size = 0;
-    ret = EDHOC_ERR_CBOR_DECODING;
-
-    if (corr == NO_CORR || corr == CORR_2_3) {
-        CBOR_CHECK_RET(cbor_bstr_id_decode(msg2->cidi, &msg2->cidi_len, msg2_buf, size, msg2_len))
-    }
-
-    CBOR_CHECK_RET(cbor_bytes_decode(&msg2->g_y, &msg2->g_y_len, msg2_buf, size, msg2_len));
-
-    CBOR_CHECK_RET(cbor_bstr_id_decode(msg2->cidr, &msg2->cidr_len, msg2_buf, size, msg2_len))
-
-    msg2->data = msg2_buf;
-    msg2->data_len = size;
-
-    CBOR_CHECK_RET(cbor_bytes_decode((const uint8_t **) &msg2->ciphertext,
-                                     &msg2->ciphertext_len,
-                                     msg2_buf,
-                                     size,
-                                     msg2_len));
-
-    ret = EDHOC_SUCCESS;
-    exit:
-    return ret;
-}
-
-int edhoc_msg1_decode(edhoc_msg1_t *msg1, const uint8_t *msg1_buf, size_t msg1_len) {
-    int ret;
-
-    size_t len;
-    ssize_t size, written;
-    const cipher_suite_t *suite_info;
-    uint8_t suites[SUPPORTED_SUITES_BUFFER_SIZE];
-
-    size = 0;
-
-    ret = EDHOC_ERR_CBOR_DECODING;
-
-    CBOR_CHECK_RET(cbor_uint_decode(&msg1->method_corr, msg1_buf, size, msg1_len));
-
-    len = SUPPORTED_SUITES_BUFFER_SIZE;
-    CBOR_CHECK_RET(cbor_suites_decode(suites, &len, msg1_buf, size, msg1_len));
-
-    EDHOC_CHECK_SUCCESS(verify_cipher_suite(suites[0], &suites[0], len));
-
-    if ((suite_info = edhoc_cipher_suite_from_id(suites[0])) == NULL)
-        return EDHOC_ERR_CIPHERSUITE_UNAVAILABLE;
-    else
-        msg1->cipher_suite = suite_info->id;
-
-    CBOR_CHECK_RET(cbor_bytes_decode(&msg1->g_x, &msg1->g_x_len, msg1_buf, size, msg1_len));
-    CBOR_CHECK_RET(cbor_bstr_id_decode(msg1->cidi, &msg1->cidi_len, msg1_buf, size, msg1_len))
-    CBOR_CHECK_RET(cbor_bytes_decode(&msg1->ad1, &msg1->ad1_len, msg1_buf, size, msg1_len));
-
-    ret = EDHOC_SUCCESS;
-    exit:
-    return ret;
-}
-
-
-ssize_t edhoc_info_encode(
-        cose_algo_t id,
-        const uint8_t *th,
-        const char *label,
-        size_t len,
-        uint8_t *out,
-        size_t olen) {
-
-    ssize_t size, written;
-
-    size = 0;
-
-    CBOR_CHECK_RET(cbor_create_array(out, CBOR_ARRAY_INFO_LEN, size, olen));
-    CBOR_CHECK_RET(cbor_array_append_int(id, out, size, olen));
-    CBOR_CHECK_RET(cbor_array_append_bytes(th, EDHOC_HASH_MAX_SIZE, out, size, olen));
-    CBOR_CHECK_RET(cbor_array_append_string(label, out, size, olen));
-    CBOR_CHECK_RET(cbor_array_append_int(len, out, size, olen));
-
-    exit:
-    return size;
-}
-
-
-ssize_t edhoc_data3_encode(corr_t corr, const uint8_t *cidr, size_t cidr_len, uint8_t *out, size_t olen) {
-    ssize_t size, written;
-    int8_t single_byte_cid;
-
-    size = 0;
-
-    if (corr == CORR_2_3 || corr == CORR_ALL) {
-        return 0;
-    } else {
-        if (cidr_len == 1) {
-            single_byte_cid = cidr[0] - 24;
-            CBOR_CHECK_RET(cbor_int_encode(single_byte_cid, out, size, olen));
-        } else if (cidr_len > 1) {
-            CBOR_CHECK_RET(cbor_bytes_encode(cidr, cidr_len, out, size, olen));
         }
     }
 
+    ret = EDHOC_SUCCESS;
     exit:
-    return size;
+    return ret;
 }
 
-ssize_t edhoc_data2_encode(corr_t corr,
-                           const uint8_t *cidi,
-                           size_t cidi_len,
-                           const uint8_t *cidr,
-                           size_t cidr_len,
-                           const cose_key_t *eph_key,
+ssize_t format_msg1_encode(const edhoc_msg1_t *msg1, uint8_t *out, size_t olen) {
+    ssize_t ret;
+
+#if defined(NANOCBOR)
+    nanocbor_encoder_t encoder;
+#elif defined(EMPTY_CBOR)
+    int encoder;
+#else
+#error "No CBOR backend enabled"
+#endif
+
+    cbor_init_encoder(&encoder, out, olen);
+
+    // (1) encode the method_corr
+    CBOR_ENC_CHECK_RET(cbor_put_int8_t(&encoder, msg1->methodCorr));
+
+    // (2) encode the EDHOC cipher suite list
+    if (edhoc_supported_suites_len() == 1) {
+        if (msg1->cipherSuite->id == edhoc_supported_suites()[0].id) {
+            CBOR_ENC_CHECK_RET(cbor_put_int8_t(&encoder, edhoc_supported_suites()[0].id));
+        } else {
+            EDHOC_FAIL(EDHOC_ERR_CBOR_ENCODING);
+        }
+    } else if (edhoc_supported_suites_len() > 1) {
+        EDHOC_CHECK_SUCCESS(has_support(msg1->cipherSuite->id));
+        CBOR_ENC_CHECK_RET(cbor_put_array(&encoder, edhoc_supported_suites_len() + 1))
+        CBOR_ENC_CHECK_RET(cbor_put_uint8_t(&encoder, msg1->cipherSuite->id));
+        for (size_t i = 0; i < edhoc_supported_suites_len(); i++) {
+            CBOR_ENC_CHECK_RET(cbor_put_uint8_t(&encoder, edhoc_supported_suites()[i].id));
+        }
+    } else {
+        EDHOC_FAIL(EDHOC_ERR_CIPHERSUITE_UNAVAILABLE);
+    }
+
+    // (3) encode the public ephemeral key G_X
+    CBOR_ENC_CHECK_RET(cbor_put_bstr(&encoder, msg1->gX.x, msg1->gX.xLen));
+
+    // (4) encode the Initiator's connection identifier
+    if (msg1->cidi.length == 1 && msg1->cidi.integer >= 0 && msg1->cidi.integer <= 0x2f) {
+        cbor_put_int8_t(&encoder, msg1->cidi.integer - 24);
+    } else {
+        cbor_put_bstr(&encoder, msg1->cidi.bstr, msg1->cidi.length);
+    }
+
+    // (5) encode the additional data
+    if (msg1->ad1 != NULL && msg1->ad1Len != 0) {
+        CBOR_ENC_CHECK_RET(cbor_put_bstr(&encoder, msg1->ad1, msg1->ad1Len));
+    }
+
+    ret = cbor_encoded_len(&encoder);
+    exit:
+    return ret;
+}
+
+int format_msg1_decode(edhoc_msg1_t *msg1, const uint8_t *in, size_t ilen) {
+    int ret;
+    uint8_t suite;
+
+    size_t i;
+    uint8_t receivedSuites[10];
+
+    const uint8_t *p;
+
+#if defined(NANOCBOR)
+    nanocbor_encoder_t decoder;
+    nanocbor_encoder_t arr;
+#elif defined(EMPTY_CBOR)
+    int decoder;
+    int arr;
+#else
+#error "No CBOR backend enabled"
+#endif
+
+    // set up the decoder context
+    cbor_init_decoder(&decoder, in, ilen);
+
+    // (1) decode the method correlation
+    CBOR_DEC_CHECK_RET(cbor_get_uint8_t(&decoder, &msg1->methodCorr));
+
+    // (2) decode the selected cipher suite
+    if (cbor_get_type(&decoder) == CBOR_ARRAY) {
+        CBOR_DEC_CHECK_RET(cbor_start_decoding_array(&decoder, &arr));
+
+        i = 0;
+        while (!cbor_at_end(&arr) && i < sizeof(receivedSuites)) {
+            CBOR_DEC_CHECK_RET(cbor_get_uint8_t(&arr, &receivedSuites[i]));
+            i++;
+        }
+        if (i == sizeof(receivedSuites)) {
+            EDHOC_FAIL(EDHOC_ERR_BUFFER_OVERFLOW);
+        } else {
+            EDHOC_CHECK_SUCCESS(verify_cipher_suite(receivedSuites[0], &receivedSuites[1], i - 1));
+        }
+    } else if (cbor_get_type(&decoder) == CBOR_UINT) {
+        cbor_get_uint8_t(&decoder, &suite);
+        msg1->cipherSuite = edhoc_cipher_suite_from_id(suite);
+        // only option, just verify the support for this cipher suite
+        EDHOC_CHECK_SUCCESS(has_support(suite));
+    } else {
+        EDHOC_FAIL(EDHOC_ERR_CBOR_DECODING);
+    }
+
+    if (msg1->cipherSuite == NULL) {
+        EDHOC_FAIL(EDHOC_ERR_CIPHERSUITE_UNAVAILABLE);
+    }
+
+    // (3) decode the ephemeral key
+    if (msg1->cipherSuite->id == EDHOC_CIPHER_SUITE_0 || msg1->cipherSuite->id == EDHOC_CIPHER_SUITE_1) {
+        msg1->gX.kty = COSE_KTY_OCTET;
+        msg1->gX.crv = COSE_EC_CURVE_X25519;
+    } else {
+        msg1->gX.kty = COSE_KTY_EC2;
+        msg1->gX.crv = COSE_EC_CURVE_P256;
+    }
+
+    CBOR_DEC_CHECK_RET(cbor_get_bstr(&decoder, &p, &msg1->gX.xLen));
+    memcpy(msg1->gX.x, p, msg1->gX.xLen);
+
+    // TODO: check if valid key?
+
+    // (4) decode connection identifier
+    if (cbor_get_type(&decoder) == CBOR_BSTR) {
+        CBOR_DEC_CHECK_RET(cbor_get_bstr(&decoder, &msg1->cidi.bstr, &msg1->cidi.length));
+    } else if (cbor_get_type(&decoder) == CBOR_NINT) {
+        CBOR_DEC_CHECK_RET(cbor_get_int8_t(&decoder, &msg1->cidi.integer));
+        msg1->cidi.integer += 24;
+        msg1->cidi.length = 1;
+    } else if (cbor_get_type(&decoder) == CBOR_UINT) {
+        CBOR_DEC_CHECK_RET(cbor_get_uint8_t(&decoder, (uint8_t *) &(msg1->cidi.integer)));
+        msg1->cidi.integer += 24;
+        msg1->cidi.length = 1;
+    } else {
+        EDHOC_FAIL(EDHOC_ERR_CBOR_DECODING);
+    }
+
+    if (!cbor_at_end(&decoder)) {
+        CBOR_DEC_CHECK_RET(cbor_get_bstr(&decoder, &msg1->ad1, &msg1->ad1Len));
+    }
+
+    ret = EDHOC_SUCCESS;
+    exit:
+    return ret;
+}
+
+ssize_t format_msg2_encode(const edhoc_msg2_t *msg2, corr_t corr, uint8_t *out, size_t olen) {
+    ssize_t ret;
+
+#if defined(NANOCBOR)
+    nanocbor_encoder_t encoder;
+#elif defined(EMPTY_CBOR)
+    int encoder;
+#else
+#error "No CBOR backend enabled"
+#endif
+
+    if ((ret = format_data2_encode(&msg2->data2, corr, out, olen)) < 0) {
+        EDHOC_FAIL(ret);
+    }
+
+    cbor_init_encoder(&encoder, out + ret, olen - ret);
+
+    CBOR_ENC_CHECK_RET(cbor_put_bstr(&encoder, msg2->ciphertext2, msg2->ciphertext2Len));
+
+    ret = ret + cbor_encoded_len(&encoder);
+    exit:
+    return ret;
+}
+
+int format_msg2_decode(edhoc_msg2_t *msg2,
+                       corr_t corr,
+                       const cipher_suite_t *suite,
+                       const uint8_t *msg2Buf,
+                       size_t msg2Len) {
+    int ret;
+    const uint8_t *p;
+
+#if defined(NANOCBOR)
+    nanocbor_encoder_t decoder;
+#elif defined(EMPTY_CBOR)
+    int decoder;
+#else
+#error "No CBOR backend enabled"
+#endif
+
+    cbor_init_decoder(&decoder, msg2Buf, msg2Len);
+
+    if (corr == NO_CORR || corr == CORR_2_3) {
+        if (cbor_get_type(&decoder) == CBOR_BSTR) {
+            CBOR_DEC_CHECK_RET(cbor_get_bstr(&decoder, &msg2->data2.cidi.bstr, &msg2->data2.cidi.length));
+        } else if (cbor_get_type(&decoder) == CBOR_NINT) {
+            CBOR_DEC_CHECK_RET(cbor_get_int8_t(&decoder, &msg2->data2.cidi.integer));
+            msg2->data2.cidi.integer += 24;
+            msg2->data2.cidi.length = 1;
+        } else if (cbor_get_type(&decoder) == CBOR_UINT) {
+            CBOR_DEC_CHECK_RET(cbor_get_uint8_t(&decoder, (uint8_t *) &(msg2->data2.cidi.integer)));
+            msg2->data2.cidi.integer += 24;
+            msg2->data2.cidi.length = 1;
+        } else {
+            EDHOC_FAIL(EDHOC_ERR_CBOR_DECODING);
+        }
+    } else {
+        msg2->data2.cidr.length = 0;
+    }
+
+    if (suite == NULL) {
+        EDHOC_FAIL(EDHOC_ERR_CIPHERSUITE_UNAVAILABLE);
+    }
+
+    // (3) decode the ephemeral key
+    if (suite->id == EDHOC_CIPHER_SUITE_0 || suite->id == EDHOC_CIPHER_SUITE_1) {
+        msg2->data2.gY.kty = COSE_KTY_OCTET;
+    } else {
+        msg2->data2.gY.kty = COSE_KTY_EC2;
+    }
+
+    CBOR_DEC_CHECK_RET(cbor_get_bstr(&decoder, &p, &msg2->data2.gY.xLen));
+    memcpy(msg2->data2.gY.x, p, msg2->data2.gY.xLen);
+
+
+    // TODO: check validity key
+
+    if (cbor_get_type(&decoder) == CBOR_BSTR) {
+        CBOR_DEC_CHECK_RET(cbor_get_bstr(&decoder, &msg2->data2.cidr.bstr, &msg2->data2.cidr.length));
+    } else if (cbor_get_type(&decoder) == CBOR_NINT) {
+        CBOR_DEC_CHECK_RET(cbor_get_int8_t(&decoder, &msg2->data2.cidr.integer));
+        msg2->data2.cidr.integer += 24;
+        msg2->data2.cidr.length = 1;
+    } else if (cbor_get_type(&decoder) == CBOR_UINT) {
+        CBOR_DEC_CHECK_RET(cbor_get_uint8_t(&decoder, (uint8_t *) &(msg2->data2.cidr.integer)));
+        msg2->data2.cidr.integer += 24;
+        msg2->data2.cidr.length = 1;
+    } else {
+        EDHOC_FAIL(EDHOC_ERR_CBOR_DECODING);
+    }
+
+    CBOR_DEC_CHECK_RET(cbor_get_bstr(&decoder, &msg2->ciphertext2, &msg2->ciphertext2Len));
+
+    ret = EDHOC_SUCCESS;
+    exit:
+    return ret;
+}
+
+ssize_t format_msg3_encode(const edhoc_msg3_t *msg3, corr_t corr, uint8_t *out, size_t olen) {
+    ssize_t ret;
+
+#if defined(NANOCBOR)
+    nanocbor_encoder_t encoder;
+#elif defined(EMPTY_CBOR)
+    int encoder;
+#else
+#error "No CBOR backend enabled"
+#endif
+
+    if ((ret = format_data3_encode(&msg3->data3, corr, out, olen)) < 0) {
+        EDHOC_FAIL(ret);
+    }
+
+    cbor_init_encoder(&encoder, out + ret, olen - ret);
+
+    CBOR_ENC_CHECK_RET(cbor_put_bstr(&encoder, msg3->ciphertext3, msg3->ciphertext3Len));
+
+    ret = ret + cbor_encoded_len(&encoder);
+    exit:
+    return ret;
+}
+
+int format_msg3_decode(edhoc_msg3_t *msg3, corr_t corr, const uint8_t *msg3_buf, size_t msg3_len) {
+    int ret;
+
+#if defined(NANOCBOR)
+    nanocbor_encoder_t decoder;
+#elif defined(EMPTY_CBOR)
+    int decoder;
+#else
+#error "No CBOR backend enabled"
+#endif
+
+    cbor_init_decoder(&decoder, msg3_buf, msg3_len);
+
+    if (corr == NO_CORR || corr == CORR_1_2) {
+        if (cbor_get_type(&decoder) == CBOR_BSTR) {
+            CBOR_DEC_CHECK_RET(cbor_get_bstr(&decoder, &msg3->data3.cidr.bstr, &msg3->data3.cidr.length));
+        } else if (cbor_get_type(&decoder) == CBOR_NINT) {
+            CBOR_DEC_CHECK_RET(cbor_get_int8_t(&decoder, &msg3->data3.cidr.integer));
+            msg3->data3.cidr.integer += 24;
+            msg3->data3.cidr.length = 1;
+        } else if (cbor_get_type(&decoder) == CBOR_UINT) {
+            CBOR_DEC_CHECK_RET(cbor_get_uint8_t(&decoder, (uint8_t *) &(msg3->data3.cidr.integer)));
+            msg3->data3.cidr.integer += 24;
+            msg3->data3.cidr.length = 1;
+        } else {
+            EDHOC_FAIL(EDHOC_ERR_CBOR_DECODING);
+        }
+    }
+
+    CBOR_DEC_CHECK_RET(cbor_get_bstr(&decoder, &msg3->ciphertext3, &msg3->ciphertext3Len));
+
+    ret = EDHOC_SUCCESS;
+    exit:
+    return ret;
+}
+
+ssize_t format_data2_encode(const edhoc_data2_t *data2, corr_t corr, uint8_t *out, size_t olen) {
+#if defined(NANOCBOR)
+    nanocbor_encoder_t encoder;
+#elif defined(EMPTY_CBOR)
+    int encoder;
+#else
+#error "No CBOR backend enabled"
+#endif
+
+    int ret;
+    cbor_init_encoder(&encoder, out, olen);
+
+    // (1) Optionally encode the Initiator's connection identifier
+    if (corr == NO_CORR || corr == CORR_2_3) {
+        if (data2->cidi.length == 1 && data2->cidi.integer >= 0 && data2->cidi.integer <= 0x2f) {
+            CBOR_ENC_CHECK_RET(cbor_put_int8_t(&encoder, data2->cidi.integer - 24));
+        } else {
+            CBOR_ENC_CHECK_RET(cbor_put_bstr(&encoder, data2->cidr.bstr, data2->cidr.length));
+        }
+    }
+
+    // (2) Encode the Responder's public ephemeral key
+    CBOR_ENC_CHECK_RET(cbor_put_bstr(&encoder, data2->gY.x, data2->gY.xLen));
+
+    // (3) Encode the Responder's connection identifier
+    if (data2->cidr.length == 1 && data2->cidr.integer >= 0 && data2->cidr.integer <= 0x2f) {
+        CBOR_ENC_CHECK_RET(cbor_put_int8_t(&encoder, data2->cidr.integer - 24));
+    } else {
+        CBOR_ENC_CHECK_RET(cbor_put_bstr(&encoder, data2->cidr.bstr, data2->cidr.length));
+    }
+
+    ret = cbor_encoded_len(&encoder);
+    exit:
+    return ret;
+}
+
+ssize_t format_data3_encode(const edhoc_data3_t *data3, corr_t corr, uint8_t *out, size_t olen) {
+    int ret;
+
+#if defined(NANOCBOR)
+    nanocbor_encoder_t encoder;
+#elif defined(EMPTY_CBOR)
+    int encoder;
+#else
+#error "No CBOR backend enabled"
+#endif
+
+    cbor_init_encoder(&encoder, out, olen);
+
+    // (1) Optionally encode the Initiator's connection identifier
+    if (corr == NO_CORR || corr == CORR_1_2) {
+        if (data3->cidr.length == 1 && data3->cidr.integer >= 0 && data3->cidr.integer <= 0x2f) {
+            CBOR_ENC_CHECK_RET(cbor_put_int8_t(&encoder, data3->cidr.integer - 24));
+        } else {
+            CBOR_ENC_CHECK_RET(cbor_put_bstr(&encoder, data3->cidr.bstr, data3->cidr.length));
+        }
+    }
+
+    ret = cbor_encoded_len(&encoder);
+    exit:
+    return ret;
+}
+
+ssize_t format_info_encode(cose_algo_id_t id,
+                           const uint8_t *th,
+                           const char *label,
+                           size_t len,
                            uint8_t *out,
                            size_t olen) {
+#if defined(NANOCBOR)
+    nanocbor_encoder_t encoder;
+#elif defined(EMPTY_CBOR)
+    int encoder;
+#else
+#error "No CBOR backend enabled"
+#endif
 
-    ssize_t size, written;
-    int8_t single_byte_cid;
+    cbor_init_encoder(&encoder, out, olen);
 
-    size = 0;
-    memset(out, 0, olen);
+    cbor_put_array(&encoder, CBOR_ARRAY_INFO_LEN);
+    cbor_put_int8_t(&encoder, id);
+    cbor_put_bstr(&encoder, th, EDHOC_DIGEST_SIZE);
+    cbor_put_tstr(&encoder, label);
+    cbor_put_int8_t(&encoder, len);
 
-    if (corr == NO_CORR || corr == CORR_2_3) {
-        if (cidi_len == 1) {
-            single_byte_cid = cidi[0] - 24;
-            CBOR_CHECK_RET(cbor_int_encode(single_byte_cid, out, size, olen));
-        } else if (cidi_len > 1) {
-            CBOR_CHECK_RET(cbor_bytes_encode(cidi, cidi_len, out, size, olen));
-        }
-    }
-
-    CBOR_CHECK_RET(cbor_bytes_encode(eph_key->x, eph_key->x_len, out, size, olen));
-
-    // even if length of responder conn id is zero we need to add it.
-    if (cidr_len == 1) {
-        single_byte_cid = cidr[0] - 24;
-        CBOR_CHECK_RET(cbor_int_encode(single_byte_cid, out, size, olen));
-    } else {
-        CBOR_CHECK_RET(cbor_bytes_encode(cidi, cidi_len, out, size, olen));
-    }
-
-    exit:
-    return size;
+    return cbor_encoded_len(&encoder);
 }
 
-ssize_t edhoc_cose_ex_aad_encode(const uint8_t *th,
-                                 const uint8_t *cred,
-                                 size_t cred_len,
-                                 ad_cb_t ad2,
-                                 uint8_t *out,
-                                 size_t olen) {
+ssize_t format_external_data_encode(const uint8_t *th,
+                                    cred_t credCtx,
+                                    cred_type_t credType,
+                                    ad_cb_t ad2,
+                                    uint8_t *out,
+                                    size_t olen) {
+    ssize_t ret, offset;
+#if defined(NANOCBOR)
+    nanocbor_encoder_t enc;
+#elif defined(EMPTY_CBOR)
+    int enc;
+#else
+#error "No CBOR backend enabled"
+#endif
 
-    ssize_t size, written, ad2_len;
-    uint8_t ad2_buf[EDHOC_ADD_DATA_MAX_SIZE];
+    cbor_init_encoder(&enc, out, olen);
+    cbor_put_bstr(&enc, th, EDHOC_DIGEST_SIZE);
 
-    size = 0;
+    offset = cbor_encoded_len(&enc);
 
-    if (ad2 != NULL)
-        ad2(ad2_buf, EDHOC_ADD_DATA_MAX_SIZE, &ad2_len);
-
-    CBOR_CHECK_RET(cbor_bytes_encode(th, EDHOC_HASH_MAX_SIZE, out, size, olen));
-
-    // cred is already CBOR encoded
-    if (size + cred_len <= olen) {
-        memcpy(out + size, cred, cred_len);
-        size += cred_len;
+    if (credType == CRED_TYPE_CBOR_CERT) {
+        memcpy(out + offset, ((c509_t *) credCtx)->raw.p, ((c509_t *) credCtx)->raw.length);
+        offset += ((c509_t *) credCtx)->raw.length;
+    } else if (credType == CRED_TYPE_DER_CERT) {
+#if defined(MBEDTLS_X509)
+        CBOR_ENC_CHECK_RET(
+                cbor_put_bstr(&enc, ((mbedtls_x509_crt *) credCtx)->raw.p, ((mbedtls_x509_crt *) credCtx)->raw.len));
+        offset = cbor_encoded_len(&enc);
+#elif defined(EMPTY_X509)
+#else
+#error "No X509 backend enabled"
+#endif
+    } else if (credType == CRED_TYPE_RPK) {
+        memcpy(out + offset, ((rpk_t *) credCtx)->raw.p, ((rpk_t *) credCtx)->raw.length);
+        offset += ((rpk_t *) credCtx)->raw.length;
     } else {
-        return EDHOC_ERR_BUFFER_OVERFLOW;
+        EDHOC_FAIL(EDHOC_ERR_INVALID_CRED);
     }
 
+    cbor_init_encoder(&enc, out + offset, olen - offset);
     if (ad2 != NULL) {
-        CBOR_CHECK_RET(cbor_bytes_encode(ad2_buf, ad2_len, out, size, olen));
+        //TODO: attach additional data
     }
 
-    exit:
-    return size;
-}
-
-ssize_t edhoc_cose_enc_struct_encode(const uint8_t *cred_id,
-                                     size_t cred_id_len,
-                                     const uint8_t *external_aad,
-                                     size_t external_aad_len,
-                                     uint8_t *out,
-                                     size_t olen) {
-    ssize_t ret;
-    ssize_t size, written;
-
-    ret = EDHOC_ERR_CBOR_ENCODING;
-    size = 0;
-
-    CBOR_CHECK_RET(cbor_create_array(out, 3, 0, olen));
-    CBOR_CHECK_RET(cbor_array_append_string("Encrypt0", out, size, olen));
-    CBOR_CHECK_RET(cbor_array_append_bytes(cred_id, cred_id_len, out, size, olen));
-    CBOR_CHECK_RET(cbor_array_append_bytes(external_aad, external_aad_len, out, size, olen));
-
-    ret = size;
+    ret = offset + cbor_encoded_len(&enc);
     exit:
     return ret;
 }
 
-ssize_t edhoc_msg2_encode(const uint8_t *data2,
-                          size_t data2_len,
-                          const uint8_t *ct2,
-                          size_t ct2_len,
-                          uint8_t *out,
-                          size_t olen) {
-    ssize_t size, written;
+int format_plaintext23_decode(edhoc_plaintext23_t *plaintext, uint8_t *in, size_t ilen) {
+    int ret;
+    int8_t cborType;
 
-    // data_2 is already a CBOR sequence
-    memcpy(out, data2, data2_len);
+#if defined(NANOCBOR)
+    nanocbor_value_t dec;
+    nanocbor_value_t _dec;
+#elif defined(EMPTY_CBOR)
+    int dec;
+    int _dec;
+#else
+#error "No CBOR backend enabled"
+#endif
 
-    size = 0;
-    CBOR_CHECK_RET(cbor_bytes_encode(ct2, ct2_len, out + data2_len, size, olen));
+    cbor_init_decoder(&dec, in, ilen);
 
-    exit:
-    return size + data2_len;
-}
+    cbor_get_substream(&dec, &plaintext->credId->p, &plaintext->credId->length);
+    cbor_init_decoder(&_dec, plaintext->credId->p, plaintext->credId->length);
 
-ssize_t edhoc_msg3_encode(const uint8_t *data3,
-                          size_t data3_len,
-                          const uint8_t *ct3,
-                          size_t ct3_len,
-                          uint8_t *out,
-                          size_t olen) {
-    ssize_t size, written;
+    cborType = cbor_get_type(&_dec);
 
-    // data_2 is already a CBOR sequence
-    memcpy(out, data3, data3_len);
+    if (cborType == CBOR_MAP) {
+        EDHOC_CHECK_SUCCESS(cose_header_parse(plaintext->credId->map,
+                                              plaintext->credId->p,
+                                              plaintext->credId->length));
+    } else {
+        // if its a kid then there was a single item in the cose header
+        plaintext->credId->map->key = COSE_HEADER_PARAM_KID;
 
-    size = 0;
-    CBOR_CHECK_RET(cbor_bytes_encode(ct3, ct3_len, out + data3_len, size, olen));
-
-    exit:
-    return size + data3_len;
-}
-
-ssize_t edhoc_a23m_encode(const uint8_t *auth_bytes,
-                          size_t auth_len,
-                          const uint8_t *cred_id,
-                          size_t cred_id_len,
-                          const uint8_t *th23,
-                          uint8_t *out,
-                          size_t olen) {
-    ssize_t ret;
-    ssize_t eaad_len;
-    ssize_t enc_len;
-
-    const uint8_t *start_eaad;
-
-    if ((eaad_len = edhoc_cose_ex_aad_encode(th23, auth_bytes, auth_len, NULL, out, olen)) <= 0) {
-        if (eaad_len < 0) {
-            EDHOC_FAIL(eaad_len);
+        if (cborType == CBOR_BSTR) {
+            CBOR_DEC_CHECK_RET(cbor_get_bstr(&_dec, &plaintext->credId->map[0].bstr, &plaintext->credId->map[0].len));
+            plaintext->credId->map[0].valueType = COSE_HDR_VALUE_BSTR;
+        } else if (cborType == CBOR_NINT || cborType == CBOR_UINT) {
+            CBOR_DEC_CHECK_RET(cbor_get_int32_t(&_dec, &plaintext->credId->map->integer));
+            plaintext->credId->map->integer += 24;
+            plaintext->credId->map[0].valueType = COSE_HDR_VALUE_INT;
         } else {
-            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
+            EDHOC_FAIL(EDHOC_ERR_CBOR_DECODING);
         }
     }
 
-    // move to the back of the buffer
-    memcpy(out + olen - eaad_len, out, eaad_len);
+    CBOR_DEC_CHECK_RET(cbor_get_bstr(&dec, &plaintext->sigOrMac23, &plaintext->sigOrMac23Len));
 
-    start_eaad = out + olen - eaad_len;
-    if ((enc_len = edhoc_cose_enc_struct_encode(cred_id, cred_id_len, start_eaad, eaad_len, out, olen)) <= 0) {
-        if (enc_len < 0) {
-            EDHOC_FAIL(enc_len);
-        } else {
-            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
-        }
+    if (!cbor_at_end(&dec)) {
+        CBOR_DEC_CHECK_RET(cbor_get_bstr(&dec, &plaintext->ad23, &plaintext->ad23Len));
     }
-
-    ret = enc_len;
-    exit:
-    return ret;
-}
-
-ssize_t edhoc_m23_encode(const uint8_t *th23,
-                         const uint8_t *auth_bytes,
-                         size_t auth_len,
-                         const uint8_t *cred_id,
-                         size_t cred_id_len,
-                         ad_cb_t ad23,
-                         const uint8_t *tag,
-                         size_t tag_len,
-                         uint8_t *out,
-                         size_t olen) {
-
-    ssize_t eaad_len, size, written;
-    ssize_t ret;
-
-    size = 0;
-
-    if ((eaad_len = edhoc_cose_ex_aad_encode(th23, auth_bytes, auth_len, ad23, out, olen)) <= 0) {
-        if (eaad_len < 0) {
-            EDHOC_FAIL(eaad_len);
-        } else {
-            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
-        }
-    }
-
-    // move to the back of the buffer
-    memcpy(out + olen - eaad_len, out, eaad_len);
-
-    ret = EDHOC_ERR_CBOR_ENCODING;
-    CBOR_CHECK_RET(cbor_create_array(out, 4, size, olen));
-    CBOR_CHECK_RET(cbor_array_append_string("Signature1", out, size, olen));
-    CBOR_CHECK_RET(cbor_array_append_bytes(cred_id, cred_id_len, out, size, olen));
-    CBOR_CHECK_RET(cbor_array_append_bytes(out + olen - eaad_len, eaad_len, out, size, olen));
-    CBOR_CHECK_RET(cbor_array_append_bytes(tag, tag_len, out, size, olen));
-
-    ret = size;
-    exit:
-    return ret;
-}
-
-ssize_t edhoc_p2e_or_p3ae_encode(uint8_t *cred_id,
-                                 size_t cred_id_len,
-                                 uint8_t *sig_or_mac23,
-                                 size_t sig_or_mac23_len,
-                                 uint8_t *out,
-                                 size_t olen) {
-    ssize_t size, written;
-
-    size = 0;
-
-    if (olen < cred_id_len)
-        return EDHOC_ERR_BUFFER_OVERFLOW;
-
-    // copy the CBOR encoded CRED_ID to the output buffer
-    memcpy(out, cred_id, cred_id_len);
-    size += cred_id_len;
-
-    // append CBOR encoding of signature_2
-    CBOR_CHECK_RET(cbor_bytes_encode(sig_or_mac23, sig_or_mac23_len, out, size, olen));
-
-    exit:
-    return size;
-}
-
-ssize_t edhoc_a3ae_encode(const uint8_t *th3, uint8_t *out, size_t olen) {
-    ssize_t ret;
-    ssize_t size, written;
-
-    size = 0;
-    ret = EDHOC_ERR_CBOR_ENCODING;
-
-    CBOR_CHECK_RET(cbor_create_array(out, 3, size, olen));
-    CBOR_CHECK_RET(cbor_array_append_string("Encrypt0", out, size, olen));
-    CBOR_CHECK_RET(cbor_array_append_bytes(NULL, 0, out, size, olen));
-    CBOR_CHECK_RET(cbor_array_append_bytes(th3, EDHOC_HASH_MAX_SIZE, out, size, olen));
-
-    ret = size;
-    exit:
-    return ret;
-}
-
-int edhoc_p3ae_decode(edhoc_ctx_t *ctx, uint8_t *p3ae, size_t p3ae_len) {
-    (void) ctx;
-    (void) p3ae;
-    (void) p3ae_len;
-
-    // TODO: verify signature
-    return EDHOC_SUCCESS;
-}
-
-int edhoc_p2e_decode(edhoc_msg2_t *msg2, const uint8_t *p2e, size_t p2e_len) {
-    ssize_t ret;
-
-    ssize_t size, written;
-
-    size = 0;
-
-    ret = EDHOC_ERR_CBOR_ENCODING;
 
     ret = EDHOC_SUCCESS;
     exit:
     return ret;
+}
+
+
+ssize_t format_plaintext23_encode(const edhoc_plaintext23_t *plaintext, uint8_t *out, size_t olen) {
+    ssize_t ret, offset;
+
+    int headerItems;
+
+#if defined(NANOCBOR)
+    nanocbor_encoder_t enc;
+#elif defined(EMPTY_CBOR)
+    int enc;
+#else
+#error "No CBOR backend enabled"
+#endif
+
+    offset = 0;
+
+    // check length of cred id map
+    headerItems = 0;
+    for (int i = 0; i < COSE_MAX_HEADER_ITEMS; i++) {
+        if (plaintext->credId->map[i].key != COSE_HEADER_PARAM_RESERVED)
+            headerItems++;
+        else
+            break;
+    }
+
+    // if KID and only item in header map, encode as BSTR_identifier
+    if (headerItems == 1 && plaintext->credId->map[0].key == COSE_HEADER_PARAM_KID) {
+        if (plaintext->credId->map[0].valueType == COSE_HDR_VALUE_BSTR) {
+            cbor_init_encoder(&enc, out, olen);
+
+            if (plaintext->credId->map[0].len == 1 && plaintext->credId->map[0].bstr[0] <= 0x2f) {
+                cbor_put_int8_t(&enc, plaintext->credId->map[0].bstr[0] - 24);
+            } else {
+                CBOR_ENC_CHECK_RET(
+                        cbor_put_bstr(&enc, plaintext->credId->map[0].bstr, plaintext->credId->map[0].len));
+            }
+
+            offset += cbor_encoded_len(&enc);
+        }
+    } else {
+        if (plaintext->credId->length <= olen - offset) {
+            memcpy(out, plaintext->credId->p, plaintext->credId->length);
+            offset += plaintext->credId->length;
+        } else {
+            EDHOC_FAIL(EDHOC_ERR_BUFFER_OVERFLOW);
+        }
+    }
+
+    cbor_init_encoder(&enc, out + offset, olen - offset);
+
+    cbor_init_encoder(&enc, out + offset, olen - offset);
+    CBOR_ENC_CHECK_RET(cbor_put_bstr(&enc, plaintext->sigOrMac23, plaintext->sigOrMac23Len));
+
+    if (plaintext->ad23Len != 0 && plaintext->ad23 != NULL) {
+        CBOR_ENC_CHECK_RET(cbor_put_bstr(&enc, plaintext->ad23, plaintext->ad23Len));
+    }
+
+    ret = offset + cbor_encoded_len(&enc);
+    exit:
+    return ret;
+}
+
+ssize_t format_error_msg_encode(const edhoc_error_msg_t *errMsg, uint8_t *out, size_t olen) {
+    ssize_t ret;
+
+#if defined(NANOCBOR)
+    nanocbor_encoder_t enc;
+#elif defined(EMPTY_CBOR)
+    int enc;
+#else
+#error "No CBOR backend enabled"
+#endif
+
+    cbor_init_encoder(&enc, out, olen);
+
+    if (errMsg->cid.length != 0) {
+        if (errMsg->cid.length == 1 && errMsg->cid.integer <= 0x2f) {
+            CBOR_ENC_CHECK_RET(cbor_put_int8_t(&enc, errMsg->cid.integer - 24));
+        } else {
+            CBOR_ENC_CHECK_RET(cbor_put_bstr(&enc, errMsg->cid.bstr, errMsg->cid.length));
+        }
+    }
+
+    if (errMsg->diagnosticMsg == NULL && errMsg->suitesRLen == 0) {
+        EDHOC_FAIL(ERR_EDHOC_ERROR_MESSAGE);
+    }
+
+    if (errMsg->diagnosticMsg != NULL) {
+        CBOR_ENC_CHECK_RET(cbor_put_tstr(&enc, errMsg->diagnosticMsg));
+    }
+
+    if (errMsg->suitesRLen != 0) {
+        CBOR_ENC_CHECK_RET(cbor_put_array(&enc, errMsg->suitesRLen));
+        for (size_t i = 0; i < errMsg->suitesRLen; i++) {
+            CBOR_ENC_CHECK_RET(cbor_put_uint8_t(&enc, errMsg->suitesR[i]));
+        }
+    }
+
+    ret = cbor_encoded_len(&enc);
+    exit:
+    return ret;
+
 }

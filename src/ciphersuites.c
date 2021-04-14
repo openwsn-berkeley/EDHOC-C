@@ -1,5 +1,5 @@
 #include "edhoc/edhoc.h"
-#include "cipher_suites.h"
+#include "ciphersuites.h"
 
 static const cipher_suite_t ciphersuites_supported[] =
         {
@@ -7,7 +7,6 @@ static const cipher_suite_t ciphersuites_supported[] =
                 {
                         EDHOC_CIPHER_SUITE_0,
                         "EDHOC_CIPHER_SUITE_0",
-                        COSE_KTY_OCTET,
                         COSE_ALGO_AESCCM_16_64_128,
                         COSE_ALGO_SHA256,
                         COSE_EC_CURVE_X25519,
@@ -21,7 +20,6 @@ static const cipher_suite_t ciphersuites_supported[] =
                 {
                         EDHOC_CIPHER_SUITE_1,
                         "EDHOC_CIPHER_SUITE_1",
-                        COSE_KTY_OCTET,
                         COSE_ALGO_AESCCM_16_128_128,
                         COSE_ALGO_SHA256,
                         COSE_EC_CURVE_X25519,

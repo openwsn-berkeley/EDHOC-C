@@ -1,2 +1,5 @@
 .idea
 cmake-build-*
+build/*
+fuzzing/input/*
+fuzzing/output/*

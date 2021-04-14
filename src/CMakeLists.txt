@@ -19,21 +19,41 @@ endif ()
 
 add_compile_definitions(${EDHOC_CRYPTO_BACKEND})
 add_compile_definitions(${EDHOC_CBOR_BACKEND})
+add_compile_definitions(${EDHOC_X509_BACKEND})
 
 add_library(${PROJECT_NAME})
 
 set(edhoc_sources
         ${PROJECT_SOURCE_DIR}/src/process.c
         ${PROJECT_SOURCE_DIR}/src/credentials.c
-        ${PROJECT_SOURCE_DIR}/src/cipher_suites.c
+        ${PROJECT_SOURCE_DIR}/src/ciphersuites.c
         ${PROJECT_SOURCE_DIR}/src/cose.c
         ${PROJECT_SOURCE_DIR}/src/format.c
         ${PROJECT_SOURCE_DIR}/src/edhoc.c
         ${PROJECT_SOURCE_DIR}/src/cbor/nanocbor.c
+        ${PROJECT_SOURCE_DIR}/src/cbor/empty.c
         ${PROJECT_SOURCE_DIR}/src/crypto/wolfssl.c
+        ${PROJECT_SOURCE_DIR}/src/creddb.c
         ${PROJECT_SOURCE_DIR}/src/crypto/hacl.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/empty.c
         ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c)
+        ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/tinycrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_decrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_encrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hkdf.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac_prng.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ccm_mode.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/utils.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha256.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/fprime.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha512.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ed25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/c25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/f25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/morph25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/edsign.c)
 
 target_sources(${PROJECT_NAME} PRIVATE ${edhoc_sources})
 
@@ -43,6 +63,9 @@ target_include_directories(${PROJECT_NAME}
         PRIVATE
         ${PROJECT_SOURCE_DIR}/src)
 
+if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS_X509")
+    include(mbedtls)
+endif ()
 
 if ("${EDHOC_CBOR_BACKEND}" STREQUAL "NANOCBOR")
     include(nanocbor)
@@ -56,3 +79,9 @@ endif ()
 
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "edhoc")
+
+if (CMAKE_TOOLCHAIN_FILE)
+    add_custom_command(
+            TARGET ${PROJECT_NAME}
+            POST_BUILD COMMAND ${SIZE_TOOL} ${CMAKE_BINARY_DIR}/lib/libedhoc.a)
+endif ()
