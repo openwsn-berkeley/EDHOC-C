@@ -688,7 +688,15 @@ ssize_t proc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2Buf, size_t msg2Le
 ssize_t proc_init_finalize(edhoc_ctx_t *ctx) {
     int ret;
 
+    if (ctx->state == EDHOC_SENT_MESSAGE_3) {
+        ctx->state = EDHOC_FINALIZED;
+    } else {
+        ctx->state = EDHOC_FAILED;
+        EDHOC_FAIL(EDHOC_ERR_ILLEGAL_STATE);
+    }
+
     ret = EDHOC_SUCCESS;
+    exit:
     return ret;
 }
 
@@ -854,6 +862,13 @@ ssize_t proc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3Buf, size_t msg3
 
     EDHOC_CHECK_SUCCESS(
             proc_compute_prk4x3m(ctx->method, ctx->prk3e2m, &ctx->myEphKey, &remoteAuthKey, ctx->session.prk4x3m));
+
+    if (ctx->state == EDHOC_RECEIVED_MESSAGE_3) {
+        ctx->state = EDHOC_FINALIZED;
+    } else {
+        ctx->state = EDHOC_FAILED;
+        EDHOC_FAIL(EDHOC_ERR_ILLEGAL_STATE);
+    }
 
     exit:
     return ret;

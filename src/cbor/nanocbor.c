@@ -1,4 +1,4 @@
-#include <edhoc/edhoc.h>
+#include "cbor.h"
 
 #if defined(NANOCBOR)
 
@@ -6,9 +6,6 @@
 #include <memory.h>
 
 #endif
-
-#include "cbor.h"
-
 
 #if defined(NANOCBOR)
 

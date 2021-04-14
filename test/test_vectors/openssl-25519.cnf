@@ -1,0 +1,14 @@
+[req]
+distinguished_name = OpenWSN
+req_extensions = v3_req
+prompt = no
+[OpenWSN]
+C = BE
+CN = www.openwsn.org
+[v3_req]
+keyUsage = keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @alt_names
+[alt_names]
+DNS.1 = www.openwsn.org
+DNS.2 = openwsn.org

@@ -34,7 +34,7 @@ struct hacl_Sha256 {
 
 int counter = 1;
 
-// CBOR-encoded certificate
+// Preset connection identifier
 const uint8_t cid[] = {0x00};
 
 // CBOR-encoded ephemeral key
