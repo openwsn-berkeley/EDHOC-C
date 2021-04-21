@@ -108,7 +108,7 @@ ssize_t proc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suite
     }
 
     if ((len = format_msg1_encode(&msg1, out, olen)) <= 0) {
-        if (ret < 0) {
+        if (len < 0) {
             EDHOC_FAIL(len);
         } else {
             EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
