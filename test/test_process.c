@@ -49,7 +49,7 @@ int test_create_msg1(corr_t corr,
 #elif defined(HACL)
     hacl_Sha256 thCtx;
 #elif defined(TINYCRYPT)
-    tinycrypt_Sha256 thCtx;
+    struct tc_sha256_state_struct  thCtx;
 #endif
 
     edhoc_ctx_init(&ctx);
@@ -101,7 +101,7 @@ int test_create_msg2(cred_type_t credType,
 #elif defined(HACL)
     hacl_Sha256 thCtx;
 #elif defined(TINYCRYPT)
-    tinycrypt_Sha256 thCtx;
+    struct tc_sha256_state_struct  thCtx;
 #endif
 
     cose_key_init(&authKey);
@@ -184,7 +184,7 @@ int test_create_msg3(corr_t corr,
 #elif defined(HACL)
     hacl_Sha256 thCtx;
 #elif defined(TINYCRYPT)
-    tinycrypt_Sha256 thCtx;
+    struct tc_sha256_state_struct  thCtx;
 #endif
 
     cose_key_init(&authKey);
@@ -270,7 +270,7 @@ int test_resp_finalize(cred_type_t credType,
 #elif defined(HACL)
     hacl_Sha256 thCtx;
 #elif defined(TINYCRYPT)
-    tinycrypt_Sha256 thCtx;
+    struct tc_sha256_state_struct  thCtx;
 #endif
 
     cose_key_init(&authKey);

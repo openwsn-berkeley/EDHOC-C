@@ -18,7 +18,7 @@ int crypt_gen_keypair(cose_curve_t crv, cose_key_t *key) {
 }
 
 int crypt_copy_hash_context(void *dstCtx, void *srcCtx) {
-    memcpy(dstCtx, srcCtx, sizeof(tinycrypt_Sha256));
+    memcpy(dstCtx, srcCtx, sizeof(struct tc_sha256_state_struct ));
 
     return EDHOC_SUCCESS;
 }

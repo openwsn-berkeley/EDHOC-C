@@ -65,7 +65,7 @@ int edhoc_handshake(int sockfd) {
 #elif defined(HACL)
     hacl_Sha256 thCtx;
 #elif defined(TINYCRYPT)
-    tinycrypt_Sha256 thCtx;
+    struct tc_sha256_state_struct  thCtx;
 #else
 #error "No crypto backend enabled."
 #endif
