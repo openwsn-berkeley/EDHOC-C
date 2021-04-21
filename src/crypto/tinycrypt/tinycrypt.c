@@ -14,6 +14,8 @@
 #include "ccm_mode.h"
 
 int crypt_gen_keypair(cose_curve_t crv, cose_key_t *key) {
+    (void) crv;
+    (void) key;
     return EDHOC_ERR_RANDOMNESS;
 }
 
@@ -47,6 +49,7 @@ int crypt_hash_finish(void *ctx, uint8_t *output) {
 }
 
 void crypt_hash_free(void *ctx) {
+    (void) ctx;
 }
 
 int crypt_kdf(const uint8_t *prk, const uint8_t *info, size_t infoLen, uint8_t *out, size_t olen) {
@@ -128,7 +131,7 @@ int crypt_decrypt(const cose_key_t *sk,
                   size_t inOutLen,
                   uint8_t *tag,
                   size_t tagLen) {
-
+    (void) tag;
     int ret;
 
     struct tc_ccm_mode_struct c;
