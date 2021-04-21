@@ -203,7 +203,7 @@ ssize_t proc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1Buf, size_t msg1Le
     // setup method and correlation values
     ctx->correlation = msg1.methodCorr % 4;
 
-    if (ctx->correlation < NO_CORR || ctx->correlation >= CORR_UNSET) {
+    if (ctx->correlation >= CORR_UNSET) {
         EDHOC_FAIL(EDHOC_ERR_UNSUPPORTED_CORR);
     }
 
@@ -211,8 +211,7 @@ ssize_t proc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1Buf, size_t msg1Le
     ctx->session.cipherSuiteID = msg1.cipherSuite->id;
 
     // setup Initiator connection identifier
-    printf("CIDI LENGTH: %ld\n", msg1.cidi.length);
-    if (msg1.cidi.length <= EDHOC_CID_LEN && msg1.cidi.length >= 0) {
+    if (msg1.cidi.length <= EDHOC_CID_LEN) {
         // fetching security context
         ctx->session.cidiLen = msg1.cidi.length;
 
@@ -222,7 +221,6 @@ ssize_t proc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1Buf, size_t msg1Le
             memcpy(ctx->session.cidi, &msg1.cidi.integer, ctx->session.cidiLen);
 
     } else {
-	printf("Buffer overflow\n");
         EDHOC_FAIL(EDHOC_ERR_BUFFER_OVERFLOW);
     }
 
