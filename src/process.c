@@ -702,6 +702,9 @@ ssize_t proc_init_finalize(edhoc_ctx_t *ctx) {
 
 
 ssize_t proc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3Buf, size_t msg3Len, bool doMsg4, uint8_t *out, size_t olen) {
+    (void) doMsg4;
+    (void) out;
+    (void) olen;
     ssize_t ret, len;
     int i;
 
