@@ -40,12 +40,12 @@ ssize_t proc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suite
 
 #if defined(WOLFSSL)
     wc_Sha256 hashCtx;
-#elif defined(EMPTY_CRYPTO)
-    int hashCtx;
 #elif defined(HACL)
     hacl_Sha256 hashCtx;
 #elif defined(TINYCRYPT)
-    tinycrypt_Sha256 hashCtx;
+    struct tc_sha256_state_struct  hashCtx;
+#elif defined(EMPTY_CRYPTO)
+    int hashCtx;
 #else
 #error "No crypto backend enabled."
 #endif
@@ -108,7 +108,7 @@ ssize_t proc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suite
     }
 
     if ((len = format_msg1_encode(&msg1, out, olen)) <= 0) {
-        if (ret < 0) {
+        if (len < 0) {
             EDHOC_FAIL(len);
         } else {
             EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
@@ -141,12 +141,12 @@ ssize_t proc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1Buf, size_t msg1Le
 
 #if defined(WOLFSSL)
     wc_Sha256 hashCtx;
-#elif defined(EMPTY_CRYPTO)
-    int hashCtx;
 #elif defined(HACL)
     hacl_Sha256 hashCtx;
 #elif defined(TINYCRYPT)
-    tinycrypt_Sha256 hashCtx;
+    struct tc_sha256_state_struct  hashCtx;
+#elif defined(EMPTY_CRYPTO)
+    int hashCtx;
 #else
 #error "No crypto backend enabled"
 #endif
@@ -203,7 +203,7 @@ ssize_t proc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1Buf, size_t msg1Le
     // setup method and correlation values
     ctx->correlation = msg1.methodCorr % 4;
 
-    if (ctx->correlation < NO_CORR || ctx->correlation >= CORR_UNSET) {
+    if (ctx->correlation >= CORR_UNSET) {
         EDHOC_FAIL(EDHOC_ERR_UNSUPPORTED_CORR);
     }
 
@@ -211,8 +211,7 @@ ssize_t proc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1Buf, size_t msg1Le
     ctx->session.cipherSuiteID = msg1.cipherSuite->id;
 
     // setup Initiator connection identifier
-    printf("CIDI LENGTH: %ld\n", msg1.cidi.length);
-    if (msg1.cidi.length <= EDHOC_CID_LEN && msg1.cidi.length >= 0) {
+    if (msg1.cidi.length <= EDHOC_CID_LEN) {
         // fetching security context
         ctx->session.cidiLen = msg1.cidi.length;
 
@@ -222,7 +221,6 @@ ssize_t proc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1Buf, size_t msg1Le
             memcpy(ctx->session.cidi, &msg1.cidi.integer, ctx->session.cidiLen);
 
     } else {
-	printf("Buffer overflow\n");
         EDHOC_FAIL(EDHOC_ERR_BUFFER_OVERFLOW);
     }
 
@@ -395,12 +393,12 @@ ssize_t proc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2Buf, size_t msg2Le
 
 #if defined(WOLFSSL)
     wc_Sha256 hashCtx;
-#elif defined(EMPTY_X509)
-    int hashCtx;
 #elif defined(HACL)
     hacl_Sha256 hashCtx;
 #elif defined(TINYCRYPT)
-    tinycrypt_Sha256 hashCtx;
+    struct tc_sha256_state_struct  hashCtx;
+#elif defined(EMPTY_CRYPTO)
+    int hashCtx;
 #else
 #error "No crypto backend enabled"
 #endif
@@ -704,6 +702,9 @@ ssize_t proc_init_finalize(edhoc_ctx_t *ctx) {
 
 
 ssize_t proc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3Buf, size_t msg3Len, bool doMsg4, uint8_t *out, size_t olen) {
+    (void) doMsg4;
+    (void) out;
+    (void) olen;
     ssize_t ret, len;
     int i;
 
@@ -713,12 +714,12 @@ ssize_t proc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3Buf, size_t msg3
 
 #if defined(WOLFSSL)
     wc_Sha256 hashCtx;
-#elif defined(EMPTY_X509)
-    int hashCtx;
 #elif defined(HACL)
     hacl_Sha256 hashCtx;
 #elif defined(TINYCRYPT)
-    tinycrypt_Sha256 hashCtx;
+    struct tc_sha256_state_struct  hashCtx;
+#elif defined(EMPTY_CRYPTO)
+    int hashCtx;
 #else
 #error "No crypto backend enabled"
 #endif

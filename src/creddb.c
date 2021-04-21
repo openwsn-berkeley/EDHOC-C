@@ -340,9 +340,9 @@ size_t x509_der_cert_resp_tv4_len = sizeof(x509_der_cert_resp_tv4);
 size_t x509_der_cert_resp_id_tv4_len = sizeof(x509_der_cert_resp_id_tv4);
 size_t x509_auth_key_resp_tv4_len = sizeof(x509_auth_key_resp_tv4);
 
-const uint8_t rpk_cbor_stefan[] = RPK_CBOR_STEFAN;
-const uint8_t rpk_cbor_stefan_id[] = RPK_CBOR_STEFAN_ID;
-const uint8_t rpk_cbor_stefan_id_value[] = RPK_CBOR_STEFAN_ID_VALUE;
+const uint8_t rpk_cbor_christian[] = RPK_CBOR_CHRISTIAN;
+const uint8_t rpk_cbor_christian_id[] = RPK_CBOR_CHRISTAIN_ID;
+const uint8_t rpk_cbor_christian_id_value[] = RPK_CBOR_CHRISTIAN_ID_VALUE;
 
 typedef struct cred_db_t cred_db_t;
 
@@ -403,10 +403,10 @@ cred_db_t credDb[] = {
                 sizeof(x509_der_cert_resp_tv4)
         },
         {
-                rpk_cbor_stefan_id_value,
-                sizeof(rpk_cbor_stefan_id_value),
-                rpk_cbor_stefan,
-                sizeof(rpk_cbor_stefan)
+                rpk_cbor_christian_id_value,
+                sizeof(rpk_cbor_christian_id_value),
+                rpk_cbor_christian,
+                sizeof(rpk_cbor_christian)
         }
 
 };

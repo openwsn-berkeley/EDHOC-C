@@ -24,7 +24,7 @@ int test_hashing(const uint8_t *msg1, size_t msg1Len, const uint8_t *data2, size
 #elif defined(HACL)
     hacl_Sha256 hashCtx;
 #elif defined(TINYCRYPT)
-    tinycrypt_Sha256 hashCtx;
+    struct tc_sha256_state_struct  hashCtx;
 #else
 #error "No crypto backend enabled"
 #endif

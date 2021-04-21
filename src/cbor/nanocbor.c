@@ -49,6 +49,8 @@ int8_t cbor_get_int32_t(void *decoder, int32_t *value) {
 }
 
 uint8_t cbor_get_array(void *decoder, uint8_t *arr, size_t *len) {
+    (void) len;
+    (void) arr;
     nanocbor_value_t array;
 
     if (nanocbor_enter_array((nanocbor_value_t *) decoder, &array) != NANOCBOR_OK)
