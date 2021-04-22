@@ -51,6 +51,7 @@ int8_t cbor_get_int32_t(void *decoder, int32_t *value) {
 uint8_t cbor_get_array(void *decoder, uint8_t *arr, size_t *len) {
     (void) len;
     (void) arr;
+
     nanocbor_value_t array;
 
     if (nanocbor_enter_array((nanocbor_value_t *) decoder, &array) != NANOCBOR_OK)
@@ -65,7 +66,7 @@ uint8_t cbor_get_array(void *decoder, uint8_t *arr, size_t *len) {
 }
 
 int8_t cbor_get_type(void *decoder) {
-    uint8_t type;
+    int8_t type;
 
     switch (nanocbor_get_type((nanocbor_value_t *) decoder)) {
         case NANOCBOR_TYPE_UINT:
@@ -232,7 +233,7 @@ int8_t cbor_put_bstr(void *encoder, const uint8_t *bytes, size_t len) {
     }
 }
 
-int8_t cbor_put_uint8_t(void *encoder, uint8_t value) {
+int8_t cbor_put_uint(void *encoder, uint value) {
     if (nanocbor_fmt_uint((nanocbor_encoder_t *) encoder, value) == NANOCBOR_OK) {
         return CBOR_SUCCESS;
     } else {
@@ -240,7 +241,7 @@ int8_t cbor_put_uint8_t(void *encoder, uint8_t value) {
     }
 }
 
-int8_t cbor_put_int8_t(void *encoder, int8_t value) {
+int8_t cbor_put_int(void *encoder, int value) {
     if (nanocbor_fmt_int((nanocbor_encoder_t *) encoder, value) == NANOCBOR_OK) {
         return CBOR_SUCCESS;
     } else {
@@ -248,7 +249,7 @@ int8_t cbor_put_int8_t(void *encoder, int8_t value) {
     }
 }
 
-int8_t cbor_put_array(void *encoder, int8_t elements) {
+int8_t cbor_put_array(void *encoder, size_t elements) {
     if (nanocbor_fmt_array((nanocbor_encoder_t *) encoder, elements) == NANOCBOR_OK) {
         return CBOR_SUCCESS;
     } else {
@@ -256,7 +257,7 @@ int8_t cbor_put_array(void *encoder, int8_t elements) {
     }
 }
 
-int8_t cbor_put_map(void *encoder, int8_t elements) {
+int8_t cbor_put_map(void *encoder, size_t elements) {
     if (nanocbor_fmt_map((nanocbor_encoder_t *) encoder, elements) == NANOCBOR_OK) {
         return CBOR_SUCCESS;
     } else {

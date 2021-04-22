@@ -184,7 +184,7 @@ int8_t cbor_put_bstr(void *encoder, const uint8_t *bytes, size_t len);
  *
  * @return Returns CBOR_SUCCESS on success else CBOR_FAILED.
  */
-int8_t cbor_put_int8_t(void *encoder, int8_t value);
+int8_t cbor_put_int(void *encoder, int value);
 
 /**
  * @brief CBOR-encode an unsigned integer
@@ -194,7 +194,7 @@ int8_t cbor_put_int8_t(void *encoder, int8_t value);
  *
  * @return Returns CBOR_SUCCESS on success else CBOR_FAILED.
  */
-int8_t cbor_put_uint8_t(void *encoder, uint8_t value);
+int8_t cbor_put_uint(void *encoder, uint value);
 
 /**
  * @brief Create a CBOR array with a predefined number of elements
@@ -204,7 +204,7 @@ int8_t cbor_put_uint8_t(void *encoder, uint8_t value);
 
  * @return Returns CBOR_SUCCESS on success else CBOR_FAILED.
  */
-int8_t cbor_put_array(void *encoder, int8_t elements);
+int8_t cbor_put_array(void *encoder, size_t elements);
 
 /**
  * @brief Create a CBOR map with a predefined number of elements
@@ -214,7 +214,7 @@ int8_t cbor_put_array(void *encoder, int8_t elements);
 
  * @return Returns CBOR_SUCCESS on success else CBOR_FAILED.
  */
-int8_t cbor_put_map(void *encoder, int8_t elements);
+int8_t cbor_put_map(void *encoder, size_t elements);
 
 /**
  *

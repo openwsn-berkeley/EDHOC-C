@@ -24,8 +24,6 @@ typedef struct edhoc_msg2_t edhoc_msg2_t;
 typedef struct edhoc_msg3_t edhoc_msg3_t;
 typedef struct edhoc_error_msg_t edhoc_error_msg_t;
 
-typedef struct cose_adata_t cose_adata_t;
-
 typedef struct bstr_id_t bstr_id_t;
 
 struct bstr_id_t {
@@ -71,12 +69,6 @@ struct edhoc_msg2_t {
     edhoc_data2_t data2;
     const uint8_t *ciphertext2;
     size_t ciphertext2Len;
-};
-
-struct cose_adata_t {
-    const char *label;
-    const uint8_t *serializedHeader;
-    const uint8_t *externalData;
 };
 
 /**
