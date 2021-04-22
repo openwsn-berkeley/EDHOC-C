@@ -6,7 +6,7 @@ if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
     include_directories(${CMAKE_BINARY_DIR}/3rdparty/wolfssl-build/include)
 endif ()
 
-if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS_X509")
+if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS")
     link_directories(${CMAKE_BINARY_DIR}/3rdparty/mbedtls-build/lib)
     include_directories(${CMAKE_BINARY_DIR}/3rdparty/mbedtls-build/include)
 endif ()
@@ -30,10 +30,15 @@ if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
 elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
     target_link_libraries(tcp-resp-sign-x509 PRIVATE edhoc-c::edhoc-c evercrypt mbedx509)
     add_dependencies(tcp-resp-sign-x509 edhoc-c::edhoc-c hacl-backend mbedtls-backend)
-else ()
-    target_link_libraries(tcp-resp-sign-x509 PRIVATE edhoc-c::edhoc-c mbedx509)
-    add_dependencies(tcp-resp-sign-x509 edhoc-c::edhoc-c mbedtls-backend)
 endif ()
+
+if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS")
+    target_link_libraries(tcp-resp-sign-x509 PRIVATE mbedx509)
+    add_dependencies(tcp-resp-sign-x509 mbedtls-backend)
+endif ()
+
+add_dependencies(tcp-resp-sign-x509 edhoc-c::edhoc-c)
+target_link_libraries(tcp-resp-sign-x509 PRIVATE edhoc-c::edhoc-c)
 
 # --
 
@@ -46,10 +51,15 @@ if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
 elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
     target_link_libraries(tcp-init-sign-x509 PRIVATE edhoc-c::edhoc-c evercrypt mbedx509)
     add_dependencies(tcp-init-sign-x509 edhoc-c::edhoc-c hacl-backend mbedtls-backend)
-else ()
-    target_link_libraries(tcp-init-sign-x509 PRIVATE edhoc-c::edhoc-c mbedx509)
-    add_dependencies(tcp-init-sign-x509 edhoc-c::edhoc-c mbedtls-backend)
 endif ()
+
+if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS")
+    target_link_libraries(tcp-init-sign-x509 PRIVATE mbedx509)
+    add_dependencies(tcp-init-sign-x509 mbedtls-backend)
+endif ()
+
+add_dependencies(tcp-init-sign-x509 edhoc-c::edhoc-c)
+target_link_libraries(tcp-init-sign-x509 PRIVATE edhoc-c::edhoc-c)
 
 # --
 
@@ -62,10 +72,15 @@ if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
 elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
     target_link_libraries(coap-resp-sign-x509 PRIVATE edhoc-c::edhoc-c evercrypt mbedx509)
     add_dependencies(coap-resp-sign-x509 edhoc-c::edhoc-c hacl-backend mbedtls-backend)
-else ()
-    target_link_libraries(coap-resp-sign-x509 PRIVATE edhoc-c::edhoc-c mbedx509)
-    add_dependencies(coap-resp-sign-x509 edhoc-c::edhoc-c mbedtls-backend)
 endif ()
+
+if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS")
+    target_link_libraries(coap-resp-sign-x509 PRIVATE mbedx509)
+    add_dependencies(coap-resp-sign-x509 mbedtls-backend)
+endif ()
+
+target_link_libraries(coap-resp-sign-x509 PRIVATE edhoc-c::edhoc-c)
+add_dependencies(coap-resp-sign-x509 edhoc-c::edhoc-c)
 
 # --
 
@@ -78,10 +93,15 @@ if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
 elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
     target_link_libraries(coap-init-sign-x509 PRIVATE edhoc-c::edhoc-c evercrypt mbedx509)
     add_dependencies(coap-init-sign-x509 edhoc-c::edhoc-c hacl-backend mbedtls-backend)
-else ()
-    target_link_libraries(coap-init-sign-x509 PRIVATE edhoc-c::edhoc-c mbedx509)
-    add_dependencies(coap-init-sign-x509 edhoc-c::edhoc-c mbedtls-backend)
 endif ()
+
+if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS")
+    target_link_libraries(coap-init-sign-x509 PRIVATE mbedx509)
+    add_dependencies(coap-init-sign-x509 mbedtls-backend)
+endif ()
+
+target_link_libraries(coap-init-sign-x509 PRIVATE edhoc-c::edhoc-c)
+add_dependencies(coap-init-sign-x509 edhoc-c::edhoc-c)
 
 # --
 
@@ -94,10 +114,15 @@ if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
 elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
     target_link_libraries(coap-resp-static-rpk PRIVATE edhoc-c::edhoc-c evercrypt mbedx509)
     add_dependencies(coap-resp-static-rpk edhoc-c::edhoc-c hacl-backend mbedtls-backend)
-else ()
-    target_link_libraries(coap-resp-static-rpk PRIVATE edhoc-c::edhoc-c mbedx509)
-    add_dependencies(coap-resp-static-rpk edhoc-c::edhoc-c mbedtls-backend)
 endif ()
+
+if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS")
+    target_link_libraries(coap-resp-static-rpk PRIVATE mbedx509)
+    add_dependencies(coap-resp-static-rpk mbedtls-backend)
+endif ()
+
+target_link_libraries(coap-resp-static-rpk PRIVATE edhoc-c::edhoc-c)
+add_dependencies(coap-resp-static-rpk edhoc-c::edhoc-c)
 
 # --
 
@@ -110,7 +135,12 @@ if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
 elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
     target_link_libraries(coap-init-static-rpk PRIVATE edhoc-c::edhoc-c evercrypt mbedx509)
     add_dependencies(coap-init-static-rpk edhoc-c::edhoc-c hacl-backend mbedtls-backend)
-else ()
-    target_link_libraries(coap-init-static-rpk PRIVATE edhoc-c::edhoc-c mbedx509)
-    add_dependencies(coap-init-static-rpk edhoc-c::edhoc-c mbedtls-backend)
 endif ()
+
+if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS")
+    target_link_libraries(coap-init-static-rpk PRIVATE mbedx509)
+    add_dependencies(coap-init-static-rpk mbedtls-backend)
+endif ()
+
+target_link_libraries(coap-init-static-rpk PRIVATE edhoc-c::edhoc-c)
+add_dependencies(coap-init-static-rpk edhoc-c::edhoc-c)

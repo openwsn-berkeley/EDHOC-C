@@ -74,8 +74,6 @@ int cose_key_from_cbor(cose_key_t *key, const uint8_t *in, size_t ilen) {
 
 #if defined(NANOCBOR)
     nanocbor_value_t decoder;
-#elif defined(EMPTY_CBOR)
-    int decoder;
 #else
 #error "No CBOR backend enabled"
 #endif
@@ -226,8 +224,6 @@ ssize_t cose_header_serialized_len(cose_header_t *header) {
 
 #if defined(NANOCBOR)
     nanocbor_encoder_t encoder;
-#elif defined(EMPTY_CBOR)
-    int encoder;
 #else
 #error "No CBOR backend enabled"
 #endif
@@ -246,8 +242,6 @@ int cose_header_serialize(cose_header_t *header, uint8_t *out, size_t olen) {
 
 #if defined(NANOCBOR)
     nanocbor_encoder_t encoder;
-#elif defined(EMPTY_CBOR)
-    int encoder;
 #else
 #error "No CBOR backend enabled"
 #endif
@@ -273,10 +267,6 @@ int cose_header_parse(cose_header_t *header, const uint8_t *in, size_t ilen) {
     nanocbor_value_t decoder;
     nanocbor_value_t map;
     nanocbor_value_t array;
-#elif defined(EMPTY_CBOR)
-    int decoder;
-    int map;
-    int array;
 #else
 #error "No CBOR backend enabled"
 #endif
@@ -492,8 +482,8 @@ static ssize_t cose_message_base_structure(cose_message_t *coseMsgCtx,
 
 #if defined(NANOCBOR)
     nanocbor_encoder_t encoder;
-#elif defined(EMPTY_CBOR)
-    int encoder;
+#else
+#error "No CBOR backend enabled"
 #endif
 
     cbor_init_encoder(&encoder, out, olen);
@@ -541,8 +531,8 @@ ssize_t cose_sign1_create_to_be_signed(cose_sign1_t *coseMsgCtx, uint8_t *out, s
 
 #if defined(NANOCBOR)
     nanocbor_encoder_t encoder;
-#elif defined(EMPTY_CBOR)
-    int encoder;
+#else
+#error "No CBOR backend enabled."
 #endif
 
     cbor_init_encoder(&encoder, out, olen);

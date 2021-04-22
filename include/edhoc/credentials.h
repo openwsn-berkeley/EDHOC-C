@@ -69,7 +69,7 @@ struct cred_id_t {
 };
 
 #if defined(EDHOC_AUTH_CERT_ENABLED)
-#if defined(EDHOC_AUTH_CBOR_CERT)
+#if defined(EDHOC_AUTH_C509_CERT)
 
 /**
  * @brief Initialize a c509 certificate context.
@@ -80,7 +80,7 @@ void cred_c509_init(c509_t *c509Ctx);
 
 #endif
 
-#if defined(EDHOC_AUTH_DER_CERT)
+#if defined(EDHOC_AUTH_X509_CERT)
 
 /**
  * @brief Initialize a x509 certificate context.
@@ -111,7 +111,7 @@ void cred_rpk_init(rpk_t *rpkCtx);
 void cred_id_init(cred_id_t *credIdCtx);
 
 #if defined(EDHOC_AUTH_CERT_ENABLED)
-#if defined(EDHOC_AUTH_DER_CERT)
+#if defined(EDHOC_AUTH_X509_CERT)
 
 /**
  * @brief Parse a DER-encoded certificate.
@@ -126,7 +126,7 @@ int cred_x509_from_der(void *x509Ctx, const uint8_t *in, size_t ilen);
 
 #endif
 
-#if defined(EDHOC_AUTH_CBOR_CERT)
+#if defined(EDHOC_AUTH_C509_CERT)
 
 /**
  * @brief Parse a C509-encoded certificate.

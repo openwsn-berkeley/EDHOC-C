@@ -19,11 +19,11 @@
 #error "No authentication methods supported."
 #endif
 
-#if defined(EDHOC_AUTH_CERT_ENABLED) && (!defined(EDHOC_AUTH_CBOR_CERT) && !defined(EDHOC_AUTH_DER_CERT))
+#if defined(EDHOC_AUTH_CERT_ENABLED) && (!defined(EDHOC_AUTH_C509_CERT) && !defined(EDHOC_AUTH_X509_CERT))
 #error "At least one certificate type should be enabled when EDHOC_AUTH_CERT_ENABLED is true"
 #endif
 
-#if !defined(EDHOC_AUTH_CERT_ENABLED) && (defined(EDHOC_AUTH_CBOR_CERT) || defined(EDHOC_AUTH_DER_CERT))
+#if !defined(EDHOC_AUTH_CERT_ENABLED) && (defined(EDHOC_AUTH_C509_CERT) || defined(EDHOC_AUTH_X509_CERT))
 #error "Certificate-based authentication must be supported for EDHOC_AUTH_CBOR_CERT or EDHOC_AUTH_DER_CERT"
 #endif
 

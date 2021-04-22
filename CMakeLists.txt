@@ -23,15 +23,15 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 # OPTIONS
 ###############################################################################
 
-option(EDHOC_FATAL_WARNINGS "fail build when there are compile warnings" OFF)
-option(EDHOC_BUILD_TESTS "build tests" ON)
-option(EDHOC_BUILD_EXAMPLES "build examples" ON)
+option(EDHOC_FATAL_WARNINGS "Fail build when there are compile warnings" OFF)
+option(EDHOC_BUILD_TESTS "build tests" OFF)
+option(EDHOC_BUILD_EXAMPLES "build examples" OFF)
 option(BUILD_SHARED_LIBS "Build Shared Libraries" ON)
 option(EDHOC_USE_ASAN "Use address sanitizers" ON)
 option(EDHOC_USE_LSAN "Use leak sanitizers" ON)
 option(EDHOC_USE_USAN "Use undefined sanitizers" ON)
 option(EDHOC_USE_MSAN "Use memory sanitizers" OFF)
-option(EDHOC_BUILD_FUZZ_TARGETS "Compile fuzz targets" ON)
+option(EDHOC_BUILD_FUZZ_TARGETS "Compile fuzz targets" OFF)
 
 if (BUILD_SHARED_LIBS)
     set(BUILD_STATIC_LIBS OFF)
@@ -49,19 +49,19 @@ if (NOT EDHOC_CRYPTO_BACKEND)
     set(EDHOC_CRYPTO_BACKEND "TINYCRYPT" CACHE STRING "Backend for cryptography" FORCE)
 endif ()
 
-set_property(CACHE EDHOC_CRYPTO_BACKEND PROPERTY STRINGS "WOLFSSL" "HACL" "TINYCRYPT" "EMPTY_CRYPTO")
+set_property(CACHE EDHOC_CRYPTO_BACKEND PROPERTY STRINGS "WOLFSSL" "HACL" "TINYCRYPT")
 
 if (NOT EDHOC_CBOR_BACKEND)
     set(EDHOC_CBOR_BACKEND "NANOCBOR" CACHE STRING "Backend for CBOR encoding/decoding" FORCE)
 endif ()
 
-set_property(CACHE EDHOC_CBOR_BACKEND PROPERTY STRINGS "NANOCBOR" "EMPTY_CBOR")
+set_property(CACHE EDHOC_CBOR_BACKEND PROPERTY STRINGS "NANOCBOR")
 
 if (NOT EDHOC_X509_BACKEND)
-    set(EDHOC_X509_BACKEND "MBEDTLS_X509" CACHE STRING "Backend parsing X509 certificates and PKI keys" FORCE)
+    set(EDHOC_X509_BACKEND "MBEDTLS" CACHE STRING "Backend parsing DER/PEM encoded X509 certificates and keys" FORCE)
 endif ()
 
-set_property(CACHE EDHOC_X509_BACKEND PROPERTY STRINGS "MBEDTLS_X509" "EMPTY_X509")
+set_property(CACHE EDHOC_X509_BACKEND PROPERTY STRINGS "MBEDTLS" "NO_X509")
 
 include(sanitizers)
 

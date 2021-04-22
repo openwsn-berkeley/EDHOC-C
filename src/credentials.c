@@ -8,19 +8,20 @@
 #if defined(NANOCBOR)
 
 #include <nanocbor/nanocbor.h>
-#elif defined(EMPTY_CBOR)
+
 #else
 #error "No CBOR backend enabled"
 #endif
 
-#if defined(MBEDTLS_X509)
+#if defined(EDHOC_AUTH_X509_CERT)
+#if defined(MBEDTLS)
 
 #include <mbedtls/x509_crt.h>
-#elif defined(EMPTY_X509)
+
 #else
 #error "No X509 backend enabled"
 #endif
-
+#endif
 
 
 void cred_c509_init(c509_t *c509Ctx) {
@@ -28,15 +29,18 @@ void cred_c509_init(c509_t *c509Ctx) {
 }
 
 
+#if defined(EDHOC_AUTH_X509_CERT)
+
 void cred_x509_init(void *x509Ctx) {
-#if defined(MBEDTLS_X509)
+#if defined(MBEDTLS)
     mbedtls_x509_crt_init(x509Ctx);
-#elif defined(EMPTY_X509)
-    (void) x509Ctx;
 #else
 #error "No X509 backend enabled"
+    (void) x509Ctx;
 #endif
 }
+
+#endif
 
 
 void cred_rpk_init(rpk_t *rpkCtx) {
@@ -50,14 +54,14 @@ void cred_id_init(cred_id_t *credIdCtx) {
     cose_header_init(credIdCtx->map);
 }
 
+#if defined(EDHOC_AUTH_X509_CERT)
+
 int cred_x509_from_der(void *x509Ctx, const uint8_t *in, size_t ilen) {
     const uint8_t *p;
     size_t len;
 
 #if defined(NANOCBOR)
     nanocbor_value_t decoder;
-#elif defined(EMPTY_CBOR)
-    int decoder;
 #else
 #error "No CBOR backend enabled"
 #endif
@@ -72,7 +76,7 @@ int cred_x509_from_der(void *x509Ctx, const uint8_t *in, size_t ilen) {
     if (!cbor_at_end(&decoder))
         return EDHOC_ERR_INVALID_CRED;
 
-#if defined(MBEDTLS_X509)
+#if defined(MBEDTLS)
     if (mbedtls_x509_crt_parse_der((mbedtls_x509_crt *) x509Ctx, in, ilen) == 0) {
         return EDHOC_SUCCESS;
     } else {
@@ -82,13 +86,14 @@ int cred_x509_from_der(void *x509Ctx, const uint8_t *in, size_t ilen) {
         ((mbedtls_x509_crt *) x509Ctx)->raw.len = len;
         return EDHOC_ERR_INVALID_CRED;
     }
-#elif defined(EMPTY_X509)
-    (void) x509Ctx;
-    return EDHOC_SUCCESS;
 #else
 #error No X509 backend enabled
+    (void) x509Ctx;
+    return EDHOC_ERR_INVALID_CRED;
 #endif
 }
+
+#endif
 
 static int parse_c509_name(void *decoder, const uint8_t **p, size_t *len) {
     int ret;
@@ -129,8 +134,6 @@ int cred_c509_from_cbor(c509_t *c509Ctx, const uint8_t *in, size_t ilen) {
 
 #if defined(NANOCBOR)
     nanocbor_value_t decoder;
-#elif defined(EMPTY_CBOR)
-    int decoder;
 #else
 #error "No CBOR backend enabled"
 #endif
@@ -196,8 +199,6 @@ int cred_rpk_from_cbor(rpk_t *rpkCtx, const uint8_t *in, size_t ilen) {
 
 #if defined(NANOCBOR)
     nanocbor_value_t decoder;
-#elif defined(EMPTY_CBOR)
-    int decoder;
 #else
 #error "No CBOR backend enabled"
 #endif
@@ -217,8 +218,8 @@ int cred_rpk_from_cbor(rpk_t *rpkCtx, const uint8_t *in, size_t ilen) {
     rpkCtx->raw.p = in;
     rpkCtx->raw.length = ilen;
 
-    exit:
     ret = EDHOC_SUCCESS;
+    exit:
     return ret;
 }
 
