@@ -32,6 +32,22 @@ option(EDHOC_USE_LSAN "Use leak sanitizers" ON)
 option(EDHOC_USE_USAN "Use undefined sanitizers" ON)
 option(EDHOC_USE_MSAN "Use memory sanitizers" OFF)
 option(EDHOC_BUILD_FUZZ_TARGETS "Compile fuzz targets" OFF)
+option(EDHOC_CLANG_TIDY "Build with clang-tidy" OFF)
+option(EDHOC_CLANG_TIDY_WERROR "clang-tidy treats warnings as errors" OFF)
+
+
+if (EDHOC_CLANG_TIDY)
+   if (EDHOC_CLANG_TIDY_WERROR)
+        set(CMAKE_C_CLANG_TIDY
+            clang-tidy;
+            -checks=*;
+            -warnings-as-errors=*;)
+    else ()
+        set(CMAKE_C_CLANG_TIDY
+            clang-tidy;
+            -checks=*;)
+    endif()
+endif ()
 
 if (BUILD_SHARED_LIBS)
     set(BUILD_STATIC_LIBS OFF)
