@@ -300,7 +300,7 @@ int format_msg2_decode(edhoc_msg2_t *msg2,
             EDHOC_FAIL(EDHOC_ERR_CBOR_DECODING);
         }
     } else {
-        msg2->data2.cidr.length = 0;
+        msg2->data2.cidi.length = 0;
     }
 
     if (suite == NULL) {
