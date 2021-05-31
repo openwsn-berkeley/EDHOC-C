@@ -170,8 +170,8 @@ int format_msg1_decode(edhoc_msg1_t *msg1, const uint8_t *in, size_t ilen) {
     const uint8_t *p;
 
 #if defined(NANOCBOR)
-    nanocbor_encoder_t decoder;
-    nanocbor_encoder_t arr;
+    nanocbor_value_t decoder;
+    nanocbor_value_t arr;
 #else
 #error "No CBOR backend enabled"
 #endif
@@ -278,7 +278,7 @@ int format_msg2_decode(edhoc_msg2_t *msg2,
     const uint8_t *p;
 
 #if defined(NANOCBOR)
-    nanocbor_encoder_t decoder;
+    nanocbor_value_t decoder;
 #else
 #error "No CBOR backend enabled"
 #endif
@@ -367,7 +367,7 @@ int format_msg3_decode(edhoc_msg3_t *msg3, corr_t corr, const uint8_t *msg3_buf,
     int ret;
 
 #if defined(NANOCBOR)
-    nanocbor_encoder_t decoder;
+    nanocbor_value_t decoder;
 #else
 #error "No CBOR backend enabled"
 #endif
