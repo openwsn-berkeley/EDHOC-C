@@ -233,7 +233,7 @@ int8_t cbor_put_bstr(cbor_encoder_t *encoder, const uint8_t *bytes, size_t len) 
     }
 }
 
-int8_t cbor_put_uint8_t(cbor_encoder_t *encoder, uint8_t value) {
+int8_t cbor_put_uint(cbor_encoder_t *encoder, unsigned int value) {
     if (nanocbor_fmt_uint((nanocbor_encoder_t *) encoder, value) == NANOCBOR_OK) {
         return CBOR_SUCCESS;
     } else {
@@ -241,7 +241,7 @@ int8_t cbor_put_uint8_t(cbor_encoder_t *encoder, uint8_t value) {
     }
 }
 
-int8_t cbor_put_int8_t(cbor_encoder_t *encoder, int8_t value) {
+int8_t cbor_put_int(cbor_encoder_t *encoder, int value) {
     if (nanocbor_fmt_int((nanocbor_encoder_t *) encoder, value) == NANOCBOR_OK) {
         return CBOR_SUCCESS;
     } else {
@@ -249,7 +249,7 @@ int8_t cbor_put_int8_t(cbor_encoder_t *encoder, int8_t value) {
     }
 }
 
-int8_t cbor_put_array(cbor_encoder_t *encoder, int8_t elements) {
+int8_t cbor_put_array(cbor_encoder_t *encoder, size_t elements) {
     if (nanocbor_fmt_array((nanocbor_encoder_t *) encoder, elements) == NANOCBOR_OK) {
         return CBOR_SUCCESS;
     } else {
@@ -257,7 +257,7 @@ int8_t cbor_put_array(cbor_encoder_t *encoder, int8_t elements) {
     }
 }
 
-int8_t cbor_put_map(cbor_encoder_t *encoder, int8_t elements) {
+int8_t cbor_put_map(cbor_encoder_t *encoder, size_t elements) {
     if (nanocbor_fmt_map((nanocbor_encoder_t *) encoder, elements) == NANOCBOR_OK) {
         return CBOR_SUCCESS;
     } else {
