@@ -10,7 +10,9 @@
 #include <edhoc/creddb.h>
 
 #if defined(WOLFSSL)
+#ifndef WOLFSSL_USER_SETTINGS
 #include <wolfssl/options.h>
+#endif
 #include <wolfssl/wolfcrypt/sha256.h>
 #elif defined(HACL)
 
