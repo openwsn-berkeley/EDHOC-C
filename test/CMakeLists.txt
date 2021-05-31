@@ -46,7 +46,7 @@ add_executable(test-crypto
         ${PROJECT_SOURCE_DIR}/src/crypto/hacl.c
         ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
         ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/tinycrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_decrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_encrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac.c
@@ -55,13 +55,13 @@ add_executable(test-crypto
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ccm_mode.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/utils.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha256.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/fprime.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha512.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ed25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/c25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/f25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/morph25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/edsign.c)
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/fprime.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/sha512.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/ed25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/c25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/f25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/morph25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/edsign.c)
 
 add_dependencies(test-crypto json-parser nanocbor-backend)
 target_link_libraries(test-crypto PRIVATE cjson nanocbor)
@@ -97,7 +97,7 @@ add_executable(test-edhoc
         ${PROJECT_SOURCE_DIR}/src/crypto/hacl.c
         ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
         ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/tinycrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_decrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_encrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac.c
@@ -106,13 +106,13 @@ add_executable(test-edhoc
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ccm_mode.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/utils.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha256.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/fprime.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha512.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ed25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/c25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/f25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/morph25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/edsign.c)
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/fprime.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/sha512.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/ed25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/c25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/f25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/morph25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/edsign.c)
 
 add_dependencies(test-edhoc json-parser nanocbor-backend)
 target_link_libraries(test-edhoc PRIVATE cjson nanocbor)
@@ -148,7 +148,7 @@ add_executable(test-format
         ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
         ${PROJECT_SOURCE_DIR}/src/crypto/hacl.c
         ${PROJECT_SOURCE_DIR}/src/cbor/nanocbor.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/tinycrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_decrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_encrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac.c
@@ -157,13 +157,13 @@ add_executable(test-format
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ccm_mode.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/utils.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha256.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/fprime.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha512.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ed25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/c25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/f25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/morph25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/edsign.c)
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/fprime.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/sha512.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/ed25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/c25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/f25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/morph25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/edsign.c)
 
 add_dependencies(test-format json-parser nanocbor-backend)
 target_link_libraries(test-format PRIVATE cjson nanocbor)
@@ -197,7 +197,7 @@ add_executable(test-credentials
         ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
         ${PROJECT_SOURCE_DIR}/src/crypto/hacl.c
         ${PROJECT_SOURCE_DIR}/src/cbor/nanocbor.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/tinycrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_decrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_encrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac.c
@@ -206,13 +206,13 @@ add_executable(test-credentials
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ccm_mode.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/utils.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha256.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/fprime.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha512.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ed25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/c25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/f25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/morph25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/edsign.c)
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/fprime.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/sha512.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/ed25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/c25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/f25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/morph25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/edsign.c)
 
 add_dependencies(test-credentials json-parser nanocbor-backend)
 target_link_libraries(test-credentials PRIVATE cjson nanocbor)
@@ -253,7 +253,7 @@ add_executable(test-process
         ${PROJECT_SOURCE_DIR}/src/crypto/hacl.c
         ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
         ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/tinycrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_decrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_encrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac.c
@@ -262,13 +262,13 @@ add_executable(test-process
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ccm_mode.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/utils.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha256.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/fprime.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha512.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ed25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/c25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/f25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/morph25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/edsign.c)
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/fprime.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/sha512.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/ed25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/c25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/f25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/morph25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/edsign.c)
 
 add_dependencies(test-process json-parser nanocbor-backend)
 target_link_libraries(test-process PRIVATE cjson nanocbor)

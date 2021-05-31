@@ -38,7 +38,7 @@ add_executable(fuzz-message1
         ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
         ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
         ${PROJECT_SOURCE_DIR}/src/crypto/wolfssl.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/tinycrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_decrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_encrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac.c
@@ -47,13 +47,13 @@ add_executable(fuzz-message1
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ccm_mode.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/utils.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha256.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/fprime.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha512.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ed25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/c25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/f25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/morph25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/edsign.c)
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/fprime.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/sha512.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/ed25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/c25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/f25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/morph25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/edsign.c)
 
 add_dependencies(fuzz-message1 nanocbor-backend)
 target_link_libraries(fuzz-message1 PRIVATE nanocbor)
@@ -87,7 +87,7 @@ add_executable(fuzz-message2
         ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
         ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
         ${PROJECT_SOURCE_DIR}/src/crypto/wolfssl.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/tinycrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_decrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_encrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac.c
@@ -96,13 +96,13 @@ add_executable(fuzz-message2
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ccm_mode.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/utils.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha256.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/fprime.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha512.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ed25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/c25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/f25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/morph25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/edsign.c)
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/fprime.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/sha512.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/ed25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/c25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/f25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/morph25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/edsign.c)
 
 add_dependencies(fuzz-message2 nanocbor-backend)
 target_link_libraries(fuzz-message2 PRIVATE nanocbor)
