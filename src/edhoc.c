@@ -169,11 +169,13 @@ int edhoc_load_ephkey(edhoc_ctx_t *ctx, const uint8_t *ephKey, size_t ephKeyLen)
 }
 
 static size_t store_conn_id(uint8_t *storage, const uint8_t *conn_id, size_t conn_id_len) {
-    if (conn_id_len > EDHOC_CID_LEN)
+    if (conn_id_len > EDHOC_CID_LEN) {
         return EDHOC_ERR_BUFFER_OVERFLOW;
+    }
 
-    if (conn_id == NULL && conn_id_len != 0)
+    if (conn_id == NULL || conn_id_len != 0) {
         return EDHOC_ERR_BUFFER_OVERFLOW;
+    }
 
     memcpy(storage, conn_id, conn_id_len);
 

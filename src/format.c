@@ -165,7 +165,7 @@ int format_msg1_decode(edhoc_msg1_t *msg1, const uint8_t *in, size_t ilen) {
     uint8_t suite;
 
     size_t i;
-    uint8_t receivedSuites[10];
+    uint8_t receivedSuites[10] = {0};
 
     const uint8_t *p;
 
