@@ -1,4 +1,4 @@
-#include <memory.h>
+#include <string.h>
 
 #include "edhoc/cose.h"
 #include "edhoc/edhoc.h"

@@ -2,8 +2,8 @@
 
 #if defined(NANOCBOR)
 
+#include <string.h>
 #include <nanocbor/nanocbor.h>
-#include <memory.h>
 
 #endif
 
