@@ -7,6 +7,18 @@
 
 #include "edhoc/edhoc.h"
 
+#if defined(NANOCBOR)
+
+#include <nanocbor/nanocbor.h>
+typedef nanocbor_encoder_t cbor_encoder_t;
+typedef nanocbor_value_t cbor_decoder_t;
+
+#elif defined(EMPTY_CBOR)
+#else
+#error "No CBOR backend enabled"
+#endif
+
+
 #define CBOR_SUCCESS    (0)
 #define CBOR_FAILED     (-1)
 
@@ -39,7 +51,7 @@ if ((enc) != CBOR_SUCCESS) {           \
  * @param[in] buffer    Buffer holding CBOR-encoded data
  * @param[in] len       Length of @p buffer
  */
-void cbor_init_decoder(void *decoder, const uint8_t *buffer, size_t len);
+void cbor_init_decoder(cbor_decoder_t *decoder, const uint8_t *buffer, size_t len);
 
 /**
  * @brief Retrieve a CBOR byte string from a buffer.
@@ -50,7 +62,7 @@ void cbor_init_decoder(void *decoder, const uint8_t *buffer, size_t len);
  *
  * @return returns CBOR_SUCCESS on success else CBOR_FAILED
  */
-int8_t cbor_get_bstr(void *decoder, const uint8_t **buffer, size_t *len);
+int8_t cbor_get_bstr(cbor_decoder_t *decoder, const uint8_t **buffer, size_t *len);
 
 /**
  * @brief Retrieve a CBOR uint8 from a buffer.
@@ -60,7 +72,7 @@ int8_t cbor_get_bstr(void *decoder, const uint8_t **buffer, size_t *len);
  *
  * @return returns CBOR_SUCCESS on success else CBOR_FAILED
  */
-int8_t cbor_get_uint8_t(void *decoder, uint8_t *value);
+int8_t cbor_get_uint8_t(cbor_decoder_t *decoder, uint8_t *value);
 
 /**
  * @brief Retrieve a CBOR int8 from a buffer.
@@ -70,7 +82,7 @@ int8_t cbor_get_uint8_t(void *decoder, uint8_t *value);
  *
  * @return returns CBOR_SUCCESS on success else CBOR_FAILED
  */
-int8_t cbor_get_int8_t(void *decoder, int8_t *value);
+int8_t cbor_get_int8_t(cbor_decoder_t *decoder, int8_t *value);
 
 /**
  * @brief Retrieve a CBOR int32 from a buffer.
@@ -80,7 +92,7 @@ int8_t cbor_get_int8_t(void *decoder, int8_t *value);
  *
  * @return returns CBOR_SUCCESS on success else CBOR_FAILED
  */
-int8_t cbor_get_int32_t(void *decoder, int32_t *value);
+int8_t cbor_get_int32_t(cbor_decoder_t *decoder, int32_t *value);
 
 /**
  * @brief Retrieve the type of the next CBOR element in the buffer.
@@ -89,7 +101,7 @@ int8_t cbor_get_int32_t(void *decoder, int32_t *value);
  *
  * @return Returns a CBOR type on success else CBOR_FAIL
  */
-int8_t cbor_get_type(void *decoder);
+int8_t cbor_get_type(cbor_decoder_t *decoder);
 
 /**
  * @brief Check if the current CBOR buffer is exhausted
@@ -98,7 +110,7 @@ int8_t cbor_get_type(void *decoder);
  *
  * @return Returns true if exhausted else false
  */
-bool cbor_at_end(void *decoder);
+bool cbor_at_end(cbor_decoder_t *decoder);
 
 /**
  *
@@ -107,7 +119,7 @@ bool cbor_at_end(void *decoder);
  * @param len
  * @return
  */
-int8_t cbor_get_tstr(void *decoder, const uint8_t **tstr, size_t *len);
+int8_t cbor_get_tstr(cbor_decoder_t *decoder, const uint8_t **tstr, size_t *len);
 
 /**
  * @brief Get a integer value from the CBOR map through an integer key
@@ -118,7 +130,7 @@ int8_t cbor_get_tstr(void *decoder, const uint8_t **tstr, size_t *len);
  *
  * @return returns CBOR_SUCCESS on success else CBOR_FAILED.
  */
-int8_t cbor_map_from_int_int(void *decoder, int8_t key, int8_t *value);
+int8_t cbor_map_from_int_int(cbor_decoder_t *decoder, int8_t key, int8_t *value);
 
 /**
  *
@@ -128,7 +140,7 @@ int8_t cbor_map_from_int_int(void *decoder, int8_t key, int8_t *value);
  * @param len
  * @return
  */
-int8_t cbor_map_from_int_bytes(void *decoder, int8_t key, const uint8_t **value, size_t *len);
+int8_t cbor_map_from_int_bytes(cbor_decoder_t *decoder, int8_t key, const uint8_t **value, size_t *len);
 
 /**
  *
@@ -138,7 +150,7 @@ int8_t cbor_map_from_int_bytes(void *decoder, int8_t key, const uint8_t **value,
  * @param len
  * @return
  */
-int8_t cbor_map_from_tstr_tstr(void *decoder, const char *key, const char **value, size_t *len);
+int8_t cbor_map_from_tstr_tstr(cbor_decoder_t *decoder, const char *key, const char **value, size_t *len);
 
 /**
  *
@@ -146,7 +158,7 @@ int8_t cbor_map_from_tstr_tstr(void *decoder, const char *key, const char **valu
  * @param map
  * @return
  */
-int8_t cbor_start_decoding_map(void *decoder, void *map);
+int8_t cbor_start_decoding_map(cbor_decoder_t *decoder, void *map);
 
 /**
  *
@@ -154,7 +166,7 @@ int8_t cbor_start_decoding_map(void *decoder, void *map);
  * @param array
  * @return
  */
-int8_t cbor_start_decoding_array(void *decoder, void *array);
+int8_t cbor_start_decoding_array(cbor_decoder_t *decoder, void *array);
 
 /**
  * @brief Set up a CBOR encoder context.
@@ -163,7 +175,7 @@ int8_t cbor_start_decoding_array(void *decoder, void *array);
  * @param[in] buffer    Buffer to hold CBOR-encoded data
  * @param[in] len       Maximum length of @p buffer
  */
-void cbor_init_encoder(void *encoder, uint8_t *buffer, size_t len);
+void cbor_init_encoder(cbor_encoder_t *encoder, uint8_t *buffer, size_t len);
 
 /**
  * @brief CBOR-encode a byte string.
@@ -174,7 +186,7 @@ void cbor_init_encoder(void *encoder, uint8_t *buffer, size_t len);
  *
  * @return returns CBOR_SUCCESS on success else CBOR_FAILED.
  */
-int8_t cbor_put_bstr(void *encoder, const uint8_t *bytes, size_t len);
+int8_t cbor_put_bstr(cbor_encoder_t *encoder, const uint8_t *bytes, size_t len);
 
 /**
  * @brief CBOR-encode an signed integer
@@ -184,7 +196,7 @@ int8_t cbor_put_bstr(void *encoder, const uint8_t *bytes, size_t len);
  *
  * @return Returns CBOR_SUCCESS on success else CBOR_FAILED.
  */
-int8_t cbor_put_int(void *encoder, int value);
+int8_t cbor_put_int(cbor_encoder_t *encoder, int value);
 
 /**
  * @brief CBOR-encode an unsigned integer
@@ -194,7 +206,7 @@ int8_t cbor_put_int(void *encoder, int value);
  *
  * @return Returns CBOR_SUCCESS on success else CBOR_FAILED.
  */
-int8_t cbor_put_uint(void *encoder, uint value);
+int8_t cbor_put_uint(cbor_encoder_t *encoder, unsigned int value);
 
 /**
  * @brief Create a CBOR array with a predefined number of elements
@@ -204,7 +216,7 @@ int8_t cbor_put_uint(void *encoder, uint value);
 
  * @return Returns CBOR_SUCCESS on success else CBOR_FAILED.
  */
-int8_t cbor_put_array(void *encoder, size_t elements);
+int8_t cbor_put_array(cbor_encoder_t *encoder, size_t elements);
 
 /**
  * @brief Create a CBOR map with a predefined number of elements
@@ -214,7 +226,7 @@ int8_t cbor_put_array(void *encoder, size_t elements);
 
  * @return Returns CBOR_SUCCESS on success else CBOR_FAILED.
  */
-int8_t cbor_put_map(void *encoder, size_t elements);
+int8_t cbor_put_map(cbor_encoder_t *encoder, size_t elements);
 
 /**
  *
@@ -222,7 +234,7 @@ int8_t cbor_put_map(void *encoder, size_t elements);
  * @param tstr
  * @return
  */
-int8_t cbor_put_tstr(void *encoder, const char *tstr);
+int8_t cbor_put_tstr(cbor_encoder_t *encoder, const char *tstr);
 
 /**
  *
@@ -230,7 +242,7 @@ int8_t cbor_put_tstr(void *encoder, const char *tstr);
  * @param elements
  * @return
  */
-int8_t cbor_start_bstr(void *encoder, uint16_t elements);
+int8_t cbor_start_bstr(cbor_encoder_t *encoder, uint16_t elements);
 
 /**
  *
@@ -239,20 +251,20 @@ int8_t cbor_start_bstr(void *encoder, uint16_t elements);
  * @param len
  * @return
  */
-int8_t cbor_get_substream(void *decoder, const uint8_t **start, size_t *len);
+int8_t cbor_get_substream(cbor_decoder_t *decoder, const uint8_t **start, size_t *len);
 
 /**
  *
  * @param encoder
  * @return
  */
-size_t cbor_encoded_len(void *encoder);
+size_t cbor_encoded_len(cbor_encoder_t *encoder);
 
 /**
  *
  * @param decoder
  * @return
  */
-int8_t cbor_skip(void *decoder);
+int8_t cbor_skip(cbor_decoder_t *decoder);
 
 #endif /* EDHOC_CBOR_H */
