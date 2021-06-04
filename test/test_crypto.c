@@ -8,7 +8,9 @@
 
 #if defined(WOLFSSL)
 
+#ifndef WOLFSSL_USER_SETTINGS
 #include <wolfssl/options.h>
+#endif
 #include <wolfssl/wolfcrypt/random.h>
 
 #endif /* WOLFSSL */
