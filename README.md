@@ -54,7 +54,7 @@ $ cmake --build .
 
 ## Contact
 
-Timothy Claeys: <timothy.claeys@inria.fr>
+Timothy Claeys: <timothy.claeys@gmail.com>
 
 
 
