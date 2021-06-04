@@ -31,14 +31,12 @@ set(edhoc_sources
         ${PROJECT_SOURCE_DIR}/src/format.c
         ${PROJECT_SOURCE_DIR}/src/edhoc.c
         ${PROJECT_SOURCE_DIR}/src/cbor/nanocbor.c
-        ${PROJECT_SOURCE_DIR}/src/cbor/empty.c
         ${PROJECT_SOURCE_DIR}/src/crypto/wolfssl.c
         ${PROJECT_SOURCE_DIR}/src/creddb.c
         ${PROJECT_SOURCE_DIR}/src/crypto/hacl.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/empty.c
         ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
         ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/tinycrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_decrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_encrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac.c
@@ -47,13 +45,13 @@ set(edhoc_sources
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ccm_mode.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/utils.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha256.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/fprime.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha512.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ed25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/c25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/f25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/morph25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/edsign.c)
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/fprime.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/sha512.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/ed25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/c25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/f25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/morph25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/edsign.c)
 
 target_sources(${PROJECT_NAME} PRIVATE ${edhoc_sources})
 
@@ -63,7 +61,7 @@ target_include_directories(${PROJECT_NAME}
         PRIVATE
         ${PROJECT_SOURCE_DIR}/src)
 
-if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS_X509")
+if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS")
     include(mbedtls)
 endif ()
 

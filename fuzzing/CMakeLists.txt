@@ -7,7 +7,7 @@ if ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "WOLFSSL")
     include_directories(${CMAKE_BINARY_DIR}/3rdparty/wolfssl-build/include)
 endif ()
 
-if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS_X509")
+if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS")
     link_directories(${CMAKE_BINARY_DIR}/3rdparty/mbedtls-build/lib)
     include_directories(${CMAKE_BINARY_DIR}/3rdparty/mbedtls-build/include)
 endif ()
@@ -38,7 +38,7 @@ add_executable(fuzz-message1
         ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
         ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
         ${PROJECT_SOURCE_DIR}/src/crypto/wolfssl.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/tinycrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_decrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_encrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac.c
@@ -47,13 +47,13 @@ add_executable(fuzz-message1
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ccm_mode.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/utils.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha256.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/fprime.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha512.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ed25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/c25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/f25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/morph25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/edsign.c)
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/fprime.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/sha512.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/ed25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/c25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/f25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/morph25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/edsign.c)
 
 add_dependencies(fuzz-message1 nanocbor-backend)
 target_link_libraries(fuzz-message1 PRIVATE nanocbor)
@@ -66,11 +66,9 @@ elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
     add_dependencies(fuzz-message1 hacl-backend)
 endif ()
 
-if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS_X509")
+if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS")
     add_dependencies(fuzz-message1 mbedtls-backend)
     target_link_libraries(fuzz-message1 PRIVATE mbedx509)
-    target_link_libraries(fuzz-message1 PRIVATE mbedtls)
-    target_link_libraries(fuzz-message1 PRIVATE mbedcrypto)
 endif ()
 
 target_include_directories(fuzz-message1 PRIVATE ../src ../include)
@@ -89,7 +87,7 @@ add_executable(fuzz-message2
         ${PROJECT_SOURCE_DIR}/src/crypto/aes128.c
         ${PROJECT_SOURCE_DIR}/src/crypto/ccm.c
         ${PROJECT_SOURCE_DIR}/src/crypto/wolfssl.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/tinycrypt.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_decrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/aes_encrypt.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/hmac.c
@@ -98,13 +96,13 @@ add_executable(fuzz-message2
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ccm_mode.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/utils.c
         ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha256.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/fprime.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/sha512.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/ed25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/c25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/f25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/morph25519.c
-        ${PROJECT_SOURCE_DIR}/src/crypto/tinycrypt/edsign.c)
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/fprime.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/sha512.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/ed25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/c25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/f25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/morph25519.c
+        ${PROJECT_SOURCE_DIR}/src/crypto/c25519/edsign.c)
 
 add_dependencies(fuzz-message2 nanocbor-backend)
 target_link_libraries(fuzz-message2 PRIVATE nanocbor)
@@ -117,11 +115,9 @@ elseif ("${EDHOC_CRYPTO_BACKEND}" STREQUAL "HACL")
     add_dependencies(fuzz-message2 hacl-backend)
 endif ()
 
-if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS_X509")
+if ("${EDHOC_X509_BACKEND}" STREQUAL "MBEDTLS")
     add_dependencies(fuzz-message2 mbedtls-backend)
     target_link_libraries(fuzz-message2 PRIVATE mbedx509)
-    target_link_libraries(fuzz-message2 PRIVATE mbedtls)
-    target_link_libraries(fuzz-message2 PRIVATE mbedcrypto)
 endif ()
 
 target_include_directories(fuzz-message2 PRIVATE ../src ../include)

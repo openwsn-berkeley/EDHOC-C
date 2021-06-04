@@ -4,24 +4,15 @@
 #include "ciphersuites.h"
 #include "cbor.h"
 
-#if defined(MBEDTLS_X509)
+#if defined(EDHOC_AUTH_X509_CERT)
+#if defined(MBEDTLS)
 
 #include <mbedtls/x509_crt.h>
 
-#elif defined(EMPTY_X509)
 #else
 #error "No X509 backend enabled"
 #endif
-
-#if defined(NANOCBOR)
-
-#include <nanocbor/nanocbor.h>
-
-#elif defined(EMPTY_CBOR)
-#else
-#error "No CBOR backend enabled"
 #endif
-
 
 #define CBOR_ARRAY_INFO_LEN              (4)
 
@@ -111,32 +102,26 @@ static int verify_cipher_suite(uint8_t preferredSuite, const uint8_t *alternativ
 ssize_t format_msg1_encode(const edhoc_msg1_t *msg1, uint8_t *out, size_t olen) {
     ssize_t ret;
 
-#if defined(NANOCBOR)
-    nanocbor_encoder_t encoder;
-#elif defined(EMPTY_CBOR)
-    int encoder;
-#else
-#error "No CBOR backend enabled"
-#endif
+    cbor_encoder_t encoder;
 
     cbor_init_encoder(&encoder, out, olen);
 
     // (1) encode the method_corr
-    CBOR_ENC_CHECK_RET(cbor_put_int8_t(&encoder, msg1->methodCorr));
+    CBOR_ENC_CHECK_RET(cbor_put_int(&encoder, msg1->methodCorr));
 
     // (2) encode the EDHOC cipher suite list
     if (edhoc_supported_suites_len() == 1) {
         if (msg1->cipherSuite->id == edhoc_supported_suites()[0].id) {
-            CBOR_ENC_CHECK_RET(cbor_put_int8_t(&encoder, edhoc_supported_suites()[0].id));
+            CBOR_ENC_CHECK_RET(cbor_put_int(&encoder, edhoc_supported_suites()[0].id));
         } else {
             EDHOC_FAIL(EDHOC_ERR_CBOR_ENCODING);
         }
     } else if (edhoc_supported_suites_len() > 1) {
         EDHOC_CHECK_SUCCESS(has_support(msg1->cipherSuite->id));
         CBOR_ENC_CHECK_RET(cbor_put_array(&encoder, edhoc_supported_suites_len() + 1))
-        CBOR_ENC_CHECK_RET(cbor_put_uint8_t(&encoder, msg1->cipherSuite->id));
+        CBOR_ENC_CHECK_RET(cbor_put_uint(&encoder, msg1->cipherSuite->id));
         for (size_t i = 0; i < edhoc_supported_suites_len(); i++) {
-            CBOR_ENC_CHECK_RET(cbor_put_uint8_t(&encoder, edhoc_supported_suites()[i].id));
+            CBOR_ENC_CHECK_RET(cbor_put_uint(&encoder, edhoc_supported_suites()[i].id));
         }
     } else {
         EDHOC_FAIL(EDHOC_ERR_CIPHERSUITE_UNAVAILABLE);
@@ -147,7 +132,7 @@ ssize_t format_msg1_encode(const edhoc_msg1_t *msg1, uint8_t *out, size_t olen) 
 
     // (4) encode the Initiator's connection identifier
     if (msg1->cidi.length == 1 && msg1->cidi.integer >= 0 && msg1->cidi.integer <= 0x2f) {
-        cbor_put_int8_t(&encoder, msg1->cidi.integer - 24);
+        cbor_put_int(&encoder, (int8_t) (msg1->cidi.integer - 24));
     } else {
         cbor_put_bstr(&encoder, msg1->cidi.bstr, msg1->cidi.length);
     }
@@ -157,7 +142,7 @@ ssize_t format_msg1_encode(const edhoc_msg1_t *msg1, uint8_t *out, size_t olen) 
         CBOR_ENC_CHECK_RET(cbor_put_bstr(&encoder, msg1->ad1, msg1->ad1Len));
     }
 
-    ret = cbor_encoded_len(&encoder);
+    ret = (ssize_t) (cbor_encoded_len(&encoder));
     exit:
     return ret;
 }
@@ -167,19 +152,12 @@ int format_msg1_decode(edhoc_msg1_t *msg1, const uint8_t *in, size_t ilen) {
     uint8_t suite;
 
     size_t i;
-    uint8_t receivedSuites[10];
+    uint8_t receivedSuites[10] = {0};
 
     const uint8_t *p;
 
-#if defined(NANOCBOR)
-    nanocbor_encoder_t decoder;
-    nanocbor_encoder_t arr;
-#elif defined(EMPTY_CBOR)
-    int decoder;
-    int arr;
-#else
-#error "No CBOR backend enabled"
-#endif
+    cbor_decoder_t decoder;
+    cbor_decoder_t arr;
 
     // set up the decoder context
     cbor_init_decoder(&decoder, in, ilen);
@@ -255,13 +233,7 @@ int format_msg1_decode(edhoc_msg1_t *msg1, const uint8_t *in, size_t ilen) {
 ssize_t format_msg2_encode(const edhoc_msg2_t *msg2, corr_t corr, uint8_t *out, size_t olen) {
     ssize_t ret;
 
-#if defined(NANOCBOR)
-    nanocbor_encoder_t encoder;
-#elif defined(EMPTY_CBOR)
-    int encoder;
-#else
-#error "No CBOR backend enabled"
-#endif
+    cbor_encoder_t encoder;
 
     if ((ret = format_data2_encode(&msg2->data2, corr, out, olen)) < 0) {
         EDHOC_FAIL(ret);
@@ -271,7 +243,7 @@ ssize_t format_msg2_encode(const edhoc_msg2_t *msg2, corr_t corr, uint8_t *out, 
 
     CBOR_ENC_CHECK_RET(cbor_put_bstr(&encoder, msg2->ciphertext2, msg2->ciphertext2Len));
 
-    ret = ret + cbor_encoded_len(&encoder);
+    ret = ret + (ssize_t) (cbor_encoded_len(&encoder));
     exit:
     return ret;
 }
@@ -284,13 +256,7 @@ int format_msg2_decode(edhoc_msg2_t *msg2,
     int ret;
     const uint8_t *p;
 
-#if defined(NANOCBOR)
-    nanocbor_encoder_t decoder;
-#elif defined(EMPTY_CBOR)
-    int decoder;
-#else
-#error "No CBOR backend enabled"
-#endif
+    cbor_decoder_t decoder;
 
     cbor_init_decoder(&decoder, msg2Buf, msg2Len);
 
@@ -309,7 +275,7 @@ int format_msg2_decode(edhoc_msg2_t *msg2,
             EDHOC_FAIL(EDHOC_ERR_CBOR_DECODING);
         }
     } else {
-        msg2->data2.cidr.length = 0;
+        msg2->data2.cidi.length = 0;
     }
 
     if (suite == NULL) {
@@ -353,13 +319,7 @@ int format_msg2_decode(edhoc_msg2_t *msg2,
 ssize_t format_msg3_encode(const edhoc_msg3_t *msg3, corr_t corr, uint8_t *out, size_t olen) {
     ssize_t ret;
 
-#if defined(NANOCBOR)
-    nanocbor_encoder_t encoder;
-#elif defined(EMPTY_CBOR)
-    int encoder;
-#else
-#error "No CBOR backend enabled"
-#endif
+    cbor_encoder_t encoder;
 
     if ((ret = format_data3_encode(&msg3->data3, corr, out, olen)) < 0) {
         EDHOC_FAIL(ret);
@@ -369,7 +329,7 @@ ssize_t format_msg3_encode(const edhoc_msg3_t *msg3, corr_t corr, uint8_t *out, 
 
     CBOR_ENC_CHECK_RET(cbor_put_bstr(&encoder, msg3->ciphertext3, msg3->ciphertext3Len));
 
-    ret = ret + cbor_encoded_len(&encoder);
+    ret = ret + (ssize_t) (cbor_encoded_len(&encoder));
     exit:
     return ret;
 }
@@ -377,13 +337,7 @@ ssize_t format_msg3_encode(const edhoc_msg3_t *msg3, corr_t corr, uint8_t *out, 
 int format_msg3_decode(edhoc_msg3_t *msg3, corr_t corr, const uint8_t *msg3_buf, size_t msg3_len) {
     int ret;
 
-#if defined(NANOCBOR)
-    nanocbor_encoder_t decoder;
-#elif defined(EMPTY_CBOR)
-    int decoder;
-#else
-#error "No CBOR backend enabled"
-#endif
+    cbor_decoder_t decoder;
 
     cbor_init_decoder(&decoder, msg3_buf, msg3_len);
 
@@ -411,21 +365,15 @@ int format_msg3_decode(edhoc_msg3_t *msg3, corr_t corr, const uint8_t *msg3_buf,
 }
 
 ssize_t format_data2_encode(const edhoc_data2_t *data2, corr_t corr, uint8_t *out, size_t olen) {
-#if defined(NANOCBOR)
-    nanocbor_encoder_t encoder;
-#elif defined(EMPTY_CBOR)
-    int encoder;
-#else
-#error "No CBOR backend enabled"
-#endif
+    cbor_encoder_t encoder;
 
-    int ret;
+    ssize_t ret;
     cbor_init_encoder(&encoder, out, olen);
 
     // (1) Optionally encode the Initiator's connection identifier
     if (corr == NO_CORR || corr == CORR_2_3) {
         if (data2->cidi.length == 1 && data2->cidi.integer >= 0 && data2->cidi.integer <= 0x2f) {
-            CBOR_ENC_CHECK_RET(cbor_put_int8_t(&encoder, data2->cidi.integer - 24));
+            CBOR_ENC_CHECK_RET(cbor_put_int(&encoder, data2->cidi.integer - 24));
         } else {
             CBOR_ENC_CHECK_RET(cbor_put_bstr(&encoder, data2->cidr.bstr, data2->cidr.length));
         }
@@ -436,39 +384,33 @@ ssize_t format_data2_encode(const edhoc_data2_t *data2, corr_t corr, uint8_t *ou
 
     // (3) Encode the Responder's connection identifier
     if (data2->cidr.length == 1 && data2->cidr.integer >= 0 && data2->cidr.integer <= 0x2f) {
-        CBOR_ENC_CHECK_RET(cbor_put_int8_t(&encoder, data2->cidr.integer - 24));
+        CBOR_ENC_CHECK_RET(cbor_put_int(&encoder, data2->cidr.integer - 24));
     } else {
         CBOR_ENC_CHECK_RET(cbor_put_bstr(&encoder, data2->cidr.bstr, data2->cidr.length));
     }
 
-    ret = cbor_encoded_len(&encoder);
+    ret = (ssize_t) (cbor_encoded_len(&encoder));
     exit:
     return ret;
 }
 
 ssize_t format_data3_encode(const edhoc_data3_t *data3, corr_t corr, uint8_t *out, size_t olen) {
-    int ret;
+    ssize_t ret;
 
-#if defined(NANOCBOR)
-    nanocbor_encoder_t encoder;
-#elif defined(EMPTY_CBOR)
-    int encoder;
-#else
-#error "No CBOR backend enabled"
-#endif
+    cbor_encoder_t encoder;
 
     cbor_init_encoder(&encoder, out, olen);
 
     // (1) Optionally encode the Initiator's connection identifier
     if (corr == NO_CORR || corr == CORR_1_2) {
         if (data3->cidr.length == 1 && data3->cidr.integer >= 0 && data3->cidr.integer <= 0x2f) {
-            CBOR_ENC_CHECK_RET(cbor_put_int8_t(&encoder, data3->cidr.integer - 24));
+            CBOR_ENC_CHECK_RET(cbor_put_int(&encoder, data3->cidr.integer - 24));
         } else {
             CBOR_ENC_CHECK_RET(cbor_put_bstr(&encoder, data3->cidr.bstr, data3->cidr.length));
         }
     }
 
-    ret = cbor_encoded_len(&encoder);
+    ret = (ssize_t) (cbor_encoded_len(&encoder));
     exit:
     return ret;
 }
@@ -479,23 +421,17 @@ ssize_t format_info_encode(cose_algo_id_t id,
                            size_t len,
                            uint8_t *out,
                            size_t olen) {
-#if defined(NANOCBOR)
-    nanocbor_encoder_t encoder;
-#elif defined(EMPTY_CBOR)
-    int encoder;
-#else
-#error "No CBOR backend enabled"
-#endif
+    cbor_encoder_t encoder;
 
     cbor_init_encoder(&encoder, out, olen);
 
     cbor_put_array(&encoder, CBOR_ARRAY_INFO_LEN);
-    cbor_put_int8_t(&encoder, id);
+    cbor_put_int(&encoder, id);
     cbor_put_bstr(&encoder, th, EDHOC_DIGEST_SIZE);
     cbor_put_tstr(&encoder, label);
-    cbor_put_int8_t(&encoder, len);
+    cbor_put_uint(&encoder, len);
 
-    return cbor_encoded_len(&encoder);
+    return (ssize_t) cbor_encoded_len(&encoder);
 }
 
 ssize_t format_external_data_encode(const uint8_t *th,
@@ -505,34 +441,29 @@ ssize_t format_external_data_encode(const uint8_t *th,
                                     uint8_t *out,
                                     size_t olen) {
     ssize_t ret, offset;
-#if defined(NANOCBOR)
-    nanocbor_encoder_t enc;
-#elif defined(EMPTY_CBOR)
-    int enc;
-#else
-#error "No CBOR backend enabled"
-#endif
+    cbor_encoder_t enc;
 
     cbor_init_encoder(&enc, out, olen);
     cbor_put_bstr(&enc, th, EDHOC_DIGEST_SIZE);
 
-    offset = cbor_encoded_len(&enc);
+    offset = (ssize_t) (cbor_encoded_len(&enc));
 
     if (credType == CRED_TYPE_CBOR_CERT) {
         memcpy(out + offset, ((c509_t *) credCtx)->raw.p, ((c509_t *) credCtx)->raw.length);
-        offset += ((c509_t *) credCtx)->raw.length;
+        offset += (ssize_t) (((c509_t *) credCtx)->raw.length);
     } else if (credType == CRED_TYPE_DER_CERT) {
-#if defined(MBEDTLS_X509)
+#if defined(EDHOC_AUTH_X509_CERT)
+#if defined(MBEDTLS)
         CBOR_ENC_CHECK_RET(
                 cbor_put_bstr(&enc, ((mbedtls_x509_crt *) credCtx)->raw.p, ((mbedtls_x509_crt *) credCtx)->raw.len));
-        offset = cbor_encoded_len(&enc);
-#elif defined(EMPTY_X509)
+        offset = (ssize_t) (cbor_encoded_len(&enc));
 #else
 #error "No X509 backend enabled"
 #endif
+#endif
     } else if (credType == CRED_TYPE_RPK) {
         memcpy(out + offset, ((rpk_t *) credCtx)->raw.p, ((rpk_t *) credCtx)->raw.length);
-        offset += ((rpk_t *) credCtx)->raw.length;
+        offset += (ssize_t) (((rpk_t *) credCtx)->raw.length);
     } else {
         EDHOC_FAIL(EDHOC_ERR_INVALID_CRED);
     }
@@ -542,7 +473,7 @@ ssize_t format_external_data_encode(const uint8_t *th,
         //TODO: attach additional data
     }
 
-    ret = offset + cbor_encoded_len(&enc);
+    ret = (ssize_t) (offset + cbor_encoded_len(&enc));
     exit:
     return ret;
 }
@@ -551,15 +482,8 @@ int format_plaintext23_decode(edhoc_plaintext23_t *plaintext, uint8_t *in, size_
     int ret;
     int8_t cborType;
 
-#if defined(NANOCBOR)
-    nanocbor_value_t dec;
-    nanocbor_value_t _dec;
-#elif defined(EMPTY_CBOR)
-    int dec;
-    int _dec;
-#else
-#error "No CBOR backend enabled"
-#endif
+    cbor_decoder_t dec;
+    cbor_decoder_t _dec;
 
     cbor_init_decoder(&dec, in, ilen);
 
@@ -605,13 +529,7 @@ ssize_t format_plaintext23_encode(const edhoc_plaintext23_t *plaintext, uint8_t 
 
     int headerItems;
 
-#if defined(NANOCBOR)
-    nanocbor_encoder_t enc;
-#elif defined(EMPTY_CBOR)
-    int enc;
-#else
-#error "No CBOR backend enabled"
-#endif
+    cbor_encoder_t enc;
 
     offset = 0;
 
@@ -630,18 +548,18 @@ ssize_t format_plaintext23_encode(const edhoc_plaintext23_t *plaintext, uint8_t 
             cbor_init_encoder(&enc, out, olen);
 
             if (plaintext->credId->map[0].len == 1 && plaintext->credId->map[0].bstr[0] <= 0x2f) {
-                cbor_put_int8_t(&enc, plaintext->credId->map[0].bstr[0] - 24);
+                cbor_put_int(&enc, (int8_t) (plaintext->credId->map[0].bstr[0] - 24));
             } else {
                 CBOR_ENC_CHECK_RET(
                         cbor_put_bstr(&enc, plaintext->credId->map[0].bstr, plaintext->credId->map[0].len));
             }
 
-            offset += cbor_encoded_len(&enc);
+            offset += (ssize_t) (cbor_encoded_len(&enc));
         }
     } else {
         if (plaintext->credId->length <= olen - offset) {
             memcpy(out, plaintext->credId->p, plaintext->credId->length);
-            offset += plaintext->credId->length;
+            offset += (ssize_t) (plaintext->credId->length);
         } else {
             EDHOC_FAIL(EDHOC_ERR_BUFFER_OVERFLOW);
         }
@@ -656,7 +574,7 @@ ssize_t format_plaintext23_encode(const edhoc_plaintext23_t *plaintext, uint8_t 
         CBOR_ENC_CHECK_RET(cbor_put_bstr(&enc, plaintext->ad23, plaintext->ad23Len));
     }
 
-    ret = offset + cbor_encoded_len(&enc);
+    ret = (ssize_t) (offset + cbor_encoded_len(&enc));
     exit:
     return ret;
 }
@@ -664,19 +582,13 @@ ssize_t format_plaintext23_encode(const edhoc_plaintext23_t *plaintext, uint8_t 
 ssize_t format_error_msg_encode(const edhoc_error_msg_t *errMsg, uint8_t *out, size_t olen) {
     ssize_t ret;
 
-#if defined(NANOCBOR)
-    nanocbor_encoder_t enc;
-#elif defined(EMPTY_CBOR)
-    int enc;
-#else
-#error "No CBOR backend enabled"
-#endif
+    cbor_encoder_t enc;
 
     cbor_init_encoder(&enc, out, olen);
 
     if (errMsg->cid.length != 0) {
         if (errMsg->cid.length == 1 && errMsg->cid.integer <= 0x2f) {
-            CBOR_ENC_CHECK_RET(cbor_put_int8_t(&enc, errMsg->cid.integer - 24));
+            CBOR_ENC_CHECK_RET(cbor_put_int(&enc, errMsg->cid.integer - 24));
         } else {
             CBOR_ENC_CHECK_RET(cbor_put_bstr(&enc, errMsg->cid.bstr, errMsg->cid.length));
         }
@@ -693,11 +605,11 @@ ssize_t format_error_msg_encode(const edhoc_error_msg_t *errMsg, uint8_t *out, s
     if (errMsg->suitesRLen != 0) {
         CBOR_ENC_CHECK_RET(cbor_put_array(&enc, errMsg->suitesRLen));
         for (size_t i = 0; i < errMsg->suitesRLen; i++) {
-            CBOR_ENC_CHECK_RET(cbor_put_uint8_t(&enc, errMsg->suitesR[i]));
+            CBOR_ENC_CHECK_RET(cbor_put_uint(&enc, errMsg->suitesR[i]));
         }
     }
 
-    ret = cbor_encoded_len(&enc);
+    ret = (ssize_t) (cbor_encoded_len(&enc));
     exit:
     return ret;
 

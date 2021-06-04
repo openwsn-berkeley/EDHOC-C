@@ -1,15 +1,26 @@
 #include <string.h>
-#include <mbedtls/x509_crt.h>
 
 #include "edhoc/edhoc.h"
 #include "edhoc/creddb.h"
+
+#if defined(EDHOC_AUTH_X509_CERT)
+#if defined(MBEDTLS)
+#include <mbedtls/x509_crt.h>
+#else
+#error "No X509 backend enabled."
+#endif
+#else
+#error "Unit tests require EDHOC_AUTH_X509_CERT to be active"
+#endif
 
 #include "util.h"
 #include "json.h"
 
 #if defined(WOLFSSL)
 
+#ifndef WOLFSSL_USER_SETTINGS
 #include <wolfssl/options.h>
+#endif
 #include <wolfssl/wolfcrypt/sha256.h>
 
 #elif defined(HACL)
@@ -23,9 +34,10 @@ struct hacl_Sha256 {
     uint8_t buffer[HASH_INPUT_BLEN];
 };
 #elif defined(TINYCRYPT)
-#include "crypto/tinycrypt/sha256.h"
-#endif
 
+#include "crypto/tinycrypt/sha256.h"
+
+#endif
 
 
 int test_create_msg1(corr_t corr,
@@ -49,7 +61,7 @@ int test_create_msg1(corr_t corr,
 #elif defined(HACL)
     hacl_Sha256 thCtx;
 #elif defined(TINYCRYPT)
-    struct tc_sha256_state_struct  thCtx;
+    struct tc_sha256_state_struct thCtx;
 #endif
 
     edhoc_ctx_init(&ctx);
@@ -89,7 +101,13 @@ int test_create_msg2(cred_type_t credType,
 
     cred_id_t credIdCtx;
     c509_t c509Ctx;
+
+#if defined(MBEDTLS)
     mbedtls_x509_crt x509Ctx;
+#else
+#error "No X509 backend enabled"
+#endif
+
     rpk_t rpkCtx;
 
     edhoc_ctx_t ctx;
@@ -101,7 +119,7 @@ int test_create_msg2(cred_type_t credType,
 #elif defined(HACL)
     hacl_Sha256 thCtx;
 #elif defined(TINYCRYPT)
-    struct tc_sha256_state_struct  thCtx;
+    struct tc_sha256_state_struct thCtx;
 #endif
 
     cose_key_init(&authKey);
@@ -123,9 +141,13 @@ int test_create_msg2(cred_type_t credType,
         cred_c509_from_cbor(&c509Ctx, credentials, credLen);
         edhoc_conf_setup_credentials(&conf, &authKey, credType, &c509Ctx, &credIdCtx, f_remote_creds);
     } else if (credType == CRED_TYPE_DER_CERT) {
+#if defined(MBEDTLS)
         cred_x509_init(&x509Ctx);
         cred_x509_from_der(&x509Ctx, credentials, credLen);
         edhoc_conf_setup_credentials(&conf, &authKey, credType, &x509Ctx, &credIdCtx, f_remote_creds);
+#else
+#error "No X509 backend enabled"
+#endif
     } else if (credType == CRED_TYPE_RPK) {
         cred_rpk_init(&rpkCtx);
         cred_rpk_from_cbor(&rpkCtx, credentials, credLen);
@@ -172,7 +194,13 @@ int test_create_msg3(corr_t corr,
 
     cred_id_t credIdCtx;
     c509_t c509Ctx;
+
+#if defined(MBEDTLS)
     mbedtls_x509_crt x509Ctx;
+#else
+#error "No X509 backend enabled"
+#endif
+
     rpk_t rpkCtx;
 
     edhoc_ctx_t ctx;
@@ -184,7 +212,7 @@ int test_create_msg3(corr_t corr,
 #elif defined(HACL)
     hacl_Sha256 thCtx;
 #elif defined(TINYCRYPT)
-    struct tc_sha256_state_struct  thCtx;
+    struct tc_sha256_state_struct thCtx;
 #endif
 
     cose_key_init(&authKey);
@@ -206,9 +234,13 @@ int test_create_msg3(corr_t corr,
         cred_c509_from_cbor(&c509Ctx, credentials, credLen);
         edhoc_conf_setup_credentials(&conf, &authKey, credType, &c509Ctx, &credIdCtx, f_remote_creds);
     } else if (credType == CRED_TYPE_DER_CERT) {
+#if defined(MBEDTLS)
         cred_x509_init(&x509Ctx);
         cred_x509_from_der(&x509Ctx, credentials, credLen);
         edhoc_conf_setup_credentials(&conf, &authKey, credType, &x509Ctx, &credIdCtx, f_remote_creds);
+#else
+#error "No X509 backend enabled"
+#endif
     } else if (credType == CRED_TYPE_RPK) {
         cred_rpk_init(&rpkCtx);
         cred_rpk_from_cbor(&rpkCtx, credentials, credLen);
@@ -258,7 +290,11 @@ int test_resp_finalize(cred_type_t credType,
 
     cred_id_t credIdCtx;
     c509_t c509Ctx;
+#if defined(MBEDTLS)
     mbedtls_x509_crt x509Ctx;
+#else
+#error "No X509 backend enabled"
+#endif
     rpk_t rpkCtx;
 
     edhoc_ctx_t ctx;
@@ -270,7 +306,7 @@ int test_resp_finalize(cred_type_t credType,
 #elif defined(HACL)
     hacl_Sha256 thCtx;
 #elif defined(TINYCRYPT)
-    struct tc_sha256_state_struct  thCtx;
+    struct tc_sha256_state_struct thCtx;
 #endif
 
     cose_key_init(&authKey);
@@ -292,9 +328,13 @@ int test_resp_finalize(cred_type_t credType,
         cred_c509_from_cbor(&c509Ctx, credentials, credLen);
         edhoc_conf_setup_credentials(&conf, &authKey, credType, &c509Ctx, &credIdCtx, f_remote_creds);
     } else if (credType == CRED_TYPE_DER_CERT) {
+#if defined(MBEDTLS)
         cred_x509_init(&x509Ctx);
         cred_x509_from_der(&x509Ctx, credentials, credLen);
         edhoc_conf_setup_credentials(&conf, &authKey, credType, &x509Ctx, &credIdCtx, f_remote_creds);
+#else
+#error "No X509 backend enabled"
+#endif
     } else if (credType == CRED_TYPE_RPK) {
         cred_rpk_init(&rpkCtx);
         cred_rpk_from_cbor(&rpkCtx, credentials, credLen);

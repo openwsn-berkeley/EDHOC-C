@@ -10,7 +10,9 @@
 #include <edhoc/creddb.h>
 
 #if defined(WOLFSSL)
+#ifndef WOLFSSL_USER_SETTINGS
 #include <wolfssl/options.h>
+#endif
 #include <wolfssl/wolfcrypt/sha256.h>
 #elif defined(HACL)
 
@@ -23,10 +25,20 @@ struct hacl_Sha256 {
     uint8_t buffer[HASH_INPUT_BLEN];
 };
 #elif defined(TINYCRYPT)
+
 #include "../../src/crypto/tinycrypt/sha256.h"
+
 #endif
 
+#if defined(EDHOC_AUTH_X509_CERT)
+#if defined(MBEDTLS)
 #include <mbedtls/x509_crt.h>
+#else
+#error "No X509 backend enabled"
+#endif
+#else
+#error "This example requires EDHOC_AUTH_X509_CERT to be active"
+#endif
 
 #include "util.h"
 
@@ -58,7 +70,12 @@ int edhoc_handshake(int sockfd) {
     edhoc_conf_t conf;
 
     cred_id_t credIdCtx;
+#if defined(MBEDTLS)
     mbedtls_x509_crt x509Ctx;
+#else
+#error "No X509 backend enabled"
+#endif
+
     cose_key_t authKey;
 
 #if defined(WOLFSSL)
@@ -67,7 +84,7 @@ int edhoc_handshake(int sockfd) {
 #elif defined(HACL)
     hacl_Sha256 thCtx;
 #elif defined(TINYCRYPT)
-    struct tc_sha256_state_struct  thCtx;
+    struct tc_sha256_state_struct thCtx;
 #else
 #error "No crypto backend enabled."
 #endif
@@ -99,6 +116,7 @@ int edhoc_handshake(int sockfd) {
         return -1;
     }
 
+#if defined(EDHOC_AUTH_X509_CERT)
     cred_x509_init(&x509Ctx);
     // TODO: return code is negative, because we are loading a fake certificate
     cred_x509_from_der(&x509Ctx, x509_der_cert_init_tv1, x509_der_cert_init_tv1_len);
@@ -108,6 +126,9 @@ int edhoc_handshake(int sockfd) {
         printf("[%d] Failed to load EDHOC configuration... Aborting!\n", counter++);
         return -1;
     }
+#else
+#error "This example requires EDHOC_AUTH_X509_CERT to be active"
+#endif
 
     if (edhoc_conf_setup_role(&conf, EDHOC_IS_RESPONDER) != EDHOC_SUCCESS) {
         printf("[%d] Failed to load EDHOC role... Aborting!\n", counter++);

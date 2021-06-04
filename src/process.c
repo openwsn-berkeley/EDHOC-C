@@ -43,9 +43,7 @@ ssize_t proc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suite
 #elif defined(HACL)
     hacl_Sha256 hashCtx;
 #elif defined(TINYCRYPT)
-    struct tc_sha256_state_struct  hashCtx;
-#elif defined(EMPTY_CRYPTO)
-    int hashCtx;
+    struct tc_sha256_state_struct hashCtx;
 #else
 #error "No crypto backend enabled."
 #endif
@@ -94,7 +92,7 @@ ssize_t proc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suite
 
     msg1.cidi.length = ctx->session.cidiLen;
     if (ctx->session.cidiLen == 1 && ctx->session.cidi[0] <= 0x2f)
-        msg1.cidi.integer = ctx->session.cidi[0];
+        msg1.cidi.integer = (int8_t) ctx->session.cidi[0];
     else
         msg1.cidi.bstr = &ctx->session.cidi[0];
 
@@ -144,17 +142,13 @@ ssize_t proc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1Buf, size_t msg1Le
 #elif defined(HACL)
     hacl_Sha256 hashCtx;
 #elif defined(TINYCRYPT)
-    struct tc_sha256_state_struct  hashCtx;
-#elif defined(EMPTY_CRYPTO)
-    int hashCtx;
+    struct tc_sha256_state_struct hashCtx;
 #else
 #error "No crypto backend enabled"
 #endif
 
 #if defined(NANOCBOR)
     nanocbor_encoder_t enc;
-#elif defined(EMPTY_CBOR)
-    int enc;
 #else
 #error "No CBOR backend enabled"
 #endif
@@ -233,7 +227,7 @@ ssize_t proc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1Buf, size_t msg1Le
     if (ctx->session.cidiLen > 1)
         msg2.data2.cidi.bstr = &ctx->session.cidi[0];
     else
-        msg2.data2.cidi.integer = ctx->session.cidi[0];
+        msg2.data2.cidi.integer = (int8_t) ctx->session.cidi[0];
 
 #if defined(EDHOC_DEBUG_ENABLED)
     if (ctx->myEphKey.kty == COSE_KTY_NONE) {
@@ -254,7 +248,7 @@ ssize_t proc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1Buf, size_t msg1Le
     if (ctx->session.cidrLen > 1)
         msg2.data2.cidr.bstr = &ctx->session.cidr[0];
     else
-        msg2.data2.cidr.integer = ctx->session.cidr[0];
+        msg2.data2.cidr.integer = (int8_t) ctx->session.cidr[0];
 
 
     if ((len = format_data2_encode(&msg2.data2, ctx->correlation, out, olen)) <= 0) {
@@ -396,17 +390,13 @@ ssize_t proc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2Buf, size_t msg2Le
 #elif defined(HACL)
     hacl_Sha256 hashCtx;
 #elif defined(TINYCRYPT)
-    struct tc_sha256_state_struct  hashCtx;
-#elif defined(EMPTY_CRYPTO)
-    int hashCtx;
+    struct tc_sha256_state_struct hashCtx;
 #else
 #error "No crypto backend enabled"
 #endif
 
 #if defined(NANOCBOR)
     nanocbor_encoder_t enc;
-#elif defined(EMPTY_CBOR)
-    int enc;
 #else
 #error "No CBOR backend enabled"
 #endif
@@ -550,7 +540,7 @@ ssize_t proc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2Buf, size_t msg2Le
     if (ctx->session.cidrLen > 1)
         msg3.data3.cidr.bstr = &ctx->session.cidr[0];
     else
-        msg3.data3.cidr.integer = ctx->session.cidr[0];
+        msg3.data3.cidr.integer = (int8_t) ctx->session.cidr[0];
 
     // TH_3 = H(TH_2 , CIPHERTEXT_2, data_3)
     crypt_hash_init(&hashCtx);
@@ -701,7 +691,8 @@ ssize_t proc_init_finalize(edhoc_ctx_t *ctx) {
 }
 
 
-ssize_t proc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3Buf, size_t msg3Len, bool doMsg4, uint8_t *out, size_t olen) {
+ssize_t
+proc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3Buf, size_t msg3Len, bool doMsg4, uint8_t *out, size_t olen) {
     (void) doMsg4;
     (void) out;
     (void) olen;
@@ -717,17 +708,13 @@ ssize_t proc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3Buf, size_t msg3
 #elif defined(HACL)
     hacl_Sha256 hashCtx;
 #elif defined(TINYCRYPT)
-    struct tc_sha256_state_struct  hashCtx;
-#elif defined(EMPTY_CRYPTO)
-    int hashCtx;
+    struct tc_sha256_state_struct hashCtx;
 #else
 #error "No crypto backend enabled"
 #endif
 
 #if defined(NANOCBOR)
     nanocbor_encoder_t enc;
-#elif defined(EMPTY_CBOR)
-    int enc;
 #else
 #error "No CBOR backend enabled."
 #endif
@@ -891,13 +878,13 @@ ssize_t proc_create_error_msg(edhoc_ctx_t *ctx,
     if (ctx->conf->role == EDHOC_IS_RESPONDER) {
         errMsg.cid.length = ctx->session.cidrLen;
         if (ctx->session.cidrLen == 1 && ctx->session.cidr[0] <= 0x2f)
-            errMsg.cid.integer = ctx->session.cidr[0];
+            errMsg.cid.integer = (int8_t) ctx->session.cidr[0];
         else
             errMsg.cid.bstr = &ctx->session.cidr[0];
     } else {
         errMsg.cid.length = ctx->session.cidiLen;
         if (ctx->session.cidiLen == 1 && ctx->session.cidi[0] <= 0x2f)
-            errMsg.cid.integer = ctx->session.cidi[0];
+            errMsg.cid.integer = (int8_t) ctx->session.cidi[0];
         else
             errMsg.cid.bstr = &ctx->session.cidi[0];
     }
@@ -919,14 +906,14 @@ ssize_t proc_create_error_msg(edhoc_ctx_t *ctx,
     return ret;
 }
 
-int proc_compute_K23mOrK3ae(const cose_aead_t *aeadInfo,
-                            const uint8_t *th,
-                            const uint8_t *prk,
-                            const char *label,
-                            uint8_t *out,
-                            size_t olen) {
+ssize_t proc_compute_K23mOrK3ae(const cose_aead_t *aeadInfo,
+                                const uint8_t *th,
+                                const uint8_t *prk,
+                                const char *label,
+                                uint8_t *out,
+                                size_t olen) {
 
-    int ret;
+    ssize_t ret;
     uint8_t k23m[EDHOC_K23M_SIZE] = {0};
 
     if ((ret = format_info_encode(aeadInfo->id, th, label, aeadInfo->keyLength, out, olen)) <= 0) {
@@ -953,14 +940,14 @@ int proc_compute_K23mOrK3ae(const cose_aead_t *aeadInfo,
     return ret;
 }
 
-int proc_compute_keystream2(const cose_aead_t *aeadInfo,
-                            const uint8_t *th,
-                            const uint8_t *prk,
-                            const char *label,
-                            size_t keyStreamLen,
-                            uint8_t *out,
-                            size_t olen) {
-    int ret;
+ssize_t proc_compute_keystream2(const cose_aead_t *aeadInfo,
+                                const uint8_t *th,
+                                const uint8_t *prk,
+                                const char *label,
+                                size_t keyStreamLen,
+                                uint8_t *out,
+                                size_t olen) {
+    ssize_t ret;
     uint8_t keystream2[EDHOC_KEYSTREAM2_SIZE] = {0};
 
     if ((ret = format_info_encode(aeadInfo->id, th, label, keyStreamLen, out, olen)) <= 0) {
@@ -987,14 +974,14 @@ int proc_compute_keystream2(const cose_aead_t *aeadInfo,
     return ret;
 }
 
-int proc_compute_IV23mOrIV3ae(const cose_aead_t *aeadInfo,
-                              const uint8_t *th,
-                              const uint8_t *prk,
-                              const char *label,
-                              uint8_t *out,
-                              size_t olen) {
+ssize_t proc_compute_IV23mOrIV3ae(const cose_aead_t *aeadInfo,
+                                  const uint8_t *th,
+                                  const uint8_t *prk,
+                                  const char *label,
+                                  uint8_t *out,
+                                  size_t olen) {
 
-    int ret;
+    ssize_t ret;
     uint8_t iv23m[EDHOC_IV23M_SIZE] = {0};
 
     if ((ret = format_info_encode(aeadInfo->id, th, label, aeadInfo->ivLength, out, olen)) <= 0) {
@@ -1021,17 +1008,17 @@ int proc_compute_IV23mOrIV3ae(const cose_aead_t *aeadInfo,
     return ret;
 }
 
-int proc_compute_prk2e(const cose_key_t *sk, const cose_key_t *pk, uint8_t *prk_2e) {
+ssize_t proc_compute_prk2e(const cose_key_t *sk, const cose_key_t *pk, uint8_t *prk_2e) {
     const uint8_t zeroSalt[EDHOC_DIGEST_SIZE] = {0};
 
     return crypt_derive_prk(sk, pk, zeroSalt, EDHOC_DIGEST_SIZE, prk_2e);
 }
 
-int proc_compute_prk3e2m(method_t m,
-                         const uint8_t *prk2e,
-                         const cose_key_t *sk,
-                         const cose_key_t *pk,
-                         uint8_t *prk3e2m) {
+ssize_t proc_compute_prk3e2m(method_t m,
+                             const uint8_t *prk2e,
+                             const cose_key_t *sk,
+                             const cose_key_t *pk,
+                             uint8_t *prk3e2m) {
     int ret;
 
     switch (m) {
@@ -1053,11 +1040,11 @@ int proc_compute_prk3e2m(method_t m,
     return ret;
 }
 
-int proc_compute_prk4x3m(method_t m,
-                         const uint8_t *prk3e2m,
-                         const cose_key_t *sk,
-                         const cose_key_t *pk,
-                         uint8_t *prk4x3m) {
+ssize_t proc_compute_prk4x3m(method_t m,
+                             const uint8_t *prk3e2m,
+                             const cose_key_t *sk,
+                             const cose_key_t *pk,
+                             uint8_t *prk4x3m) {
     int ret;
 
     switch (m) {

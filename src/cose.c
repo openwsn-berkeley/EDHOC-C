@@ -74,8 +74,6 @@ int cose_key_from_cbor(cose_key_t *key, const uint8_t *in, size_t ilen) {
 
 #if defined(NANOCBOR)
     nanocbor_value_t decoder;
-#elif defined(EMPTY_CBOR)
-    int decoder;
 #else
 #error "No CBOR backend enabled"
 #endif
@@ -188,12 +186,12 @@ static int internal_header_serialize(void *encoder, cose_header_t *header, ssize
     for (int i = 0; i < COSE_MAX_HEADER_ITEMS; i++) {
         if (header[i].key != COSE_HEADER_PARAM_RESERVED) {
             // encode key
-            res -= cbor_put_int8_t(encoder, header[i].key);
+            res -= cbor_put_int(encoder, header[i].key);
 
             // encode value
             switch (header[i].valueType) {
                 case COSE_HDR_VALUE_INT:
-                    res -= cbor_put_int8_t(encoder, header->integer);
+                    res -= cbor_put_int(encoder, header->integer);
                     break;
                 case COSE_HDR_VALUE_BSTR:
                     res -= cbor_put_bstr(encoder, header->bstr, header->len);
@@ -203,7 +201,7 @@ static int internal_header_serialize(void *encoder, cose_header_t *header, ssize
                     break;
                 case COSE_HDR_VALUE_CERTHASH:
                     res -= cbor_put_array(encoder, 2);
-                    res -= cbor_put_int8_t(encoder, header->certHash.identifier);
+                    res -= cbor_put_int(encoder, header->certHash.identifier);
                     res -= cbor_put_bstr(encoder, header->certHash.value, header->certHash.length);
                     break;
                 default:
@@ -216,7 +214,7 @@ static int internal_header_serialize(void *encoder, cose_header_t *header, ssize
         }
     }
 
-    *len = cbor_encoded_len(encoder);
+    *len = (int) cbor_encoded_len(encoder);
 
     return EDHOC_SUCCESS;
 }
@@ -226,8 +224,6 @@ ssize_t cose_header_serialized_len(cose_header_t *header) {
 
 #if defined(NANOCBOR)
     nanocbor_encoder_t encoder;
-#elif defined(EMPTY_CBOR)
-    int encoder;
 #else
 #error "No CBOR backend enabled"
 #endif
@@ -242,12 +238,11 @@ ssize_t cose_header_serialized_len(cose_header_t *header) {
 }
 
 int cose_header_serialize(cose_header_t *header, uint8_t *out, size_t olen) {
-    ssize_t ret, tmp;
+    int ret;
+    ssize_t tmp;
 
 #if defined(NANOCBOR)
     nanocbor_encoder_t encoder;
-#elif defined(EMPTY_CBOR)
-    int encoder;
 #else
 #error "No CBOR backend enabled"
 #endif
@@ -273,10 +268,6 @@ int cose_header_parse(cose_header_t *header, const uint8_t *in, size_t ilen) {
     nanocbor_value_t decoder;
     nanocbor_value_t map;
     nanocbor_value_t array;
-#elif defined(EMPTY_CBOR)
-    int decoder;
-    int map;
-    int array;
 #else
 #error "No CBOR backend enabled"
 #endif
@@ -410,7 +401,7 @@ int cose_message_set_protected_hdr(cose_message_t *coseMsgCtx, cose_header_t *he
         return EDHOC_SUCCESS;
 }
 
-int cose_sign1_sign(cose_sign1_t *coseMsgCtx, const cose_key_t *key) {
+ssize_t cose_sign1_sign(cose_sign1_t *coseMsgCtx, const cose_key_t *key) {
     ssize_t toBeSignedLen;
     uint8_t toBeSigned[EDHOC_TOBESIGNED_SIZE];
 
@@ -429,7 +420,7 @@ int cose_sign1_sign(cose_sign1_t *coseMsgCtx, const cose_key_t *key) {
     return crypt_sign(key, toBeSigned, toBeSignedLen, coseMsgCtx->signature, &coseMsgCtx->sigLen);
 }
 
-int cose_encrypt0_decrypt(cose_encrypt0_t *coseMsgCtx, const cose_key_t *key, const uint8_t *iv, size_t ivLen) {
+ssize_t cose_encrypt0_decrypt(cose_encrypt0_t *coseMsgCtx, const cose_key_t *key, const uint8_t *iv, size_t ivLen) {
     ssize_t addAuthDataLen;
     uint8_t addAuthData[EDHOC_ASSOCIATED_DATA_SIZE];
 
@@ -456,7 +447,7 @@ int cose_encrypt0_decrypt(cose_encrypt0_t *coseMsgCtx, const cose_key_t *key, co
                          coseMsgCtx->aeadCipher->tagLength);
 }
 
-int cose_encrypt0_encrypt(cose_encrypt0_t *coseMsgCtx, const cose_key_t *key, const uint8_t *iv, size_t ivLen) {
+ssize_t cose_encrypt0_encrypt(cose_encrypt0_t *coseMsgCtx, const cose_key_t *key, const uint8_t *iv, size_t ivLen) {
     ssize_t addAuthDataLen;
     uint8_t addAuthData[EDHOC_ASSOCIATED_DATA_SIZE];
 
@@ -492,8 +483,8 @@ static ssize_t cose_message_base_structure(cose_message_t *coseMsgCtx,
 
 #if defined(NANOCBOR)
     nanocbor_encoder_t encoder;
-#elif defined(EMPTY_CBOR)
-    int encoder;
+#else
+#error "No CBOR backend enabled"
 #endif
 
     cbor_init_encoder(&encoder, out, olen);
@@ -506,13 +497,13 @@ static ssize_t cose_message_base_structure(cose_message_t *coseMsgCtx,
         EDHOC_FAIL(EDHOC_ERR_CBOR_ENCODING);
     }
 
-    offset = cbor_encoded_len(&encoder);
+    offset = (ssize_t) cbor_encoded_len(&encoder);
 
     /* add COSE protected header */
     cbor_init_encoder(&encoder, out + offset, olen - offset);
     coseHdrLen = cose_header_serialized_len(&coseMsgCtx->protected[0]);
     cbor_start_bstr(&encoder, coseHdrLen);
-    offset += cbor_encoded_len(&encoder);
+    offset += (ssize_t) cbor_encoded_len(&encoder);
 
     if (coseHdrLen != 0) {
         if (cose_header_serialize(&coseMsgCtx->protected[0], out + offset, olen - offset) != EDHOC_SUCCESS) {
@@ -527,7 +518,7 @@ static ssize_t cose_message_base_structure(cose_message_t *coseMsgCtx,
         EDHOC_FAIL(EDHOC_ERR_CBOR_ENCODING);
     }
 
-    ret = offset + cbor_encoded_len(&encoder);
+    ret = offset + (ssize_t) cbor_encoded_len(&encoder);
     exit:
     return ret;
 }
@@ -541,8 +532,8 @@ ssize_t cose_sign1_create_to_be_signed(cose_sign1_t *coseMsgCtx, uint8_t *out, s
 
 #if defined(NANOCBOR)
     nanocbor_encoder_t encoder;
-#elif defined(EMPTY_CBOR)
-    int encoder;
+#else
+#error "No CBOR backend enabled."
 #endif
 
     cbor_init_encoder(&encoder, out, olen);
@@ -554,7 +545,7 @@ ssize_t cose_sign1_create_to_be_signed(cose_sign1_t *coseMsgCtx, uint8_t *out, s
         EDHOC_FAIL(EDHOC_ERR_CBOR_ENCODING);
     }
 
-    ret += cbor_encoded_len(&encoder);
+    ret += (ssize_t) cbor_encoded_len(&encoder);
     exit:
     return ret;
 }

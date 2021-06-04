@@ -85,13 +85,13 @@ ssize_t proc_resp_finalize(edhoc_ctx_t *ctx,
  * @param olen
  * @return
  */
-int proc_compute_keystream2(const cose_aead_t *aeadInfo,
-                            const uint8_t *th,
-                            const uint8_t *prk,
-                            const char *label,
-                            size_t keyStreamLen,
-                            uint8_t *out,
-                            size_t olen);
+ssize_t proc_compute_keystream2(const cose_aead_t *aeadInfo,
+                                const uint8_t *th,
+                                const uint8_t *prk,
+                                const char *label,
+                                size_t keyStreamLen,
+                                uint8_t *out,
+                                size_t olen);
 
 /**
  *
@@ -103,12 +103,12 @@ int proc_compute_keystream2(const cose_aead_t *aeadInfo,
  * @param olen
  * @return
  */
-int proc_compute_K23mOrK3ae(const cose_aead_t *aeadInfo,
-                            const uint8_t *th,
-                            const uint8_t *prk,
-                            const char *label,
-                            uint8_t *out,
-                            size_t olen);
+ssize_t proc_compute_K23mOrK3ae(const cose_aead_t *aeadInfo,
+                                const uint8_t *th,
+                                const uint8_t *prk,
+                                const char *label,
+                                uint8_t *out,
+                                size_t olen);
 
 /**
  *
@@ -120,12 +120,12 @@ int proc_compute_K23mOrK3ae(const cose_aead_t *aeadInfo,
  * @param olen
  * @return
  */
-int proc_compute_IV23mOrIV3ae(const cose_aead_t *aeadInfo,
-                              const uint8_t *th,
-                              const uint8_t *prk,
-                              const char *label,
-                              uint8_t *out,
-                              size_t olen);
+ssize_t proc_compute_IV23mOrIV3ae(const cose_aead_t *aeadInfo,
+                                  const uint8_t *th,
+                                  const uint8_t *prk,
+                                  const char *label,
+                                  uint8_t *out,
+                                  size_t olen);
 
 /**
  *
@@ -134,7 +134,7 @@ int proc_compute_IV23mOrIV3ae(const cose_aead_t *aeadInfo,
  * @param prk_2e
  * @return
  */
-int proc_compute_prk2e(const cose_key_t *sk, const cose_key_t *pk, uint8_t *prk_2e);
+ssize_t proc_compute_prk2e(const cose_key_t *sk, const cose_key_t *pk, uint8_t *prk_2e);
 
 /**
  *
@@ -145,11 +145,11 @@ int proc_compute_prk2e(const cose_key_t *sk, const cose_key_t *pk, uint8_t *prk_
  * @param prk3e2m
  * @return
  */
-int proc_compute_prk3e2m(method_t m,
-                         const uint8_t *prk2e,
-                         const cose_key_t *sk,
-                         const cose_key_t *pk,
-                         uint8_t *prk3e2m);
+ssize_t proc_compute_prk3e2m(method_t m,
+                             const uint8_t *prk2e,
+                             const cose_key_t *sk,
+                             const cose_key_t *pk,
+                             uint8_t *prk3e2m);
 
 /**
  *
@@ -160,11 +160,11 @@ int proc_compute_prk3e2m(method_t m,
  * @param prk4x3m
  * @return
  */
-int proc_compute_prk4x3m(method_t m,
-                         const uint8_t *prk3e2m,
-                         const cose_key_t *sk,
-                         const cose_key_t *pk,
-                         uint8_t *prk4x3m);
+ssize_t proc_compute_prk4x3m(method_t m,
+                             const uint8_t *prk3e2m,
+                             const cose_key_t *sk,
+                             const cose_key_t *pk,
+                             uint8_t *prk4x3m);
 
 /**
  *

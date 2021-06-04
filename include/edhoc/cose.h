@@ -296,7 +296,7 @@ void cose_message_set_algo(cose_message_t *coseMsgCtx, cose_algo_id_t);
  * @param olen
  * @return
  */
-int cose_encrypt0_encrypt(cose_encrypt0_t *coseMsgCtx, const cose_key_t *key, const uint8_t *iv, size_t ivLen);
+ssize_t cose_encrypt0_encrypt(cose_encrypt0_t *coseMsgCtx, const cose_key_t *key, const uint8_t *iv, size_t ivLen);
 
 /**
  * @brief Initializes a COSE Encrypt0 context
@@ -329,7 +329,7 @@ void cose_sign1_init(cose_sign1_t *coseMsgCtx,
  * @param key
  * @return
  */
-int cose_sign1_sign(cose_sign1_t *coseMsgCtx, const cose_key_t *key);
+ssize_t cose_sign1_sign(cose_sign1_t *coseMsgCtx, const cose_key_t *key);
 
 
 /**
@@ -350,7 +350,7 @@ ssize_t cose_encrypt0_create_adata(cose_encrypt0_t *coseMsgCtx, uint8_t *out, si
  * @param ivLen
  * @return
  */
-int cose_encrypt0_decrypt(cose_encrypt0_t *coseMsgCtx, const cose_key_t *key, const uint8_t *iv, size_t ivLen);
+ssize_t cose_encrypt0_decrypt(cose_encrypt0_t *coseMsgCtx, const cose_key_t *key, const uint8_t *iv, size_t ivLen);
 
 /**
  *

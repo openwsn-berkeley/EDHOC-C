@@ -1,13 +1,24 @@
 #include <edhoc/edhoc.h>
-#include <mbedtls/x509_crt.h>
 #include <edhoc/creddb.h>
 #include <util.h>
+
+#if defined(EDHOC_AUTH_X509_CERT)
+#if defined(MBEDTLS)
+#include <mbedtls/x509_crt.h>
+#else
+#error "No X509 backend enabled"
+#endif
+#else
+#error "This example requires EDHOC_AUTH_X509_CERT to be active"
+#endif
 
 #include "nanocoap.h"
 
 #if defined(WOLFSSL)
 
+#ifndef WOLFSSL_USER_SETTINGS
 #include <wolfssl/options.h>
+#endif
 #include <wolfssl/wolfcrypt/sha256.h>
 
 #elif defined(HACL)
@@ -21,7 +32,9 @@ struct hacl_Sha256 {
     uint8_t buffer[HASH_INPUT_BLEN];
 };
 #elif defined(TINYCRYPT)
+
 #include "../../src/crypto/tinycrypt/sha256.h"
+
 #endif
 
 /* must be sorted by path (ASCII order) */
@@ -48,7 +61,12 @@ int main(void) {
     edhoc_conf_t conf;
 
     cred_id_t credIdCtx;
+#if defined(MBEDTLS)
     mbedtls_x509_crt x509Ctx;
+#else
+#error "No X509 backend enabled"
+#endif
+
     cose_key_t authKey;
 
     uint8_t masterSecret[16];
@@ -60,7 +78,7 @@ int main(void) {
 #elif defined(HACL)
     hacl_Sha256 thCtx;
 #elif defined(TINYCRYPT)
-    struct tc_sha256_state_struct  thCtx;
+    struct tc_sha256_state_struct thCtx;
 #else
 #error "No crypto backend enabled."
 #endif
@@ -108,6 +126,7 @@ int main(void) {
         return -1;
     }
 
+#if defined(EDHOC_AUTH_X509_CERT)
     cred_x509_init(&x509Ctx);
     // TODO: return code is negative, because we are loading a fake certificate
     cred_x509_from_der(&x509Ctx, x509_der_cert_init_tv1, x509_der_cert_init_tv1_len);
@@ -117,6 +136,9 @@ int main(void) {
         DEBUG("Failed to load EDHOC configuration... Aborting!\n");
         return -1;
     }
+#else
+#error "This example requires EDHOC_AUTH_X509_CERT to be active"
+#endif
 
     if (edhoc_conf_setup_role(&conf, EDHOC_IS_INITIATOR) != EDHOC_SUCCESS) {
         DEBUG("Failed to load EDHOC role... Aborting!\n");
@@ -179,7 +201,7 @@ int main(void) {
                 pkt.payload_len = sizeof(buf1) - (pktpos - buf1);
                 coap_opt_finish(&pkt, COAP_OPT_FINISH_PAYLOAD);
 
-                msgLen = coap_payload_put_bytes(&pkt, buf2, msgLen) +  (pktpos - buf1) + 1;
+                msgLen = coap_payload_put_bytes(&pkt, buf2, msgLen) + (pktpos - buf1) + 1;
             }
         }
     }
