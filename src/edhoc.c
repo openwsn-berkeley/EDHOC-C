@@ -173,7 +173,7 @@ static size_t store_conn_id(uint8_t *storage, const uint8_t *conn_id, size_t con
         return EDHOC_ERR_BUFFER_OVERFLOW;
     }
 
-    if (conn_id == NULL || conn_id_len != 0) {
+    if (conn_id == NULL) {
         return EDHOC_ERR_BUFFER_OVERFLOW;
     }
 
