@@ -37,33 +37,33 @@ int crypt_gen_keypair(cose_curve_t crv, cose_key_t *key) {
 }
 
 
-int crypt_copy_hash_context(void *dstCtx, void *srcCtx) {
+int crypt_copy_hash_context(sha_ctx_t *dstCtx, sha_ctx_t *srcCtx) {
     return wc_Sha256Copy(srcCtx, dstCtx);
 }
 
-int crypt_hash_init(void *ctx) {
-    if (wc_InitSha256((wc_Sha256 *) ctx) != EDHOC_SUCCESS)
+int crypt_hash_init(sha_ctx_t *ctx) {
+    if (wc_InitSha256(ctx) != EDHOC_SUCCESS)
         return EDHOC_ERR_CRYPTO;
     else
         return EDHOC_SUCCESS;
 }
 
-int crypt_hash_update(void *ctx, const uint8_t *in, size_t ilen) {
-    if (wc_Sha256Update((wc_Sha256 *) ctx, in, ilen) != EDHOC_SUCCESS)
+int crypt_hash_update(sha_ctx_t *ctx, const uint8_t *in, size_t ilen) {
+    if (wc_Sha256Update(ctx, in, ilen) != EDHOC_SUCCESS)
         return EDHOC_ERR_CRYPTO;
     else
         return EDHOC_SUCCESS;
 }
 
-int crypt_hash_finish(void *ctx, uint8_t *out) {
-    if (wc_Sha256Final((wc_Sha256 *) ctx, out) != EDHOC_SUCCESS)
+int crypt_hash_finish(sha_ctx_t *ctx, uint8_t *out) {
+    if (wc_Sha256Final(ctx, out) != EDHOC_SUCCESS)
         return EDHOC_ERR_CRYPTO;
     else
         return EDHOC_SUCCESS;
 }
 
-void crypt_hash_free(void *ctx) {
-    wc_Sha256Free((wc_Sha256 *) ctx);
+void crypt_hash_free(sha_ctx_t *ctx) {
+    wc_Sha256Free(ctx);
 }
 
 int crypt_kdf(const uint8_t *prk, const uint8_t *info, size_t infoLen, uint8_t *out, size_t olen) {

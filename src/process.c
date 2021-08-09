@@ -29,7 +29,6 @@ static void generate_conn_id(uint8_t *p, size_t *length) {
     *length = cidLen;
 }
 
-
 ssize_t proc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suite_id_t id, uint8_t *out, size_t olen) {
     ssize_t ret, len;
     ssize_t ad1Len;
@@ -38,16 +37,7 @@ ssize_t proc_create_msg1(edhoc_ctx_t *ctx, corr_t corr, method_t m, cipher_suite
 
     edhoc_msg1_t msg1;
 
-#if defined(WOLFSSL)
-    wc_Sha256 hashCtx;
-#elif defined(HACL)
-    hacl_Sha256 hashCtx;
-#elif defined(TINYCRYPT)
-    struct tc_sha256_state_struct hashCtx;
-#else
-#error "No crypto backend enabled."
-#endif
-
+    sha_ctx_t hashCtx;
     const cipher_suite_t *suiteInfo;
 
     suiteInfo = NULL;
@@ -137,21 +127,8 @@ ssize_t proc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1Buf, size_t msg1Le
     ad_cb_t ad2;
     cred_type_t credType;
 
-#if defined(WOLFSSL)
-    wc_Sha256 hashCtx;
-#elif defined(HACL)
-    hacl_Sha256 hashCtx;
-#elif defined(TINYCRYPT)
-    struct tc_sha256_state_struct hashCtx;
-#else
-#error "No crypto backend enabled"
-#endif
-
-#if defined(NANOCBOR)
-    nanocbor_encoder_t enc;
-#else
-#error "No CBOR backend enabled"
-#endif
+    sha_ctx_t hashCtx;
+    cbor_encoder_t enc;
 
     uint8_t iv2m[EDHOC_IV23M_SIZE] = {0};
     uint8_t mac2[EDHOC_MAC23_SIZE] = {0};
@@ -385,21 +362,8 @@ ssize_t proc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2Buf, size_t msg2Le
     const uint8_t *remoteCred;
     size_t remoteCredLen;
 
-#if defined(WOLFSSL)
-    wc_Sha256 hashCtx;
-#elif defined(HACL)
-    hacl_Sha256 hashCtx;
-#elif defined(TINYCRYPT)
-    struct tc_sha256_state_struct hashCtx;
-#else
-#error "No crypto backend enabled"
-#endif
-
-#if defined(NANOCBOR)
-    nanocbor_encoder_t enc;
-#else
-#error "No CBOR backend enabled"
-#endif
+    sha_ctx_t hashCtx;
+    cbor_encoder_t enc;
 
     uint8_t iv3mOrIv3ae[EDHOC_IV23M_SIZE] = {0};
     uint8_t mac3[EDHOC_MAC23_SIZE] = {0};
@@ -703,21 +667,8 @@ proc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3Buf, size_t msg3Len, boo
     const uint8_t *remoteCred;
     size_t remoteCredLen;
 
-#if defined(WOLFSSL)
-    wc_Sha256 hashCtx;
-#elif defined(HACL)
-    hacl_Sha256 hashCtx;
-#elif defined(TINYCRYPT)
-    struct tc_sha256_state_struct hashCtx;
-#else
-#error "No crypto backend enabled"
-#endif
-
-#if defined(NANOCBOR)
-    nanocbor_encoder_t enc;
-#else
-#error "No CBOR backend enabled."
-#endif
+    sha_ctx_t hashCtx;
+    cbor_encoder_t enc;
 
     uint8_t iv3ae[EDHOC_IV23M_SIZE] = {0};
     uint8_t temp[EDHOC_PLAINTEXT23_SIZE + EDHOC_MAC23_SIZE] = {0};
