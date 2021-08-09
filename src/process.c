@@ -231,10 +231,10 @@ ssize_t proc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1Buf, size_t msg1Le
 
 #if defined(EDHOC_DEBUG_ENABLED)
     if (ctx->myEphKey.kty == COSE_KTY_NONE) {
-        EDHOC_CHECK_SUCCESS(crypt_gen_keypair(msg1.cipherSuite->dhCurve, &msg2.data2.gY));
+        EDHOC_CHECK_SUCCESS(crypt_gen_keypair(msg1.cipherSuite->dhCurve, &ctx->myEphKey));
     }
 #else
-    EDHOC_CHECK_SUCCESS(crypt_gen_keypair(msg1.cipherSuite->dhCurve, &msg2.data2.gY));
+    EDHOC_CHECK_SUCCESS(crypt_gen_keypair(msg1.cipherSuite->dhCurve, &ctx->myEphKey));
 #endif
 
     memcpy(&msg2.data2.gY, &ctx->myEphKey, sizeof(cose_key_t));
