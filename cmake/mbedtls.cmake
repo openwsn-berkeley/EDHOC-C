@@ -9,7 +9,7 @@ endif ()
 ExternalProject_Add(
         mbedtls-backend
         GIT_REPOSITORY https://github.com/ARMmbed/mbedtls.git
-        GIT_TAG master
+        GIT_TAG 1905a244886c00f2fea12b8589a934e759d617af
         GIT_PROGRESS TRUE
         INSTALL_DIR ${CMAKE_BINARY_DIR}/3rdparty/mbedtls-build
         SOURCE_DIR ${CMAKE_BINARY_DIR}/3rdparty/mbedtls
