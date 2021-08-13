@@ -7,7 +7,7 @@ endif ()
 ExternalProject_Add(
         nanocbor-backend
         GIT_REPOSITORY https://github.com/bergzand/NanoCBOR.git
-        GIT_TAG master
+        GIT_TAG 7728af0633a8d9d119c9b36a5c5a441e11e75ff1
         GIT_PROGRESS TRUE
         INSTALL_DIR ${CMAKE_BINARY_DIR}/3rdparty/nanocbor-build
         SOURCE_DIR ${CMAKE_BINARY_DIR}/3rdparty/nanocbor
