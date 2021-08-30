@@ -31,37 +31,36 @@ int crypt_gen_keypair(cose_curve_t crv, cose_key_t *key) {
     return ret;
 }
 
-int crypt_copy_hash_context(void *dstCtx, void *srcCtx) {
-    memcpy(dstCtx, srcCtx, sizeof(hacl_Sha256));
+int crypt_copy_hash_context(sha_ctx_t *dstCtx, sha_ctx_t *srcCtx) {
+    memcpy(dstCtx, srcCtx, sizeof(sha_ctx_t));
     return EDHOC_SUCCESS;
 }
 
-int crypt_hash_init(void *ctx) {
-    (void) ctx;
-    ((hacl_Sha256 *) ctx)->fillLevel = 0;
+int crypt_hash_init(sha_ctx_t *ctx) {
+    ctx->fillLevel = 0;
 
     return EDHOC_SUCCESS;
 }
 
-int crypt_hash_update(void *ctx, const uint8_t *in, size_t ilen) {
-    if (((hacl_Sha256 *) ctx)->fillLevel + ilen > HASH_INPUT_BLEN)
+int crypt_hash_update(sha_ctx_t *ctx, const uint8_t *in, size_t ilen) {
+    if (ctx->fillLevel + ilen > HASH_INPUT_BLEN)
         return EDHOC_ERR_CRYPTO;
 
-    memcpy(((hacl_Sha256 *) ctx)->buffer + ((hacl_Sha256 *) ctx)->fillLevel, in, ilen);
+    memcpy(ctx->buffer + ctx->fillLevel, in, ilen);
 
-    ((hacl_Sha256 *) ctx)->fillLevel += ilen;
+    ctx->fillLevel += ilen;
 
     return EDHOC_SUCCESS;
 }
 
-int crypt_hash_finish(void *ctx, uint8_t *output) {
-    Hacl_Hash_SHA2_hash_256(((hacl_Sha256 *) ctx)->buffer, ((hacl_Sha256 *) ctx)->fillLevel, output);
+int crypt_hash_finish(sha_ctx_t *ctx, uint8_t *output) {
+    Hacl_Hash_SHA2_hash_256(ctx->buffer, ctx->fillLevel, output);
     return EDHOC_SUCCESS;
 }
 
-void crypt_hash_free(void *ctx) {
-    ((hacl_Sha256 *) ctx)->fillLevel = 0;
-    memset(((hacl_Sha256 *) ctx)->buffer, 0, HASH_INPUT_BLEN);
+void crypt_hash_free(sha_ctx_t *ctx) {
+    ctx->fillLevel = 0;
+    memset(ctx->buffer, 0, HASH_INPUT_BLEN);
 }
 
 int crypt_kdf(const uint8_t *prk, const uint8_t *info, size_t infoLen, uint8_t *out, size_t outlen) {
@@ -119,7 +118,7 @@ int crypt_decrypt(const cose_key_t *sk,
                   size_t inOutLen,
                   uint8_t *tag,
                   size_t tagLen) {
-
+    (void) ivLen;
     int ret;
     uint8_t temp[EDHOC_PLAINTEXT23_SIZE];
     size_t tempSize;

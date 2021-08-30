@@ -19,36 +19,36 @@ int crypt_gen_keypair(cose_curve_t crv, cose_key_t *key) {
     return EDHOC_ERR_RANDOMNESS;
 }
 
-int crypt_copy_hash_context(void *dstCtx, void *srcCtx) {
-    memcpy(dstCtx, srcCtx, sizeof(struct tc_sha256_state_struct ));
+int crypt_copy_hash_context(sha_ctx_t *dstCtx, sha_ctx_t *srcCtx) {
+    memcpy(dstCtx, srcCtx, sizeof(sha_ctx_t));
 
     return EDHOC_SUCCESS;
 }
 
-int crypt_hash_init(void *ctx) {
+int crypt_hash_init(sha_ctx_t *ctx) {
 
-    if (tc_sha256_init((TCSha256State_t) ctx) == TC_CRYPTO_SUCCESS)
+    if (tc_sha256_init(ctx) == TC_CRYPTO_SUCCESS)
         return EDHOC_SUCCESS;
     else
         return EDHOC_ERR_CRYPTO;
 }
 
-int crypt_hash_update(void *ctx, const uint8_t *in, size_t ilen) {
+int crypt_hash_update(sha_ctx_t *ctx, const uint8_t *in, size_t ilen) {
 
-    if (tc_sha256_update((TCSha256State_t) ctx, in, ilen) == TC_CRYPTO_SUCCESS)
+    if (tc_sha256_update(ctx, in, ilen) == TC_CRYPTO_SUCCESS)
         return EDHOC_SUCCESS;
     else
         return EDHOC_ERR_CRYPTO;
 }
 
-int crypt_hash_finish(void *ctx, uint8_t *output) {
-    if (tc_sha256_final(output, (TCSha256State_t) ctx) == TC_CRYPTO_SUCCESS)
+int crypt_hash_finish(sha_ctx_t *ctx, uint8_t *output) {
+    if (tc_sha256_final(output, ctx) == TC_CRYPTO_SUCCESS)
         return EDHOC_SUCCESS;
     else
         return EDHOC_ERR_CRYPTO;
 }
 
-void crypt_hash_free(void *ctx) {
+void crypt_hash_free(sha_ctx_t *ctx) {
     (void) ctx;
 }
 

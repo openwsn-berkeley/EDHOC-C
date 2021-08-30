@@ -8,12 +8,12 @@
 #include <wolfssl/options.h>
 #endif
 #include <wolfssl/wolfcrypt/sha256.h>
-
+    typedef wc_Sha256 sha_ctx_t;
 #elif defined(HACL)
 
 #define HASH_INPUT_BLEN     (256)
 
-typedef struct hacl_Sha256 hacl_Sha256;
+typedef struct hacl_Sha256 sha_ctx_t;
 
 struct hacl_Sha256 {
     uint16_t fillLevel;
@@ -22,6 +22,7 @@ struct hacl_Sha256 {
 #elif defined(EMPTY_CRYPTO)
 #elif defined(TINYCRYPT)
 #include "crypto/tinycrypt/sha256.h"
+    typedef struct tc_sha256_state_struct sha_ctx_t;
 #else
 #error "No crypto backend selected"
 #endif
@@ -48,7 +49,7 @@ int crypt_gen_keypair(cose_curve_t crv, cose_key_t *key);
  * @return On success returns EDHOC_SUCCESS
  * @return On failure returns EDHOC_ERR_CRYPTO
  */
-int crypt_hash_init(void *ctx);
+int crypt_hash_init(sha_ctx_t *ctx);
 
 /**
  * @brief Update the hashing context with
@@ -60,7 +61,7 @@ int crypt_hash_init(void *ctx);
  * @return On success returns EDHOC_SUCCESS
  * @return On failure returns EDHOC_ERR_CRYPTO
  */
-int crypt_hash_update(void *ctx, const uint8_t *in, size_t ilen);
+int crypt_hash_update(sha_ctx_t *ctx, const uint8_t *in, size_t ilen);
 
 /**
  * @brief Finalize a hashing context
@@ -71,7 +72,7 @@ int crypt_hash_update(void *ctx, const uint8_t *in, size_t ilen);
  * @return On success returns EDHOC_SUCCESS
  * @return On failure returns EDHOC_ERR_CRYPTO
  */
-int crypt_hash_finish(void *ctx, uint8_t *out);
+int crypt_hash_finish(sha_ctx_t *ctx, uint8_t *out);
 
 /**
  * @brief Free the hashing context
@@ -79,7 +80,7 @@ int crypt_hash_finish(void *ctx, uint8_t *out);
  * @param[in] digest_ctx    Hashing context
  *
  */
-void crypt_hash_free(void *ctx);
+void crypt_hash_free(sha_ctx_t *ctx);
 
 /**
  * @brief Compute the EDHOC-KDF
@@ -169,7 +170,7 @@ int crypt_decrypt(const cose_key_t *sk,
  * @param srcCtx
  * @return
  */
-int crypt_copy_hash_context(void *dstCtx, void *srcCtx);
+int crypt_copy_hash_context(sha_ctx_t *dstCtx, sha_ctx_t *srcCtx);
 
 /**
  * @brief Compute a signature of the digest
