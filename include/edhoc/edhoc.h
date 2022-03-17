@@ -120,7 +120,7 @@ do{                                                             \
 /* Callback functions */
 typedef int (*ad_cb_t)(unsigned char *, size_t, ssize_t *);
 
-typedef int (*edhoc_cred_cb_t)(const uint8_t *, size_t, const uint8_t **, size_t *);
+typedef int (*edhoc_cred_cb_t)(const uint8_t *, size_t, cred_type_t *, const uint8_t **, size_t *, const uint8_t **, size_t *);
 
 /* Defined below */
 typedef struct edhoc_conf_t edhoc_conf_t;
@@ -190,7 +190,6 @@ typedef void *cred_t;
  */
 struct edhoc_cred_container_t {
     cose_key_t *authKey;              /**< Private authentication key */
-
     cred_type_t credType;             /**< credential type (RPK or CBOR certificate) */
     cred_t credCtx;                   /**< Pointer to a populated credential context */
     cred_id_t *idCtx;                 /**< Pointer to the raw credential identifier bytes */

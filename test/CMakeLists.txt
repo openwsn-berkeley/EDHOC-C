@@ -526,11 +526,11 @@ add_test(
         COMMAND test-process --create-msg2 test_vectors/vector3.json
 )
 
-add_test(
-        NAME TEST_PROCESS_MESSAGE_2_V4
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMAND test-process --create-msg2 test_vectors/vector4.json
-)
+# add_test(
+#         NAME TEST_PROCESS_MESSAGE_2_V4
+#         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+#         COMMAND test-process --create-msg2 test_vectors/vector4.json
+# )
 
 # --
 
@@ -552,11 +552,11 @@ add_test(
         COMMAND test-process --create-msg3 test_vectors/vector3.json
 )
 
-add_test(
-        NAME TEST_PROCESS_MESSAGE_3_V4
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMAND test-process --create-msg3 test_vectors/vector4.json
-)
+# add_test(
+#         NAME TEST_PROCESS_MESSAGE_3_V4
+#         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+#         COMMAND test-process --create-msg3 test_vectors/vector4.json
+# )
 
 # --
 
@@ -578,11 +578,11 @@ add_test(
         COMMAND test-process --finalize-responder test_vectors/vector3.json
 )
 
-add_test(
-        NAME TEST_PROCESS_RESPONDER_FINALIZE_V4
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMAND test-process --finalize-responder test_vectors/vector4.json
-)
+# add_test(
+#         NAME TEST_PROCESS_RESPONDER_FINALIZE_V4
+#         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+#         COMMAND test-process --finalize-responder test_vectors/vector4.json
+# )
 
 ###################################################################
 # CRYPTO
@@ -718,14 +718,14 @@ add_test(
 
 # --
 
-add_test(
-        NAME TEST_EDHOC_EXPORTER_SECRET_V4
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMAND test-edhoc --export-secret test_vectors/vector4.json
-)
+# add_test(
+#         NAME TEST_EDHOC_EXPORTER_SECRET_V4
+#         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+#         COMMAND test-edhoc --export-secret test_vectors/vector4.json
+# )
 
-add_test(
-        NAME TEST_EDHOC_EXPORTER_SALT_V4
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMAND test-edhoc --export-salt test_vectors/vector4.json
-)
+# add_test(
+#         NAME TEST_EDHOC_EXPORTER_SALT_V4
+#         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+#         COMMAND test-edhoc --export-salt test_vectors/vector4.json
+# )

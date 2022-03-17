@@ -118,7 +118,7 @@ void format_msg3_init(edhoc_msg3_t *msg3);
  *
  * @param errMsg
  */
-void format_error_msg_init(edhoc_error_msg_t* errMsg);
+void format_error_msg_init(edhoc_error_msg_t *errMsg);
 
 /**
  *
@@ -281,7 +281,7 @@ ssize_t format_plaintext23_encode(const edhoc_plaintext23_t *plaintext, uint8_t 
  * @param ilen
  * @return
  */
-int format_plaintext23_decode(edhoc_plaintext23_t *plaintext, uint8_t *in, size_t ilen);
+int format_plaintext23_decode(edhoc_plaintext23_t *plaintext, int8_t *bstr_id, uint8_t *in, size_t ilen);
 
 /**
  *
@@ -290,7 +290,7 @@ int format_plaintext23_decode(edhoc_plaintext23_t *plaintext, uint8_t *in, size_
  * @param olen
  * @return
  */
-ssize_t format_error_msg_encode(const edhoc_error_msg_t* errMsg, uint8_t* out, size_t olen);
+ssize_t format_error_msg_encode(const edhoc_error_msg_t *errMsg, uint8_t *out, size_t olen);
 
 
 #endif /* EDHOC_FORMATTING_H */

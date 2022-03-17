@@ -331,6 +331,13 @@ void cose_sign1_init(cose_sign1_t *coseMsgCtx,
  */
 ssize_t cose_sign1_sign(cose_sign1_t *coseMsgCtx, const cose_key_t *key);
 
+/**
+ *
+ * @param coseMsgCtx
+ * @param key
+ * @return
+ */
+ssize_t cose_sign1_verify(cose_sign1_t *coseMsgCtx, const cose_key_t *key);
 
 /**
  *

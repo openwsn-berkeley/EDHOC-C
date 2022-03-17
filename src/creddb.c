@@ -312,120 +312,114 @@ const uint8_t x509_der_cert_resp_id_tv4[] = X509_DER_CERT_RESP_ID_TV4;
 const uint8_t x509_der_cert_resp_id_value_tv4[] = X509_DER_CERT_RESP_ID_VALUE_TV4;
 const uint8_t x509_auth_key_resp_tv4[] = X509_AUTH_KEY_RESP_TV4;
 
-size_t x509_der_cert_init_tv1_len = sizeof(x509_der_cert_init_tv1);
-size_t x509_der_cert_init_id_tv1_len = sizeof(x509_der_cert_init_id_tv1);
-size_t x509_auth_key_init_tv1_len = sizeof(x509_auth_key_init_tv1);
-size_t x509_der_cert_resp_tv1_len = sizeof(x509_der_cert_resp_tv1);
-size_t x509_der_cert_resp_id_tv1_len = sizeof(x509_der_cert_resp_id_tv1);
-size_t x509_auth_key_resp_tv1_len = sizeof(x509_auth_key_resp_tv1);
-
-size_t rpk_cbor_init_tv2_len = sizeof(rpk_cbor_init_tv2);
-size_t rpk_cbor_init_id_tv2_len = sizeof(rpk_cbor_init_id_tv2);
-size_t rpk_auth_key_init_tv2_len = sizeof(rpk_auth_key_init_tv2);
-size_t rpk_cbor_resp_tv2_len = sizeof(rpk_cbor_resp_tv2);
-size_t rpk_cbor_resp_id_tv2_len = sizeof(rpk_cbor_resp_id_tv2);
-size_t rpk_auth_key_resp_tv2_len = sizeof(rpk_auth_key_resp_tv2);
-
-size_t x509_der_cert_init_tv3_len = sizeof(x509_der_cert_init_tv3);
-size_t x509_der_cert_init_id_tv3_len = sizeof(x509_der_cert_init_id_tv3);
-size_t x509_auth_key_init_tv3_len = sizeof(x509_auth_key_init_tv3);
-size_t rpk_cbor_resp_tv3_len = sizeof(rpk_cbor_resp_tv3);
-size_t rpk_cbor_resp_id_tv3_len = sizeof(rpk_cbor_resp_id_tv3);
-size_t rpk_auth_key_resp_tv3_len = sizeof(rpk_auth_key_resp_tv3);
-
-size_t rpk_cbor_init_tv4_len = sizeof(rpk_cbor_init_tv4);
-size_t rpk_cbor_init_id_tv4_len = sizeof(rpk_cbor_init_id_tv4);
-size_t rpk_auth_key_init_tv4_len = sizeof(rpk_auth_key_init_tv4);
-size_t x509_der_cert_resp_tv4_len = sizeof(x509_der_cert_resp_tv4);
-size_t x509_der_cert_resp_id_tv4_len = sizeof(x509_der_cert_resp_id_tv4);
-size_t x509_auth_key_resp_tv4_len = sizeof(x509_auth_key_resp_tv4);
-
-const uint8_t rpk_cbor_christian[] = RPK_CBOR_CHRISTIAN;
-const uint8_t rpk_cbor_christian_id[] = RPK_CBOR_CHRISTAIN_ID;
-const uint8_t rpk_cbor_christian_id_value[] = RPK_CBOR_CHRISTIAN_ID_VALUE;
-
 typedef struct cred_db_t cred_db_t;
 
 struct cred_db_t {
+    cred_type_t credType;
     const uint8_t *id;
     size_t idLen;
+    const uint8_t *authKey;
+    size_t authKeyLen;
     const uint8_t *credValue;
     size_t credValueLen;
 };
 
 cred_db_t credDb[] = {
         {
+                CRED_TYPE_DER_CERT,
                 x509_der_cert_init_id_value_tv1,
                 sizeof(x509_der_cert_init_id_value_tv1),
+                x509_auth_key_init_tv1,
+                sizeof(x509_auth_key_init_tv1),
                 x509_der_cert_init_tv1,
                 sizeof(x509_der_cert_init_tv1)
         },
         {
+                CRED_TYPE_DER_CERT,
                 x509_der_cert_resp_id_value_tv1,
                 sizeof(x509_der_cert_resp_id_value_tv1),
+                x509_auth_key_resp_tv1,
+                sizeof(x509_auth_key_resp_tv1),
                 x509_der_cert_resp_tv1,
                 sizeof(x509_der_cert_resp_tv1)
         },
         {
+                CRED_TYPE_RPK,
                 rpk_cbor_init_id_value_tv2,
                 sizeof(rpk_cbor_init_id_value_tv2),
+                rpk_auth_key_init_tv2,
+                sizeof(rpk_auth_key_init_tv2),
                 rpk_cbor_init_tv2,
                 sizeof(rpk_cbor_init_tv2),
         },
         {
+                CRED_TYPE_RPK,
                 rpk_cbor_resp_id_value_tv2,
                 sizeof(rpk_cbor_resp_id_value_tv2),
+                rpk_auth_key_resp_tv2,
+                sizeof(rpk_auth_key_resp_tv2),
                 rpk_cbor_resp_tv2,
                 sizeof(rpk_cbor_resp_tv2),
         },
         {
+                CRED_TYPE_DER_CERT,
                 x509_der_cert_init_id_value_tv3,
                 sizeof(x509_der_cert_init_id_value_tv3),
+                x509_auth_key_init_tv3,
+                sizeof(x509_auth_key_init_tv3),
                 x509_der_cert_init_tv3,
                 sizeof(x509_der_cert_init_tv3)
         },
         {
+                CRED_TYPE_RPK,
                 rpk_cbor_resp_id_value_tv3,
                 sizeof(rpk_cbor_resp_id_value_tv3),
+                rpk_auth_key_resp_tv3,
+                sizeof(rpk_auth_key_resp_tv3),
                 rpk_cbor_resp_tv3,
                 sizeof(rpk_cbor_resp_tv3),
         },
         {
+                CRED_TYPE_RPK,
                 rpk_cbor_init_id_value_tv4,
                 sizeof(rpk_cbor_init_id_value_tv4),
+                rpk_auth_key_init_tv4,
+                sizeof(rpk_auth_key_init_tv4),
                 rpk_cbor_init_tv4,
                 sizeof(rpk_cbor_init_tv4),
         },
         {
+                CRED_TYPE_DER_CERT,
                 x509_der_cert_resp_id_value_tv4,
                 sizeof(x509_der_cert_resp_id_value_tv4),
+                x509_auth_key_resp_tv4,
+                sizeof(x509_auth_key_resp_tv4),
                 x509_der_cert_resp_tv4,
                 sizeof(x509_der_cert_resp_tv4)
-        },
-        {
-                rpk_cbor_christian_id_value,
-                sizeof(rpk_cbor_christian_id_value),
-                rpk_cbor_christian,
-                sizeof(rpk_cbor_christian)
         }
 
 };
 
 
-int f_remote_creds(const uint8_t *key, size_t keyLen, const uint8_t **out, size_t *olen) {
+int f_remote_creds(const uint8_t *key, size_t keyLen, cred_type_t* credType, const uint8_t **cred, size_t *credLen, const uint8_t **authKey, size_t* authKeyLen) {
     int ret, i;
 
     for (i = 0; i < (int) (sizeof(credDb) / sizeof(cred_db_t)); i++) {
         if (credDb[i].idLen == keyLen && memcmp(credDb[i].id, key, keyLen) == 0) {
-            *out = credDb[i].credValue;
-            *olen = credDb[i].credValueLen;
+            *credType = credDb[i].credType;
+            *cred = credDb[i].credValue;
+            *credLen = credDb[i].credValueLen;
+            *authKey = credDb[i].authKey;
+            *authKeyLen = credDb[i].authKeyLen;
             break;
         }
     }
 
     if (i == sizeof(credDb) / sizeof(cred_db_t)) {
-        out = NULL;
-        *olen = 0;
+        cred = NULL;
+        *credLen = 0;
+        authKey = NULL;
+        *authKeyLen = 0;
         ret = EDHOC_ERR_INVALID_CRED_ID;
     } else {
         ret = 0;

@@ -184,4 +184,15 @@ int crypt_copy_hash_context(sha_ctx_t *dstCtx, sha_ctx_t *srcCtx);
  */
 int crypt_sign(const cose_key_t *authkey, const uint8_t *msg, size_t msgLen, uint8_t *signature, size_t *sigLen);
 
+/**
+ *
+ * @param authkey
+ * @param msg
+ * @param msgLen
+ * @param signature
+ * @param sigLen
+ * @return
+ */
+int crypt_verify(const cose_key_t *authkey, const uint8_t *msg, size_t msgLen, uint8_t *signature, size_t *sigLen);
+
 #endif /* EDHOC_CRYPTO_INTERNAL_H */

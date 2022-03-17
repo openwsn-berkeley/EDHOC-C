@@ -420,6 +420,26 @@ ssize_t cose_sign1_sign(cose_sign1_t *coseMsgCtx, const cose_key_t *key) {
     return crypt_sign(key, toBeSigned, toBeSignedLen, coseMsgCtx->signature, &coseMsgCtx->sigLen);
 }
 
+ssize_t cose_sign1_verify(cose_sign1_t *coseMsgCtx, const cose_key_t *key) {
+    ssize_t toBeSignedLen;
+    uint8_t toBeSigned[EDHOC_TOBESIGNED_SIZE];
+
+    // debugging purposes
+    memset(toBeSigned, 0, EDHOC_TOBESIGNED_SIZE);
+
+    if (key->kty != COSE_KTY_OCTET && key->kty != COSE_KTY_EC2) {
+        return EDHOC_ERR_INVALID_KEY;
+    }
+
+    if ((toBeSignedLen = cose_sign1_create_to_be_signed(coseMsgCtx, toBeSigned, sizeof(toBeSigned))) < 0) {
+        return toBeSignedLen;
+    }
+
+    coseMsgCtx->sigLen = EDHOC_SIGNATURE23_SIZE;
+    return crypt_verify(key, toBeSigned, toBeSignedLen, coseMsgCtx->signature, &coseMsgCtx->sigLen);
+
+}
+
 ssize_t cose_encrypt0_decrypt(cose_encrypt0_t *coseMsgCtx, const cose_key_t *key, const uint8_t *iv, size_t ivLen) {
     ssize_t addAuthDataLen;
     uint8_t addAuthData[EDHOC_ASSOCIATED_DATA_SIZE];

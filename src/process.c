@@ -7,6 +7,8 @@
 
 #endif
 
+#include <mbedtls/x509_crt.h>
+
 #include "edhoc/edhoc.h"
 #include "edhoc/cose.h"
 
@@ -354,19 +356,30 @@ ssize_t proc_create_msg2(edhoc_ctx_t *ctx, const uint8_t *msg1Buf, size_t msg1Le
 ssize_t proc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2Buf, size_t msg2Len, uint8_t *out, size_t olen) {
     ssize_t ret, len;
     int i;
+    int8_t bstr_id;
 
     cred_t credCtx;
+#if defined(MBEDTLS)
+    mbedtls_x509_crt x509Ctx;
+    mbedtls_x509_crt_init(&x509Ctx);
+#else
+#error "No X509 backend enabled"
+#endif
+    rpk_t rpk;
+
     ad_cb_t ad3;
     cred_type_t credType;
     cred_id_t remoteCredId;
-    const uint8_t *remoteCred;
-    size_t remoteCredLen;
+    const uint8_t *remoteCredRaw;
+    size_t remoteCredRawLen;
+    const uint8_t *remoteAuthKeyRaw;
+    size_t remoteAuthKeyRawLen;
 
     sha_ctx_t hashCtx;
     cbor_encoder_t enc;
 
-    uint8_t iv3mOrIv3ae[EDHOC_IV23M_SIZE] = {0};
-    uint8_t mac3[EDHOC_MAC23_SIZE] = {0};
+    uint8_t iv23mOrIv3ae[EDHOC_IV23M_SIZE] = {0};
+    uint8_t mac23[EDHOC_MAC23_SIZE] = {0};
     uint8_t signature3[EDHOC_SIGNATURE23_SIZE] = {0};
     uint8_t keystream2[EDHOC_KEYSTREAM2_SIZE] = {0};
     uint8_t p2eOrP3ae[EDHOC_PLAINTEXT23_SIZE] = {0};
@@ -382,7 +395,7 @@ ssize_t proc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2Buf, size_t msg2Le
     cose_encrypt0_t ioCoseEncrypt0;
 
     cose_sign1_t coseSign1;
-    cose_key_t k3mOrk3ae;
+    cose_key_t k23mOrk3ae;
     cose_key_t remoteAuthKey;
 
     const cose_aead_t *aeadCipher;
@@ -398,9 +411,6 @@ ssize_t proc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2Buf, size_t msg2Le
     format_msg2_init(&msg2);
     format_msg3_init(&msg3);
     format_plaintext23_init(&plaintext23);
-
-    cose_key_init(&k3mOrk3ae);
-    cose_key_init(&remoteAuthKey);
 
     cipherSuite = edhoc_cipher_suite_from_id(ctx->session.cipherSuiteID);
     aeadCipher = cose_algo_get_aead_info(cipherSuite->aeadCipher);
@@ -449,40 +459,59 @@ ssize_t proc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2Buf, size_t msg2Le
     }
 
     plaintext23.credId = &remoteCredId;
-    EDHOC_CHECK_SUCCESS(format_plaintext23_decode(&plaintext23, p2eOrP3ae, msg2.ciphertext2Len));
+    EDHOC_CHECK_SUCCESS(format_plaintext23_decode(&plaintext23, &bstr_id, p2eOrP3ae, msg2.ciphertext2Len));
 
     // fetch the remote credential info
     for (i = 0; i < COSE_MAX_HEADER_ITEMS; i++) {
         if (remoteCredId.map[i].key == COSE_HEADER_PARAM_X5T) {
             EDHOC_CHECK_SUCCESS(ctx->conf->f_remote_cred(remoteCredId.map[i].certHash.value,
                                                          remoteCredId.map[i].certHash.length,
-                                                         &remoteCred,
-                                                         &remoteCredLen));
-            break;
+                                                         &credType,
+                                                         &remoteCredRaw,
+                                                         &remoteCredRawLen,
+                                                         &remoteAuthKeyRaw,
+                                                         &remoteAuthKeyRawLen));
 
         } else if (remoteCredId.map[i].key == COSE_HEADER_PARAM_KID) {
             if (remoteCredId.map[i].valueType == COSE_HDR_VALUE_BSTR) {
                 EDHOC_CHECK_SUCCESS(ctx->conf->f_remote_cred(remoteCredId.map[i].bstr,
                                                              remoteCredId.map[i].len,
-                                                             &remoteCred,
-                                                             &remoteCredLen));
+                                                             &credType,
+                                                             &remoteCredRaw,
+                                                             &remoteCredRawLen,
+                                                             &remoteAuthKeyRaw,
+                                                             &remoteAuthKeyRawLen));
             } else if (remoteCredId.map[i].valueType == COSE_HDR_VALUE_INT) {
                 if (remoteCredId.map[i].integer >= 0x0 && remoteCredId.map[i].integer <= 0x2f) {
                     EDHOC_CHECK_SUCCESS(ctx->conf->f_remote_cred((uint8_t *) &remoteCredId.map[i].integer,
-                                                                 1,
-                                                                 &remoteCred,
-                                                                 &remoteCredLen));
+                                                                 remoteCredId.map[i].len,
+                                                                 &credType,
+                                                                 &remoteCredRaw,
+                                                                 &remoteCredRawLen,
+                                                                 &remoteAuthKeyRaw,
+                                                                 &remoteAuthKeyRawLen));
                 } else {
                     EDHOC_FAIL(EDHOC_ERR_INVALID_CRED_ID);
                 }
             } else {
                 EDHOC_FAIL(EDHOC_ERR_INVALID_CRED_ID);
             }
-            cose_key_from_cbor(&remoteAuthKey, remoteCred, remoteCredLen);
-            break;
         } else {
             continue;
         }
+
+        if (credType == CRED_TYPE_DER_CERT) {
+            // do not check return code, since we are parsing invalid certificates
+            cred_x509_from_der(&x509Ctx, remoteCredRaw, remoteCredRawLen);
+            credCtx = &x509Ctx;
+        } else if (credType == CRED_TYPE_RPK) {
+            cred_rpk_init(&rpk);
+            EDHOC_CHECK_SUCCESS(cred_rpk_from_cbor(&rpk, remoteCredRaw, remoteCredRawLen));
+            credCtx = &rpk;
+        } else {
+            // TODO: handle CBOR certificates
+        }
+        break;
     }
 
     if (i == COSE_MAX_HEADER_ITEMS) {
@@ -490,12 +519,53 @@ ssize_t proc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2Buf, size_t msg2Le
         EDHOC_FAIL(EDHOC_ERR_INVALID_CRED_ID);
     }
 
-    if (ctx->method == EDHOC_AUTH_SIGN_SIGN || ctx->method == EDHOC_AUTH_SIGN_STATIC) {
-        // TODO: verify certificate
-    }
+    cose_key_init(&remoteAuthKey);
+    EDHOC_CHECK_SUCCESS(cose_key_from_cbor(&remoteAuthKey, remoteAuthKeyRaw, remoteAuthKeyRawLen));
 
     EDHOC_CHECK_SUCCESS(
             proc_compute_prk3e2m(ctx->method, ctx->prk2e, &ctx->myEphKey, &remoteAuthKey, ctx->prk3e2m));
+
+    if ((aeadCipher = cose_algo_get_aead_info(cipherSuite->aeadCipher)) == NULL) {
+        EDHOC_FAIL(EDHOC_ERR_AEAD_CIPHER_UNAVAILABLE);
+    }
+
+    cose_encrypt0_init(&ioCoseEncrypt0, NULL, 0, aeadCipher, mac23);
+
+    if ((len = format_external_data_encode(ctx->th2, credCtx, credType, NULL, extData, sizeof(extData))) <= 0) {
+        if (len < 0) {
+            EDHOC_FAIL(len);
+        } else {
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
+        }
+    }
+
+    cose_message_set_external_aad((cose_message_t *) &ioCoseEncrypt0, extData, len);
+    EDHOC_CHECK_SUCCESS(cose_message_set_protected_hdr((cose_message_t *) &ioCoseEncrypt0, remoteCredId.map));
+    cose_message_set_payload((cose_message_t *) &ioCoseEncrypt0, mac23, 0);
+
+    // compute the K_2m key
+    cose_key_init(&k23mOrk3ae);
+    EDHOC_CHECK_SUCCESS(proc_compute_K23mOrK3ae(aeadCipher, ctx->th2, ctx->prk3e2m, "K_2m", out, olen));
+    EDHOC_CHECK_SUCCESS(cose_symmetric_key_from_buffer(&k23mOrk3ae, out, aeadCipher->keyLength));
+
+    // compute the nonce
+    EDHOC_CHECK_SUCCESS(proc_compute_IV23mOrIV3ae(aeadCipher, ctx->th2, ctx->prk3e2m, "IV_2m", out, olen));
+    memcpy(iv23mOrIv3ae, out, aeadCipher->ivLength);
+
+
+    if (ctx->method == EDHOC_AUTH_SIGN_SIGN || ctx->method == EDHOC_AUTH_STATIC_SIGN) {
+        cose_encrypt0_encrypt(&ioCoseEncrypt0, &k23mOrk3ae, iv23mOrIv3ae, aeadCipher->ivLength);
+        signAlgorithm = cose_algo_get_sign_info(cipherSuite->signAlgorithm);
+        cose_sign1_init(&coseSign1, mac23, aeadCipher->tagLength, signAlgorithm, (uint8_t *) plaintext23.sigOrMac23);
+        cose_message_set_protected_hdr((cose_message_t *) &coseSign1, remoteCredId.map);
+        cose_message_set_external_aad((cose_message_t *) &coseSign1, extData, len);
+
+        EDHOC_CHECK_SUCCESS(cose_sign1_verify(&coseSign1, &remoteAuthKey));
+
+    } else {
+        memcpy(mac23, plaintext23.sigOrMac23, plaintext23.sigOrMac23Len);
+        EDHOC_CHECK_SUCCESS(cose_encrypt0_decrypt(&ioCoseEncrypt0, &k23mOrk3ae, iv23mOrIv3ae, aeadCipher->ivLength));
+    }
 
     // TODO: call the AD3 callback
 
@@ -531,7 +601,7 @@ ssize_t proc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2Buf, size_t msg2Le
     EDHOC_CHECK_SUCCESS(proc_compute_prk4x3m(ctx->method, ctx->prk3e2m, ctx->conf->myCred.authKey, &msg2.data2.gY,
                                              ctx->session.prk4x3m));
 
-    cose_encrypt0_init(&ioCoseEncrypt0, p2eOrP3ae, 0, aeadCipher, mac3);
+    cose_encrypt0_init(&ioCoseEncrypt0, p2eOrP3ae, 0, aeadCipher, mac23);
     credCtx = ctx->conf->myCred.credCtx;
     credType = ctx->conf->myCred.credType;
     ad3 = ctx->conf->ad3;
@@ -547,21 +617,22 @@ ssize_t proc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2Buf, size_t msg2Le
     cose_message_set_external_aad((cose_message_t *) &ioCoseEncrypt0, extData, len);
     cose_message_set_protected_hdr((cose_message_t *) &ioCoseEncrypt0, ctx->conf->myCred.idCtx->map);
 
-    // compute the K_2m key
+    // compute the K_3m key
+    cose_key_init(&k23mOrk3ae);
     EDHOC_CHECK_SUCCESS(proc_compute_K23mOrK3ae(aeadCipher, ctx->th3, ctx->session.prk4x3m, "K_3m", out, olen));
-    cose_symmetric_key_from_buffer(&k3mOrk3ae, out, aeadCipher->keyLength);
+    cose_symmetric_key_from_buffer(&k23mOrk3ae, out, aeadCipher->keyLength);
 
     // compute the nonce
     EDHOC_CHECK_SUCCESS(proc_compute_IV23mOrIV3ae(aeadCipher, ctx->th3, ctx->session.prk4x3m, "IV_3m", out, olen));
-    memcpy(iv3mOrIv3ae, out, aeadCipher->ivLength);
+    memcpy(iv23mOrIv3ae, out, aeadCipher->ivLength);
 
-    cose_encrypt0_encrypt(&ioCoseEncrypt0, &k3mOrk3ae, iv3mOrIv3ae, aeadCipher->ivLength);
+    cose_encrypt0_encrypt(&ioCoseEncrypt0, &k23mOrk3ae, iv23mOrIv3ae, aeadCipher->ivLength);
 
     // reset plaintext struct
     format_plaintext23_init(&plaintext23);
     if (ctx->method == EDHOC_AUTH_SIGN_SIGN || ctx->method == EDHOC_AUTH_SIGN_STATIC) {
         signAlgorithm = cose_algo_get_sign_info(cipherSuite->signAlgorithm);
-        cose_sign1_init(&coseSign1, mac3, aeadCipher->tagLength, signAlgorithm, signature3);
+        cose_sign1_init(&coseSign1, mac23, aeadCipher->tagLength, signAlgorithm, signature3);
         cose_message_set_protected_hdr((cose_message_t *) &coseSign1, ctx->conf->myCred.idCtx->map);
         cose_message_set_external_aad((cose_message_t *) &coseSign1, extData, len);
 
@@ -589,18 +660,18 @@ ssize_t proc_create_msg3(edhoc_ctx_t *ctx, const uint8_t *msg2Buf, size_t msg2Le
     }
 
     // overwrite inner COSE Encrypt0 with outer COSE Encrypt0
-    cose_encrypt0_init(&ioCoseEncrypt0, p2eOrP3ae, len, aeadCipher, mac3);
+    cose_encrypt0_init(&ioCoseEncrypt0, p2eOrP3ae, len, aeadCipher, mac23);
     cose_message_set_external_aad((cose_message_t *) &ioCoseEncrypt0, ctx->th3, EDHOC_DIGEST_SIZE);
 
     // reset cose key
-    cose_key_init(&k3mOrk3ae);
+    cose_key_init(&k23mOrk3ae);
     EDHOC_CHECK_SUCCESS(proc_compute_K23mOrK3ae(aeadCipher, ctx->th3, ctx->prk3e2m, "K_3ae", out, olen));
-    cose_symmetric_key_from_buffer(&k3mOrk3ae, out, aeadCipher->keyLength);
+    cose_symmetric_key_from_buffer(&k23mOrk3ae, out, aeadCipher->keyLength);
 
     EDHOC_CHECK_SUCCESS(proc_compute_IV23mOrIV3ae(aeadCipher, ctx->th3, ctx->prk3e2m, "IV_3ae", out, olen));
-    memcpy(iv3mOrIv3ae, out, aeadCipher->ivLength);
+    memcpy(iv23mOrIv3ae, out, aeadCipher->ivLength);
 
-    cose_encrypt0_encrypt(&ioCoseEncrypt0, &k3mOrk3ae, iv3mOrIv3ae, aeadCipher->ivLength);
+    cose_encrypt0_encrypt(&ioCoseEncrypt0, &k23mOrk3ae, iv23mOrIv3ae, aeadCipher->ivLength);
     memcpy(ciphertext3, ioCoseEncrypt0.base.payload, ioCoseEncrypt0.base.payloadLen);
     memcpy(ciphertext3 + ioCoseEncrypt0.base.payloadLen, ioCoseEncrypt0.authTag, aeadCipher->tagLength);
 
@@ -661,38 +732,55 @@ proc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3Buf, size_t msg3Len, boo
     (void) out;
     (void) olen;
     ssize_t ret, len;
+    int8_t bstr_id;
     int i;
 
+    cred_t credCtx;
+#if defined(MBEDTLS)
+    mbedtls_x509_crt x509Ctx;
+    mbedtls_x509_crt_init(&x509Ctx);
+#else
+#error "No X509 backend enabled"
+#endif
+    rpk_t rpk;
+
+    cred_type_t credType;
     cred_id_t remoteCredId;
-    const uint8_t *remoteCred;
-    size_t remoteCredLen;
+    const uint8_t *remoteCredRaw;
+    size_t remoteCredRawLen;
+    const uint8_t *remoteAuthKeyRaw;
+    size_t remoteAuthKeyRawLen;
 
     sha_ctx_t hashCtx;
     cbor_encoder_t enc;
 
-    uint8_t iv3ae[EDHOC_IV23M_SIZE] = {0};
-    uint8_t temp[EDHOC_PLAINTEXT23_SIZE + EDHOC_MAC23_SIZE] = {0};
+    uint8_t mac3[EDHOC_MAC23_SIZE] = {0};
+    uint8_t iv3mOrIv3ae[EDHOC_IV23M_SIZE] = {0};
+    uint8_t ciphertext3[EDHOC_PLAINTEXT23_SIZE + EDHOC_MAC23_SIZE] = {0};
+
+    // << TH_3, CRED_I, ? AD_3 >>
+    uint8_t extData[EDHOC_EXTDATA_SIZE] = {0};
 
     edhoc_msg3_t msg3;
     edhoc_plaintext23_t plaintext3;
 
-    cose_encrypt0_t outerCoseEncrypt0;
+    cose_encrypt0_t ioCoseEncrypt0;
 
-    cose_key_t k3ae;
+    cose_sign1_t coseSign1;
+    cose_key_t k3mOrk3ae;
     cose_key_t remoteAuthKey;
 
     const cose_aead_t *aeadCipher;
     const cipher_suite_t *cipherSuite;
+    const cose_sign_t *signAlgorithm;
 
     cipherSuite = NULL;
     aeadCipher = NULL;
+    signAlgorithm = NULL;
 
     cred_id_init(&remoteCredId);
 
     format_msg3_init(&msg3);
-
-    cose_key_init(&k3ae);
-    cose_key_init(&remoteAuthKey);
 
     cipherSuite = edhoc_cipher_suite_from_id(ctx->session.cipherSuiteID);
     aeadCipher = cose_algo_get_aead_info(cipherSuite->aeadCipher);
@@ -712,7 +800,7 @@ proc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3Buf, size_t msg3Len, boo
     crypt_hash_init(&hashCtx);
     EDHOC_CHECK_SUCCESS(crypt_copy_hash_context(&hashCtx, ctx->thCtx));
 
-    if ((len = format_data3_encode(&msg3.data3, ctx->correlation, temp, sizeof(temp))) <= 0) {
+    if ((len = format_data3_encode(&msg3.data3, ctx->correlation, ciphertext3, sizeof(ciphertext3))) <= 0) {
         if (len < 0) {
             EDHOC_FAIL(len);
         } else {
@@ -720,74 +808,96 @@ proc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3Buf, size_t msg3Len, boo
         }
     }
 
-    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hashCtx, temp, len));
+    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hashCtx, ciphertext3, len));
     EDHOC_CHECK_SUCCESS(crypt_hash_finish(&hashCtx, ctx->th3));
 
     // TH_4 = H(TH_3 , CIPHERTEXT_3)
     crypt_hash_init(&hashCtx);
-    cbor_init_encoder(&enc, temp, sizeof(temp));
+    cbor_init_encoder(&enc, ciphertext3, sizeof(ciphertext3));
     CBOR_ENC_CHECK_RET(cbor_put_bstr(&enc, ctx->th3, EDHOC_DIGEST_SIZE));
-    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hashCtx, temp, cbor_encoded_len(&enc)));
+    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hashCtx, ciphertext3, cbor_encoded_len(&enc)));
 
-    cbor_init_encoder(&enc, temp, sizeof(temp));
+    cbor_init_encoder(&enc, ciphertext3, sizeof(ciphertext3));
     CBOR_ENC_CHECK_RET(cbor_put_bstr(&enc, msg3.ciphertext3, msg3.ciphertext3Len));
-    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hashCtx, temp, cbor_encoded_len(&enc)));
 
+    EDHOC_CHECK_SUCCESS(crypt_hash_update(&hashCtx, ciphertext3, cbor_encoded_len(&enc)));
     EDHOC_CHECK_SUCCESS(crypt_hash_finish(&hashCtx, ctx->session.th4));
 
-    EDHOC_CHECK_SUCCESS(proc_compute_K23mOrK3ae(aeadCipher, ctx->th3, ctx->prk3e2m, "K_3ae", temp, sizeof(temp)));
-    cose_symmetric_key_from_buffer(&k3ae, temp, aeadCipher->keyLength);
+    cose_key_init(&k3mOrk3ae);
+    EDHOC_CHECK_SUCCESS(
+            proc_compute_K23mOrK3ae(aeadCipher, ctx->th3, ctx->prk3e2m, "K_3ae", ciphertext3, sizeof(ciphertext3)));
+    cose_symmetric_key_from_buffer(&k3mOrk3ae, ciphertext3, aeadCipher->keyLength);
 
-    EDHOC_CHECK_SUCCESS(proc_compute_IV23mOrIV3ae(aeadCipher, ctx->th3, ctx->prk3e2m, "IV_3ae", temp, sizeof(temp)));
-    memcpy(iv3ae, temp, aeadCipher->ivLength);
+    EDHOC_CHECK_SUCCESS(
+            proc_compute_IV23mOrIV3ae(aeadCipher, ctx->th3, ctx->prk3e2m, "IV_3ae", ciphertext3, sizeof(ciphertext3)));
+    memcpy(iv3mOrIv3ae, ciphertext3, aeadCipher->ivLength);
 
-    memcpy(temp, msg3.ciphertext3, msg3.ciphertext3Len);
+    memcpy(ciphertext3, msg3.ciphertext3, msg3.ciphertext3Len);
 
-    cose_encrypt0_init(&outerCoseEncrypt0,
-                       temp,
+    cose_encrypt0_init(&ioCoseEncrypt0,
+                       ciphertext3,
                        msg3.ciphertext3Len - aeadCipher->tagLength,
                        aeadCipher,
-                       temp + msg3.ciphertext3Len - aeadCipher->tagLength);
-    cose_message_set_external_aad((cose_message_t *) &outerCoseEncrypt0, ctx->th3, EDHOC_DIGEST_SIZE);
+                       ciphertext3 + msg3.ciphertext3Len - aeadCipher->tagLength);
+    cose_message_set_external_aad((cose_message_t *) &ioCoseEncrypt0, ctx->th3, EDHOC_DIGEST_SIZE);
 
-    EDHOC_CHECK_SUCCESS(cose_encrypt0_decrypt(&outerCoseEncrypt0, &k3ae, iv3ae, aeadCipher->ivLength));
+    EDHOC_CHECK_SUCCESS(cose_encrypt0_decrypt(&ioCoseEncrypt0, &k3mOrk3ae, iv3mOrIv3ae, aeadCipher->ivLength));
 
     plaintext3.credId = &remoteCredId;
     EDHOC_CHECK_SUCCESS(
-            format_plaintext23_decode(&plaintext3, outerCoseEncrypt0.base.payload, outerCoseEncrypt0.base.payloadLen));
+            format_plaintext23_decode(&plaintext3, &bstr_id, ioCoseEncrypt0.base.payload,
+                                      ioCoseEncrypt0.base.payloadLen));
 
     // fetch the remote credential info
     for (i = 0; i < COSE_MAX_HEADER_ITEMS; i++) {
         if (remoteCredId.map[i].key == COSE_HEADER_PARAM_X5T) {
             EDHOC_CHECK_SUCCESS(ctx->conf->f_remote_cred(remoteCredId.map[i].certHash.value,
                                                          remoteCredId.map[i].certHash.length,
-                                                         &remoteCred,
-                                                         &remoteCredLen));
-            break;
-
+                                                         &credType,
+                                                         &remoteCredRaw,
+                                                         &remoteCredRawLen,
+                                                         &remoteAuthKeyRaw,
+                                                         &remoteAuthKeyRawLen));
         } else if (remoteCredId.map[i].key == COSE_HEADER_PARAM_KID) {
             if (remoteCredId.map[i].valueType == COSE_HDR_VALUE_BSTR) {
                 EDHOC_CHECK_SUCCESS(ctx->conf->f_remote_cred(remoteCredId.map[i].bstr,
                                                              remoteCredId.map[i].len,
-                                                             &remoteCred,
-                                                             &remoteCredLen));
+                                                             &credType,
+                                                             &remoteCredRaw,
+                                                             &remoteCredRawLen,
+                                                             &remoteAuthKeyRaw,
+                                                             &remoteAuthKeyRawLen));
             } else if (remoteCredId.map[i].valueType == COSE_HDR_VALUE_INT) {
                 if (remoteCredId.map[i].integer >= 0x0 && remoteCredId.map[i].integer <= 0x2f) {
                     EDHOC_CHECK_SUCCESS(ctx->conf->f_remote_cred((uint8_t *) &remoteCredId.map[i].integer,
                                                                  1,
-                                                                 &remoteCred,
-                                                                 &remoteCredLen));
+                                                                 &credType,
+                                                                 &remoteCredRaw,
+                                                                 &remoteCredRawLen,
+                                                                 &remoteAuthKeyRaw,
+                                                                 &remoteAuthKeyRawLen));
                 } else {
                     EDHOC_FAIL(EDHOC_ERR_INVALID_CRED_ID);
                 }
             } else {
                 EDHOC_FAIL(EDHOC_ERR_INVALID_CRED_ID);
             }
-            cose_key_from_cbor(&remoteAuthKey, remoteCred, remoteCredLen);
-            break;
         } else {
             continue;
         }
+
+        if (credType == CRED_TYPE_DER_CERT) {
+            // do not check return code, since we are parsing invalid certificates
+            cred_x509_from_der(&x509Ctx, remoteCredRaw, remoteCredRawLen);
+            credCtx = &x509Ctx;
+        } else if (credType == CRED_TYPE_RPK) {
+            cred_rpk_init(&rpk);
+            EDHOC_CHECK_SUCCESS(cred_rpk_from_cbor(&rpk, remoteCredRaw, remoteCredRawLen));
+            credCtx = &rpk;
+        } else {
+            // TODO: handle CBOR certificates
+        }
+        break;
     }
 
     if (i == COSE_MAX_HEADER_ITEMS) {
@@ -795,14 +905,56 @@ proc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3Buf, size_t msg3Len, boo
         EDHOC_FAIL(EDHOC_ERR_INVALID_CRED_ID);
     }
 
+    cose_key_init(&remoteAuthKey);
+    EDHOC_CHECK_SUCCESS(cose_key_from_cbor(&remoteAuthKey, remoteAuthKeyRaw, remoteAuthKeyRawLen));
+
+    EDHOC_CHECK_SUCCESS(
+            proc_compute_prk4x3m(ctx->method, ctx->prk3e2m, &ctx->myEphKey, &remoteAuthKey, ctx->session.prk4x3m));
+
+    if ((aeadCipher = cose_algo_get_aead_info(cipherSuite->aeadCipher)) == NULL) {
+        EDHOC_FAIL(EDHOC_ERR_AEAD_CIPHER_UNAVAILABLE);
+    }
+
+    cose_encrypt0_init(&ioCoseEncrypt0, NULL, 0, aeadCipher, mac3);
+
+    if ((len = format_external_data_encode(ctx->th3, credCtx, credType, NULL, extData, sizeof(extData))) <= 0) {
+        if (len < 0) {
+            EDHOC_FAIL(len);
+        } else {
+            EDHOC_FAIL(EDHOC_ERR_INVALID_SIZE);
+        }
+    }
+
+    cose_message_set_external_aad((cose_message_t *) &ioCoseEncrypt0, extData, len);
+    EDHOC_CHECK_SUCCESS(cose_message_set_protected_hdr((cose_message_t *) &ioCoseEncrypt0, remoteCredId.map));
+    cose_message_set_payload((cose_message_t *) &ioCoseEncrypt0, mac3, 0);
+
+    // compute the K_3m key
+    cose_key_init(&k3mOrk3ae);
+    EDHOC_CHECK_SUCCESS(proc_compute_K23mOrK3ae(aeadCipher, ctx->th3, ctx->session.prk4x3m, "K_3m", out, olen));
+    cose_symmetric_key_from_buffer(&k3mOrk3ae, out, aeadCipher->keyLength);
+
+    // compute the nonce
+    EDHOC_CHECK_SUCCESS(proc_compute_IV23mOrIV3ae(aeadCipher, ctx->th3, ctx->session.prk4x3m, "IV_3m", out, olen));
+    memcpy(iv3mOrIv3ae, out, aeadCipher->ivLength);
+
     if (ctx->method == EDHOC_AUTH_SIGN_SIGN || ctx->method == EDHOC_AUTH_SIGN_STATIC) {
-        // TODO: verify certificate
+        cose_encrypt0_encrypt(&ioCoseEncrypt0, &k3mOrk3ae, iv3mOrIv3ae, aeadCipher->ivLength);
+
+        signAlgorithm = cose_algo_get_sign_info(cipherSuite->signAlgorithm);
+        cose_sign1_init(&coseSign1, mac3, aeadCipher->tagLength, signAlgorithm, (uint8_t *) plaintext3.sigOrMac23);
+        cose_message_set_protected_hdr((cose_message_t *) &coseSign1, remoteCredId.map);
+        cose_message_set_external_aad((cose_message_t *) &coseSign1, extData, len);
+
+        EDHOC_CHECK_SUCCESS(cose_sign1_verify(&coseSign1, &remoteAuthKey));
+
+    } else {
+        memcpy(mac3, plaintext3.sigOrMac23, plaintext3.sigOrMac23Len);
+        EDHOC_CHECK_SUCCESS(cose_encrypt0_decrypt(&ioCoseEncrypt0, &k3mOrk3ae, iv3mOrIv3ae, aeadCipher->ivLength));
     }
 
     // TODO: pass AD3 back to application
 
-    EDHOC_CHECK_SUCCESS(
-            proc_compute_prk4x3m(ctx->method, ctx->prk3e2m, &ctx->myEphKey, &remoteAuthKey, ctx->session.prk4x3m));
 
     if (ctx->state == EDHOC_RECEIVED_MESSAGE_3) {
         ctx->state = EDHOC_FINALIZED;
@@ -815,6 +967,7 @@ proc_resp_finalize(edhoc_ctx_t *ctx, const uint8_t *msg3Buf, size_t msg3Len, boo
     return ret;
 }
 
+#ifdef ERROR_MESSAGE
 ssize_t proc_create_error_msg(edhoc_ctx_t *ctx,
                               const char *diagMsg,
                               const uint8_t *suitesR,
@@ -856,6 +1009,7 @@ ssize_t proc_create_error_msg(edhoc_ctx_t *ctx,
     exit:
     return ret;
 }
+#endif
 
 ssize_t proc_compute_K23mOrK3ae(const cose_aead_t *aeadInfo,
                                 const uint8_t *th,

@@ -142,7 +142,7 @@ int crypt_decrypt(const cose_key_t *sk,
     if (tc_aes128_set_encrypt_key(&sched, sk->k) != TC_CRYPTO_SUCCESS)
         goto exit;
 
-    if (tc_ccm_config(&c, &sched, (uint8_t *)iv, ivLen, 8) != TC_CRYPTO_SUCCESS)
+    if (tc_ccm_config(&c, &sched, (uint8_t *) iv, ivLen, 8) != TC_CRYPTO_SUCCESS)
         goto exit;
 
     if (tc_ccm_decryption_verification(out, inOutLen, aad, aadLen, in, inOutLen + tagLen, &c) != TC_CRYPTO_SUCCESS)
@@ -173,7 +173,7 @@ int crypt_encrypt(const cose_key_t *sk,
     if (tc_aes128_set_encrypt_key(&sched, sk->k) != TC_CRYPTO_SUCCESS)
         goto exit;
 
-    if (tc_ccm_config(&c, &sched, (uint8_t *)iv, ivLen, 8) != TC_CRYPTO_SUCCESS)
+    if (tc_ccm_config(&c, &sched, (uint8_t *) iv, ivLen, 8) != TC_CRYPTO_SUCCESS)
         goto exit;
 
     if (tc_ccm_generation_encryption(out, (inOutlen + tagLen), aad, aadLen, in, inOutlen, &c) != TC_CRYPTO_SUCCESS)
@@ -193,6 +193,15 @@ int crypt_sign(const cose_key_t *authkey, const uint8_t *msg, size_t msgLen, uin
     edsign_sign(signature, authkey->x, authkey->d, msg, msgLen);
 
     return EDHOC_SUCCESS;
+}
+
+int crypt_verify(const cose_key_t *authkey, const uint8_t *msg, size_t msgLen, uint8_t *signature, size_t *sigLen) {
+    *sigLen = EDSIGN_SIGNATURE_SIZE;
+
+    if (edsign_verify(signature, authkey->x, msg, msgLen))
+        return EDHOC_SUCCESS;
+    else
+        return EDHOC_ERR_CRYPTO;
 }
 
 #endif /* TINYCRYPT */

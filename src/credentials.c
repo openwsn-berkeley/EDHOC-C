@@ -121,8 +121,8 @@ int cred_id_from_cbor(cred_id_t *credIdCtx, const uint8_t *in, size_t ilen) {
 
     EDHOC_CHECK_SUCCESS(cose_header_parse(credIdCtx->map, in, ilen));
 
-    credIdCtx->p = in;
-    credIdCtx->length = ilen;
+    credIdCtx->cred = in;
+    credIdCtx->credLen = ilen;
 
     ret = EDHOC_SUCCESS;
     exit:
@@ -179,8 +179,8 @@ int cred_c509_from_cbor(c509_t *c509Ctx, const uint8_t *in, size_t ilen) {
         EDHOC_FAIL(EDHOC_ERR_CBOR_DECODING);
     }
 
-    // ctx->tbs.p = in;
-    // ctx->tbs.length = 0;
+    // ctx->tbs.cred = in;
+    // ctx->tbs.credLen = 0;
 
     if (cbor_get_bstr(&decoder, &c509Ctx->issuerSignatureValue.p, &c509Ctx->issuerSignatureValue.length) !=
         CBOR_SUCCESS) {

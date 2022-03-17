@@ -214,7 +214,7 @@ int format_msg1_decode(edhoc_msg1_t *msg1, const uint8_t *in, size_t ilen) {
         msg1->cidi.integer += 24;
         msg1->cidi.length = 1;
     } else if (cbor_get_type(&decoder) == CBOR_UINT) {
-        CBOR_DEC_CHECK_RET(cbor_get_uint8_t(&decoder, (uint8_t *) &(msg1->cidi.integer)));
+        CBOR_DEC_CHECK_RET(cbor_get_uint8_t(&decoder, (uint8_t * ) & (msg1->cidi.integer)));
         msg1->cidi.integer += 24;
         msg1->cidi.length = 1;
     } else {
@@ -268,7 +268,7 @@ int format_msg2_decode(edhoc_msg2_t *msg2,
             msg2->data2.cidi.integer += 24;
             msg2->data2.cidi.length = 1;
         } else if (cbor_get_type(&decoder) == CBOR_UINT) {
-            CBOR_DEC_CHECK_RET(cbor_get_uint8_t(&decoder, (uint8_t *) &(msg2->data2.cidi.integer)));
+            CBOR_DEC_CHECK_RET(cbor_get_uint8_t(&decoder, (uint8_t * ) & (msg2->data2.cidi.integer)));
             msg2->data2.cidi.integer += 24;
             msg2->data2.cidi.length = 1;
         } else {
@@ -302,7 +302,7 @@ int format_msg2_decode(edhoc_msg2_t *msg2,
         msg2->data2.cidr.integer += 24;
         msg2->data2.cidr.length = 1;
     } else if (cbor_get_type(&decoder) == CBOR_UINT) {
-        CBOR_DEC_CHECK_RET(cbor_get_uint8_t(&decoder, (uint8_t *) &(msg2->data2.cidr.integer)));
+        CBOR_DEC_CHECK_RET(cbor_get_uint8_t(&decoder, (uint8_t * ) & (msg2->data2.cidr.integer)));
         msg2->data2.cidr.integer += 24;
         msg2->data2.cidr.length = 1;
     } else {
@@ -349,7 +349,7 @@ int format_msg3_decode(edhoc_msg3_t *msg3, corr_t corr, const uint8_t *msg3_buf,
             msg3->data3.cidr.integer += 24;
             msg3->data3.cidr.length = 1;
         } else if (cbor_get_type(&decoder) == CBOR_UINT) {
-            CBOR_DEC_CHECK_RET(cbor_get_uint8_t(&decoder, (uint8_t *) &(msg3->data3.cidr.integer)));
+            CBOR_DEC_CHECK_RET(cbor_get_uint8_t(&decoder, (uint8_t * ) & (msg3->data3.cidr.integer)));
             msg3->data3.cidr.integer += 24;
             msg3->data3.cidr.length = 1;
         } else {
@@ -478,7 +478,7 @@ ssize_t format_external_data_encode(const uint8_t *th,
     return ret;
 }
 
-int format_plaintext23_decode(edhoc_plaintext23_t *plaintext, uint8_t *in, size_t ilen) {
+int format_plaintext23_decode(edhoc_plaintext23_t *plaintext, int8_t* bstr_id, uint8_t *in, size_t ilen) {
     int ret;
     int8_t cborType;
 
@@ -487,26 +487,28 @@ int format_plaintext23_decode(edhoc_plaintext23_t *plaintext, uint8_t *in, size_
 
     cbor_init_decoder(&dec, in, ilen);
 
-    cbor_get_substream(&dec, &plaintext->credId->p, &plaintext->credId->length);
-    cbor_init_decoder(&_dec, plaintext->credId->p, plaintext->credId->length);
+    cbor_get_substream(&dec, &plaintext->credId->cred, &plaintext->credId->credLen);
+    cbor_init_decoder(&_dec, plaintext->credId->cred, plaintext->credId->credLen);
 
     cborType = cbor_get_type(&_dec);
 
     if (cborType == CBOR_MAP) {
         EDHOC_CHECK_SUCCESS(cose_header_parse(plaintext->credId->map,
-                                              plaintext->credId->p,
-                                              plaintext->credId->length));
+                                              plaintext->credId->cred,
+                                              plaintext->credId->credLen));
     } else {
-        // if its a kid then there was a single item in the cose header
+        // if it's a kid then there was a single item in the cose header
         plaintext->credId->map->key = COSE_HEADER_PARAM_KID;
 
         if (cborType == CBOR_BSTR) {
             CBOR_DEC_CHECK_RET(cbor_get_bstr(&_dec, &plaintext->credId->map[0].bstr, &plaintext->credId->map[0].len));
             plaintext->credId->map[0].valueType = COSE_HDR_VALUE_BSTR;
         } else if (cborType == CBOR_NINT || cborType == CBOR_UINT) {
-            CBOR_DEC_CHECK_RET(cbor_get_int32_t(&_dec, &plaintext->credId->map->integer));
-            plaintext->credId->map->integer += 24;
-            plaintext->credId->map[0].valueType = COSE_HDR_VALUE_INT;
+            CBOR_DEC_CHECK_RET(cbor_get_int8_t(&_dec, bstr_id));
+            *bstr_id += 24;
+            plaintext->credId->map[0].bstr = (const uint8_t *) bstr_id;
+            plaintext->credId->map[0].len = 1;
+            plaintext->credId->map[0].valueType = COSE_HDR_VALUE_BSTR;
         } else {
             EDHOC_FAIL(EDHOC_ERR_CBOR_DECODING);
         }
@@ -557,9 +559,9 @@ ssize_t format_plaintext23_encode(const edhoc_plaintext23_t *plaintext, uint8_t 
             offset += (ssize_t) (cbor_encoded_len(&enc));
         }
     } else {
-        if (plaintext->credId->length <= olen - offset) {
-            memcpy(out, plaintext->credId->p, plaintext->credId->length);
-            offset += (ssize_t) (plaintext->credId->length);
+        if (plaintext->credId->credLen <= olen - offset) {
+            memcpy(out, plaintext->credId->cred, plaintext->credId->credLen);
+            offset += (ssize_t) (plaintext->credId->credLen);
         } else {
             EDHOC_FAIL(EDHOC_ERR_BUFFER_OVERFLOW);
         }

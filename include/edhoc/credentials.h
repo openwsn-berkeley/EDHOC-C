@@ -63,8 +63,10 @@ struct c509_t {
 };
 
 struct cred_id_t {
-    const uint8_t *p;
-    size_t length;
+    const uint8_t *cred;
+    size_t credLen;
+    const uint8_t key;
+    size_t keyLen;
     cose_header_t map[EDHOC_COSE_HEADER_SIZE];
 };
 
